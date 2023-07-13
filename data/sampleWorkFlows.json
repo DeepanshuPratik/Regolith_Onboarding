@@ -6,19 +6,23 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Navigate_52",
-                    "function":"Navigate Relative Left Window"
+                    "function":"Navigate Relative Left Window",
+                    "image":"image_url"
                 },
                 {
                     "key_id":"Navigate_56",
-                    "function":"Traversing into left Workspace"
+                    "function":"Traversing into left Workspace",
+                    "image":"image_url"
                 },
                 {
                     "key_id":"Navigate_57",
-                    "function":"Moving Application to Workspace"
+                    "function":"Moving Application to Workspace",
+                    "image":"image_url"
                 },
                 {
                     "key_id":"Navigate_58",
-                    "function":"Switching to next workspace"
+                    "function":"Switching to next workspace",
+                    "image":"image_url"
                 }
             ]
         },
@@ -28,19 +32,23 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
-                    "function":"Can exit application"
+                    "function":"Can exit application",
+                    "image":"image_url"
                 },
                 {
                     "key_id":"Session_26",
-                    "function":"Terminate application"
+                    "function":"Terminate application",
+                    "image":"image_url"
                 },
                 {
                     "key_id":"Session_27",
-                    "function":"Reload the config"
+                    "function":"Reload the config",
+                    "image":"image_url"
                 },
                 {
                     "key_id":"Session_29",
-                    "function":"Restart the sessions"
+                    "function":"Restart the sessions",
+                    "image":"image_url"
                 }
             ]
         }
