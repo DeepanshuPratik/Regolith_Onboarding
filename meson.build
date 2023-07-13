@@ -14,6 +14,8 @@ regolith_onboarding_deps += dependency('gobject-2.0')
 regolith_onboarding_deps += dependency('gtk+-3.0')
 regolith_onboarding_deps += dependency('pango')
 regolith_onboarding_deps += dependency('x11')
+regolith_onboarding_deps += dependency('libhandy-1')
+
 regolith_onboarding_deps += layer_shell_dep
 
 executable(

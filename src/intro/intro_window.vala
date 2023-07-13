@@ -14,7 +14,6 @@ namespace regolith_onboarding {
         protected Gdk.Seat seat;
         // grid for headers
         private Gtk.Grid grid;
-        private Gtk.Box box;
 
         public DialogWindow () {
             Object(type: Gtk.WindowType.POPUP); // Window is unmanaged
@@ -26,11 +25,14 @@ namespace regolith_onboarding {
             //  cssProvider.load_from_path ("intro_window.css");
 
 
+            var container = new Box(Gtk.Orientation.VERTICAL, 5);
+            this.add(container);
 
+            var caraousel = new Hdy.Carousel();
+            container.add(caraousel);
+            var box = new Box(Gtk.Orientation.VERTICAL, 30);
+            caraousel.insert(box, 0);
 
-            box = new Box(Gtk.Orientation.VERTICAL, 5);
-            this.add(box);
-    
 
             grid = new Gtk.Grid ();
 
@@ -64,11 +66,15 @@ namespace regolith_onboarding {
             circle_button.add(next_arrow);
             box.add(circle_button);
 
+            var caraousel_indicator = new Hdy.CarouselIndicatorDots();
+            caraousel_indicator.set_carousel(caraousel);
+            container.add(caraousel_indicator);
+
 
             if (IS_SESSION_WAYLAND) {
-                set_size_request (800,700);
+                set_size_request (800,450);
             } else {
-                set_default_size (800,700);
+                set_default_size (800,450);
             }
 
             // changes opacity
