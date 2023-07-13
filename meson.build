@@ -1,5 +1,7 @@
 project('regolith_onboarding', 'vala', version: '1.12.1')
+add_project_arguments(['--pkg', 'GtkLayerShell-0.1'], language: 'vala')
 
+layer_shell_dep = meson.get_compiler('c').find_library('gtk-layer-shell', required: false)
 regolith_onboarding_deps = [dependency('gio-unix-2.0')]
 regolith_onboarding_deps += dependency('json-glib-1.0')
 regolith_onboarding_deps += dependency('atk')
@@ -12,6 +14,7 @@ regolith_onboarding_deps += dependency('gobject-2.0')
 regolith_onboarding_deps += dependency('gtk+-3.0')
 regolith_onboarding_deps += dependency('pango')
 regolith_onboarding_deps += dependency('x11')
+regolith_onboarding_deps += layer_shell_dep
 
 executable(
   'regolith_onboarding',
