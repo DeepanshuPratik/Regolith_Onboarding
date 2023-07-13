@@ -1,0 +1,48 @@
+{
+    "workspaces":[
+        {
+            "workflow_name": "Navigation",
+            "workflow_description" : "It will teach how all the possible ways you can navigate between workspaces in different ways",
+            "key_bindings_sequence": [
+                {
+                    "key_id":"Navigate_52",
+                    "function":"Navigate Relative Left Window"
+                },
+                {
+                    "key_id":"Navigate_56",
+                    "function":"Traversing into left Workspace"
+                },
+                {
+                    "key_id":"Navigate_57",
+                    "function":"Moving Application to Workspace"
+                },
+                {
+                    "key_id":"Navigate_58",
+                    "function":"Switching to next workspace"
+                }
+            ]
+        },
+        {
+            "workflow_name": "Session",
+            "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
+            "key_bindings_sequence": [
+                {
+                    "key_id":"Session_25",
+                    "function":"Can exit application"
+                },
+                {
+                    "key_id":"Session_26",
+                    "function":"Terminate application"
+                },
+                {
+                    "key_id":"Session_27",
+                    "function":"Relaod the config"
+                },
+                {
+                    "key_id":"Session_29",
+                    "function":"Restart the sessions"
+                }
+            ]
+        }
+    ]
+}
