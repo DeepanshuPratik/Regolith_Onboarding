@@ -30,7 +30,6 @@ To install and run this project, follow these steps:
 - Step 4: Build the project using `meson compile -C build`
 - Step 5: Run the project using `./build/regolith-onboarding`
 
-## Screenshots
 ## Screenshots (Adaptive to themes)
 <img alt="Sample1"
         height="250" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/resources/sample1.jpeg />
