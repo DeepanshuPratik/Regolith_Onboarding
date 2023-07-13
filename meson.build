@@ -15,10 +15,12 @@ regolith_onboarding_deps += dependency('gtk+-3.0')
 regolith_onboarding_deps += dependency('pango')
 regolith_onboarding_deps += dependency('x11')
 regolith_onboarding_deps += layer_shell_dep
+regolith_onboarding_deps += dependency('gee-0.8')
+regolith_onboarding_deps += dependency('json-glib-1.0')
 
 executable(
   'regolith_onboarding',
-  sources: ['src/main.vala', 'src/intro/intro_window.vala'],
+  sources: ['src/main.vala', 'src/intro/intro_window.vala','src/parser/configParser.vala',src/parser/json_parser.vala'],
   dependencies: regolith_onboarding_deps,
   install: true
 )
