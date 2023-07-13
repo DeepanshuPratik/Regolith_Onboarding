@@ -6,6 +6,7 @@ namespace regolith_onboarding {
     const float TRANSPARENCY = 0.0f;
 
     public class DialogWindow : Window {
+        public const int KEY_CODE_ESCAPE = 65307;
         const int MIN_WINDOW_WIDTH = 160;
         const int MIN_WINDOW_HEIGHT = 100;
 
@@ -27,44 +28,58 @@ namespace regolith_onboarding {
 
             var container = new Box(Gtk.Orientation.VERTICAL, 5);
             this.add(container);
-
+            var tables = new HashTable<string, string>(str_hash,str_equal);
+            tables["Sessions"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/floating.jpeg";
+            tables["Navigation"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/Navigation.jpeg";
+            tables["Workspace"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/workspaces.jpeg";
+            tables["Modes"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/resize.jpeg";
+            tables["Ilia"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/ilia.jpeg";
+            tables["Floating Windows"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/floating.jpeg";
             var caraousel = new Hdy.Carousel();
             container.add(caraousel);
-            var box = new Box(Gtk.Orientation.VERTICAL, 30);
-            caraousel.insert(box, 0);
+            var page1 = new Box(Gtk.Orientation.VERTICAL, 30);
+            var page2 = new Box(Gtk.Orientation.VERTICAL, 30);
+            caraousel.insert(page1, 0);
+            var page3 = new WorkFlows(tables);
+            caraousel.insert(page2,1);
+            caraousel.insert(page3,2);
 
 
             grid = new Gtk.Grid ();
 
-            // adding close button
-            var button = new Button();
-            button.set_label("X");
-            button.clicked.connect(on_button_clicked);
+            //  // adding close button
+            //  var button = new Button();
+            //  button.set_label("X");
+            //  button.clicked.connect(on_button_clicked);
             
-            box.add(button);
+            // page1.add(button);
+            page1.set_margin_top (40);
             var image = new Gtk.Image.from_file("/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/regolith-onboarding_logo.png");
             Gdk.Pixbuf pixbuf = image.get_pixbuf();
             var img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple (200, 200,Gdk.InterpType.BILINEAR));
-            box.add(img);
+            page1.add(img);
 
             var introText = new Gtk.Label("Getting started with regolith");
             introText.get_style_context().add_class("suggested-action");
             //introText.get_style_context ().add_provider (cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-            box.add(introText);
+            page1.add(introText);
 
             Gdk.Color white_bg; 
             Gdk.color_parse("white", out white_bg);
 
-            var circle_button = new Button();
-            circle_button.get_style_context().add_class("circular");
-            circle_button.set_size_request(50, 50);
-            circle_button.modify_bg(Gtk.StateType.NORMAL, white_bg);
+            var next_button = new Button();
+            next_button.get_style_context().add_class("circular");
+            next_button.set_size_request(50, 50);
+            next_button.modify_bg(Gtk.StateType.NORMAL, white_bg);
+            next_button.clicked.connect(()=>{
+                caraousel.scroll_to_full(page3,1000);
+            });
 
 
             var next_arrow = new Gtk.Image();
             next_arrow.set_from_icon_name("go-next", Gtk.IconSize.BUTTON );
-            circle_button.add(next_arrow);
-            box.add(circle_button);
+            next_button.add(next_arrow);
+            page1.add(next_button);
 
             var caraousel_indicator = new Hdy.CarouselIndicatorDots();
             caraousel_indicator.set_carousel(caraousel);
@@ -99,7 +114,11 @@ namespace regolith_onboarding {
 
             // Route keys based on function
             key_press_event.connect ((key) => {
-                // key.keyval
+                switch (key.keyval) {
+                    case KEY_CODE_ESCAPE:
+                        quit();
+                        break;
+                }
                 return false;
             });
 
@@ -108,10 +127,10 @@ namespace regolith_onboarding {
             //  dialog_pages[active_page].show (); // Get page ready to use
         }
 
-        private void on_button_clicked(Button button)
-        {
-            quit();
-        }
+        //  private void on_button_clicked(Button button)
+        //  {
+        //      quit();
+        //  }
 
         public void set_seat(Gdk.Seat seat) {
             this.seat = seat;
