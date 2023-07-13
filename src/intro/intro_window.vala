@@ -42,7 +42,7 @@ namespace regolith_onboarding {
             button.clicked.connect(on_button_clicked);
             
             box.add(button);
-            var image = new Gtk.Image.from_file("/home/soumyarp/git/Regolith_Onboarding/resources/regolith-onboarding_logo.png");
+            var image = new Gtk.Image.from_file("/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/regolith-onboarding_logo.png");
             Gdk.Pixbuf pixbuf = image.get_pixbuf();
             var img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple (200, 200,Gdk.InterpType.BILINEAR));
             box.add(img);
@@ -89,6 +89,9 @@ namespace regolith_onboarding {
         
                 if (click_out_bounds) {
                     this.set_opacity(0.8);
+                }
+                if(!click_out_bounds){
+                    this.set_opacity(1.0);
                 }
         
                 return !click_out_bounds;
