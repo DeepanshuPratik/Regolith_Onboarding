@@ -1,26 +1,6 @@
 using Gtk;
 
 namespace regolith_onboarding {
-    public const int KEY_CODE_ESCAPE = 65307;
-    public const int KEY_CODE_LEFT_ALT = 65513;
-    public const int KEY_CODE_RIGHT_ALT = 65514;
-    public const int KEY_CODE_SUPER = 65515;
-    public const int KEY_CODE_UP = 65364;
-    public const int KEY_CODE_DOWN = 65362;
-    public const int KEY_CODE_ENTER = 65293;
-    public const int KEY_CODE_PGDOWN = 65366;
-    public const int KEY_CODE_PGUP = 65365;
-    public const int KEY_CODE_RIGHT = 65363;
-    public const int KEY_CODE_LEFT = 65361;
-    public const int KEY_CODE_PLUS = 43;
-    public const int KEY_CODE_MINUS = 45;
-    public const int KEY_CODE_PRINTSRC = 65377;
-    public const int KEY_CODE_BRIGHT_UP = 269025026;
-    public const int KEY_CODE_BRIGHT_DOWN = 269025027;
-    public const int KEY_CODE_MIC_MUTE = 269025202;
-    public const int KEY_CODE_VOLUME_UP = 269025043;
-    public const int KEY_CODE_VOLUME_DOWN = 269025041;
-    public const int KEY_CODE_VOLUME_MUTE = 269025042;
     const int MIN_WINDOW_WIDTH = 160;
     const int MIN_WINDOW_HEIGHT = 100;
     const float TRANSPARENCY = 0.0f;
@@ -54,29 +34,36 @@ namespace regolith_onboarding {
 
             grid = new Gtk.Grid ();
 
-            // adding cross button
+            // adding close button
             var button = new Button();
             button.set_label("X");
             button.clicked.connect(on_button_clicked);
             
             box.add(button);
-            var image = new Gtk.Image.from_file("/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/regolith-onboarding_logo.png");
+            var image = new Gtk.Image.from_file("/home/soumyarp/git/Regolith_Onboarding/resources/regolith-onboarding_logo.png");
             Gdk.Pixbuf pixbuf = image.get_pixbuf();
             var img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple (200, 200,Gdk.InterpType.BILINEAR));
             box.add(img);
-            var circle_button = new Button();
-            circle_button.get_style_context().add_class("circular");
-            var progressbar = new Box(Gtk.Orientation.HORIZONTAL, 5);
-            circle_button.set_size_request(20, 20);
-            progressbar.add(circle_button);
-            progressbar.add(circle_button);
-            progressbar.add(circle_button);
 
             var introText = new Gtk.Label("Getting started with regolith");
             introText.get_style_context().add_class("suggested-action");
             //introText.get_style_context ().add_provider (cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
             box.add(introText);
-            box.add(progressbar);
+
+            Gdk.Color white_bg; 
+            Gdk.color_parse("white", out white_bg);
+
+            var circle_button = new Button();
+            circle_button.get_style_context().add_class("circular");
+            circle_button.set_size_request(50, 50);
+            circle_button.modify_bg(Gtk.StateType.NORMAL, white_bg);
+
+
+            var next_arrow = new Gtk.Image();
+            next_arrow.set_from_icon_name("go-next", Gtk.IconSize.BUTTON );
+            circle_button.add(next_arrow);
+            box.add(circle_button);
+
 
             if (IS_SESSION_WAYLAND) {
                 set_size_request (800,700);
@@ -95,7 +82,7 @@ namespace regolith_onboarding {
                 var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
         
                 if (click_out_bounds) {
-                    this.set_opacity (0.8);
+                    this.set_opacity(0.8);
                 }
         
                 return !click_out_bounds;
