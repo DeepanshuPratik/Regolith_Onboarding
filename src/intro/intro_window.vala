@@ -35,8 +35,6 @@ namespace regolith_onboarding {
         private uint active_page = 0;
         // Controls access to keyboard and mouse
         protected Gdk.Seat seat;
-        // Settings backend
-        private GLib.Settings settings;
         // Mode switcher
         private Gtk.Notebook notebook;
 
@@ -45,9 +43,11 @@ namespace regolith_onboarding {
         public DialogWindow(){
             Object(type: Gtk.WindowType.POPUP); // Window is unmanaged
             window_position = WindowPosition.CENTER_ALWAYS;
-
-            //settings = new GLib.Settings ("org.regolith-linux.onboarding");
-            set_default_size (settings.get_int ("window-width"), settings.get_int ("window-height"));
+            // setting Title and other properties
+            this.title = "Regolith Onboarding";
+            this.border_width = 10;
+            // setting window size
+            set_default_size (800,800);
             
             // Exit if focus leaves us
             focus_out_event.connect (() => {
@@ -121,8 +121,6 @@ namespace regolith_onboarding {
 
             resize (width, height);
 
-            settings.set_int("window-width", width);
-            settings.set_int("window-height", height);
         }
     }
 }

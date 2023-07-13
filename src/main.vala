@@ -6,7 +6,6 @@ int main(string[] args) {
     Gdk.init(ref args);
 
     var introWindow = new regolith_onboarding.DialogWindow();
-    introWindow.destroy.connect (Gtk.main_quit);
     introWindow.show_all();
     Gdk.Window gdkwin = introWindow.get_window ();
     var seat = grab_inputs (gdkwin);
