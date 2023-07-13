@@ -24,8 +24,8 @@ The project offers the following workflows:
 
 To install and run this project, follow these steps:
 
-Step 1: Clone this repository using `git clone https://github.com/username/regolith-onboarding.git`
-Step 2: Enter the project directory using `cd regolith-onboarding`
-Step 3: Set up the build system using `meson setup build`
-Step 4: Build the project using `meson compile -C build`
-Step 5: Run the project using `./build/regolith-onboarding`
+- Step 1: Clone this repository using `git clone https://github.com/username/regolith-onboarding.git`
+- Step 2: Enter the project directory using `cd regolith-onboarding`
+- Step 3: Set up the build system using `meson setup build`
+- Step 4: Build the project using `meson compile -C build`
+- Step 5: Run the project using `./build/regolith-onboarding`
