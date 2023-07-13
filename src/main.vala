@@ -117,11 +117,3 @@ Gdk.Seat ? grab_inputs (Gdk.Window gdkwin) {
     }
 }
 
-string? get_wm_cli() {
-    if(WM_NAME == "i3") {
-        return "/usr/bin/i3-msg ";
-    } else if (WM_NAME == "sway") {
-        return "/usr/bin/swaymsg ";
-    }
-    return null;
-}

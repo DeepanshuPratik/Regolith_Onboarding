@@ -29,3 +29,8 @@ To install and run this project, follow these steps:
 - Step 3: Set up the build system using `meson setup build`
 - Step 4: Build the project using `meson compile -C build`
 - Step 5: Run the project using `./build/regolith-onboarding`
+
+## Screenshots
+
+
+
