@@ -22,7 +22,7 @@ regolith_onboarding_deps += dependency('json-glib-1.0')
 
 executable(
   'regolith_onboarding',
-  sources: ['src/main.vala', 'src/intro/intro_window.vala','src/parser/configParser.vala',src/parser/json_parser.vala'],
+  sources: ['src/main.vala', 'src/intro/intro_window.vala','src/parser/configParser.vala','src/parser/json_parser.vala'],
   dependencies: regolith_onboarding_deps,
   install: true
 )
