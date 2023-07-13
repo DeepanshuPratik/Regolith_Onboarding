@@ -72,23 +72,7 @@ public static int main (string[] args) {
             window.set_seat (seat);
         }
     
-        // Handle mouse clicks by determining if a click is in or out of bounds
-        // If we get a mouse click out of bounds of the window, exit.
-        window.button_press_event.connect ((event) => {
-            int window_width = 0, window_height = 0;
-            window.get_size (out window_width, out window_height);
     
-            int mouse_x = (int) event.x;
-            int mouse_y = (int) event.y;
-    
-            var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
-    
-            if (click_out_bounds) {
-                window.quit ();
-            }
-    
-            return !click_out_bounds;
-        });
     
         Gtk.main ();
         

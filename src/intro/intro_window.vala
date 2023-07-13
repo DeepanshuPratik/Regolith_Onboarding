@@ -29,103 +29,82 @@ namespace regolith_onboarding {
         const int MIN_WINDOW_WIDTH = 160;
         const int MIN_WINDOW_HEIGHT = 100;
 
-        // Reference to all active dialog pages
-        // private DialogPage[] dialog_pages;
-        // The total number of pages (including help)
-        private int total_pages = -1;
-        // Specifies the array index for dialog_pages of active page
-        private uint active_page = 0;
-        // Mode switcher
-        private Gtk.Notebook notebook;
-        // Filtering text box
-        private Gtk.Entry entry;
-        
 
-        private Gtk.Grid grid;
         // Controls access to keyboard and mouse
         protected Gdk.Seat seat;
-
-        private Gtk.TreeView keybinding_view;
+        // grid for headers
+        private Gtk.Grid grid;
+        private Gtk.Box box;
 
         public DialogWindow () {
-            //Object(type: Gtk.WindowType.POPUP); // Window is unmanaged
+            Object(type: Gtk.WindowType.POPUP); // Window is unmanaged
             window_position = WindowPosition.CENTER_ALWAYS;
 
-            entry = new Gtk.Entry ();
-            entry.get_style_context ().add_class ("filter_entry");
-            entry.hexpand = true;
-            entry.button_press_event.connect ((event) => {
-                // Disable context menu as causes de-focus event to exit execution
-                return event.button == 3; // squelch right button click event
-            });
 
-            //entry.changed.connect (on_entry_changed);
+            // adding css file
+            //  var cssProvider = new Gtk.CssProvider ();
+            //  cssProvider.load_from_path ("intro_window.css");
 
-            notebook = new Notebook ();
-            notebook.get_style_context ().add_class ("notebook");
-            notebook.set_tab_pos (PositionType.BOTTOM);
 
-            
-            //init_pages (arg_map, focus_page, all_page_mode);
+
+
+            box = new Box(Gtk.Orientation.VERTICAL, 5);
+            this.add(box);
+    
 
             grid = new Gtk.Grid ();
-            grid.get_style_context ().add_class ("root_box");
-            grid.attach (entry, 0, 0, 1, 1);
-            grid.attach (notebook, 0, 1, 1, 1);
-            add (grid);
+
+            // adding cross button
+            var button = new Button();
+            button.set_label("X");
+            button.clicked.connect(on_button_clicked);
+            
+            box.add(button);
+            var image = new Gtk.Image.from_file("/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/regolith-onboarding_logo.png");
+            Gdk.Pixbuf pixbuf = image.get_pixbuf();
+            var img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple (200, 200,Gdk.InterpType.BILINEAR));
+            box.add(img);
+            var circle_button = new Button();
+            circle_button.get_style_context().add_class("circular");
+            var progressbar = new Box(Gtk.Orientation.HORIZONTAL, 5);
+            circle_button.set_size_request(20, 20);
+            progressbar.add(circle_button);
+            progressbar.add(circle_button);
+            progressbar.add(circle_button);
+
+            var introText = new Gtk.Label("Getting started with regolith");
+            introText.get_style_context().add_class("suggested-action");
+            //introText.get_style_context ().add_provider (cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+            box.add(introText);
+            box.add(progressbar);
 
             if (IS_SESSION_WAYLAND) {
-                set_size_request (600,600);
+                set_size_request (800,700);
             } else {
-                set_default_size (600,600);
+                set_default_size (800,700);
             }
 
-
-            // Exit if focus leaves us
-            focus_out_event.connect (() => {
-                this.set_opacity(0.6);
-                return false;
+            // changes opacity
+            this.button_press_event.connect ((event) => {
+                int window_width = 0, window_height = 0;
+                this.get_size (out window_width, out window_height);
+        
+                int mouse_x = (int) event.x;
+                int mouse_y = (int) event.y;
+        
+                var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
+        
+                if (click_out_bounds) {
+                    this.set_opacity (0.8);
+                }
+        
+                return !click_out_bounds;
             });
 
             // Route keys based on function
             key_press_event.connect ((key) => {
-                
-                bool key_handled = false;
-                switch (key.keyval) {
-                    case KEY_CODE_ESCAPE:
-                    case KEY_CODE_SUPER:    // Explicit exit
-                        quit ();
-                        break;
-                    case KEY_CODE_BRIGHT_UP:
-                    case KEY_CODE_BRIGHT_DOWN:
-                    case KEY_CODE_MIC_MUTE:
-                    case KEY_CODE_VOLUME_UP:
-                    case KEY_CODE_VOLUME_DOWN:
-                    case KEY_CODE_VOLUME_MUTE:
-                    case KEY_CODE_PRINTSRC: // Implicit exit
-                        quit ();
-                        break;
-                    case KEY_CODE_UP:
-                    case KEY_CODE_DOWN:
-                    case KEY_CODE_ENTER:
-                    case KEY_CODE_PGDOWN:
-                    case KEY_CODE_PGUP:     // Let UI handle these nav keys
-                        // show next page
-                        break;
-                    case KEY_CODE_RIGHT:
-                    case KEY_CODE_LEFT:     // Switch pages
-                        notebook.grab_focus ();
-                        break;
-                    default:                // Pass key event to active page for handling
-                        // stdout.printf ("Keycode: %u\n", key.keyval);
-                        //  key_handled = dialog_pages[active_page].key_event (key);
-                        if (!key_handled) {
-                            entry.grab_focus_without_selecting (); // causes entry to consume all unhandled key events
-                        }
-                        break;
-                }
-
-                return key_handled;
+                // key.keyval
+                return false;
             });
 
             //  entry.activate.connect (on_entry_activated);
@@ -133,31 +112,15 @@ namespace regolith_onboarding {
             //  dialog_pages[active_page].show (); // Get page ready to use
         }
 
+        private void on_button_clicked(Button button)
+        {
+            quit();
+        }
 
         public void set_seat(Gdk.Seat seat) {
             this.seat = seat;
         }
 
-        // Resize the dialog, bigger or smaller
-        void change_size(int delta) {
-            int width, height;
-            get_size(out width, out height);
-
-            width += delta;
-            height += delta;
-
-            // Ignore changes past min bounds
-            if (width < MIN_WINDOW_WIDTH || height < MIN_WINDOW_HEIGHT) return;
-
-            var monitor = this.get_screen ().get_display ().get_monitor (0); //Assume first monitor
-            if (monitor != null) {
-                var geometry = monitor.get_geometry ();
-
-                if (width >= geometry.width || height >= geometry.height) return;
-            }
-
-            resize (width, height);
-        }
         public void quit() {
             if (seat != null) seat.ungrab ();
             hide ();
