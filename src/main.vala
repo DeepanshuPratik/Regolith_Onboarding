@@ -27,7 +27,7 @@ public static int main (string[] args) {
     } else {
         WM_NAME = "Unknown";
     }
-    var window = new regolith_onboarding.DialogWindow ();
+    var window = new regolith_onboarding.OnboardingWindow ();
     window.destroy.connect (Gtk.main_quit);
 
     // Grab inputs from wayland backend before showing window
