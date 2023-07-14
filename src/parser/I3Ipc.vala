@@ -1,5 +1,5 @@
 /**
- * A client library for i3-wm that deserializes into idomatic Vala response types
+ * A client library for i3-wm that deserializes into idomatic Vala response types : copyrights to ILia
  */
 
 using GLib;

@@ -29,13 +29,19 @@ namespace regolith_onboarding {
             var container = new Box(Gtk.Orientation.VERTICAL, 5);
             this.add(container);
             var tables = new HashTable<string, string>(str_hash,str_equal);
-            tables["Sessions"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/floating.jpeg";
-            tables["Navigation"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/Navigation.jpeg";
-            tables["Workspace"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/workspaces.jpeg";
-            tables["Modes"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/resize.jpeg";
-            tables["Ilia"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/ilia.jpeg";
-            tables["Floating Windows"] = "/home/deepanshupratik/GSOC_2023/Regolith_Onboarding/resources/floating.jpeg";
+            
+            // 
+
+            File file = File.new_for_path("../resources");
+            var resource_path = file.get_path();
+            tables["Sessions"] = resource_path+"/floating.jpeg";
+            tables["Navigation"] = resource_path+"/Navigation.jpeg";
+            tables["Workspace"] = resource_path+"/workspaces.jpeg";
+            tables["Modes"] = resource_path+"/resize.jpeg";
+            tables["Ilia"] = resource_path+"/ilia.jpeg";
+            tables["Floating Windows"] = resource_path+"/floating.jpeg";
             var caraousel = new Hdy.Carousel();
+            
             container.add(caraousel);
             var page1 = new Box(Gtk.Orientation.VERTICAL, 30);
             var page2 = new Box(Gtk.Orientation.VERTICAL, 30);
