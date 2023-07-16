@@ -8,10 +8,10 @@ namespace regolith_onboarding {
         public circularButton(){
             next_button = new Button ();
             next_button.get_style_context().add_class("circular");
-            next_button.set_size_request(50, 50);
-            Gdk.Color white_bg; 
-            Gdk.color_parse("white", out white_bg);
-            next_button.modify_bg(Gtk.StateType.NORMAL, white_bg);
+            // stdout.printf(regolith_onboarding.resource_path);
+            //  Gdk.Color white_bg; 
+            //  Gdk.color_parse("white", out white_bg);
+            //  next_button.modify_bg(Gtk.StateType.NORMAL, white_bg);
         }
     }
     public class closeButton: Button {

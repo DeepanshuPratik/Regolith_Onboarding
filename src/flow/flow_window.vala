@@ -2,12 +2,10 @@ using Gtk;
 
 namespace regolith_onboarding {
     
-    public class DisplayWorkFlow : Window {
+    public class WorkFlowPage : Box {
         
-        public DisplayWorkFlow(){
-            Object(type: Gtk.WindowType.POPUP);
-            window_position = WindowPosition.CENTER_ALWAYS;
-
+        public WorkFlowPage(){
+            
             
         }
     }

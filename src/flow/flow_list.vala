@@ -7,6 +7,7 @@ namespace regolith_onboarding {
         protected Gdk.Seat seat;
         // grid for headers
         private Gtk.Grid grid;
+        private Json.Array workflow_sequence;
 
         public WorkFlows(HashTable<string,string> workflowList){
             this.set_margin_top (20);
@@ -22,7 +23,7 @@ namespace regolith_onboarding {
             grid.set_row_spacing (10);
             
             var workflowLabels = workflowList.get_keys_as_array ();
-            // Create and add labels to the grid
+            // Create and add workflows to the grid
             for (int i = 0; i < workflowLabels.length; i++) {  
                 var container = new Box(Gtk.Orientation.VERTICAL, 5);
                 var label = workflowLabels[i];
@@ -33,7 +34,7 @@ namespace regolith_onboarding {
                 container.add(new Label(label));
                 grid.attach(container, i % 3, i / 3, 1, 1);
             }
-
+            var workflowPage = new WorkFlowPage();
         }
     }
 }

@@ -23,7 +23,7 @@ regolith_onboarding_deps += dependency('json-glib-1.0')
 
 executable(
   'regolith_onboarding',
-  sources: ['src/main.vala', 'src/intro/intro_window.vala','src/parser/configParser.vala','src/flow/flow_list.vala','src/parser/I3Ipc.vala','src/flow/flow_window.vala','src/components/buttons.vala','src/components/labels.vala'],
+  sources: ['src/main.vala', 'src/intro/intro_window.vala','src/parser/configParser.vala','src/flow/flow_list.vala','src/parser/I3Ipc.vala','src/flow/flow_window.vala','src/components/buttons.vala','src/components/labels.vala','src/carouselSetup.vala'],
   dependencies: regolith_onboarding_deps,
   install: true
 )
