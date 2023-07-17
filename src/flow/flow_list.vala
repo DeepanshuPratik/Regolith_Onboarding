@@ -18,6 +18,9 @@ namespace regolith_onboarding {
             grid = new Gtk.Grid();
             grid.set_row_homogeneous(true);
             grid.set_column_homogeneous(true);
+            var scrolledWindow = new Gtk.ScrolledWindow(null, null);
+            scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC);
+            //this.add(scrolledWindow);
             this.add(grid);
             grid.set_column_spacing (48);
             grid.set_row_spacing (10);

@@ -5,10 +5,9 @@ namespace regolith_onboarding {
     const int MAX_WINDOW_HEIGHT = 800;
     const int MIN_WINDOW_WIDTH = 200;
     const int MIN_WINDOW_HEIGHT = 100;
-    const float TRANSPARENCY = 0.0f;
     bool allow_scroll_wheel = false;
     private string resource_path;
-    protected Hdy.Carousel caraousel;
+    protected Hdy.Carousel carousel;
     private uint carousel_spacing;
     
     // Controls access to keyboard and mouse
@@ -33,7 +32,7 @@ namespace regolith_onboarding {
                 set_default_size (800,450);
             }
 
-            var container = new Box(Gtk.Orientation.VERTICAL, 5);
+            var container = new Box(Gtk.Orientation.VERTICAL, 30);
             this.add(container);
 
 
@@ -47,42 +46,31 @@ namespace regolith_onboarding {
             tables["Modes"] = resource_path+"/resize.jpeg";
             tables["Ilia"] = resource_path+"/ilia.jpeg";
             tables["Floating Windows"] = resource_path+"/floating.jpeg";
-            var caraousel = new Hdy.Carousel();
+            var carousel = new Hdy.Carousel();
 
-            container.add(caraousel);
-            var onboardingPage = new OnboardingWindow();
-                //  ()=>{
-                //  caraousel.scroll_to_full(worflowsListPage,800);
-                //  });
+            // adding carrousel and indicators
+            container.add(carousel);
+            var carousel_indicator = new Hdy.CarouselIndicatorDots();
+            carousel_indicator.set_carousel(carousel);
+            container.add(carousel_indicator);
+
             var worflowsListPage = new WorkFlows(tables);
-
-            caraousel.insert(onboardingPage, 0);
-            caraousel.insert(worflowsListPage,1);
+            var introPage = new IntroPage( ()=>{
+                carousel.scroll_to_full(worflowsListPage,800);
+            });
+            carousel.insert(introPage, 0);
+            carousel.insert(worflowsListPage,1);
             carousel_spacing = 100;
-            caraousel.set_spacing(carousel_spacing);
+            carousel.set_spacing(carousel_spacing);
 
             // disabling the drags and scrolls to next page to omit jumps while training
-            caraousel.set_allow_scroll_wheel(allow_scroll_wheel);
-            caraousel.set_allow_mouse_drag(allow_scroll_wheel);
-            caraousel.set_allow_long_swipes(allow_scroll_wheel);
+            carousel.set_allow_scroll_wheel(allow_scroll_wheel);
+            carousel.set_allow_mouse_drag(allow_scroll_wheel);
+            carousel.set_allow_long_swipes(allow_scroll_wheel);
 
 
             // Route keys based on function
             key_press_event.connect ((key) => {
-                if ((key.state & Gdk.ModifierType.MOD1_MASK) == Gdk.ModifierType.MOD1_MASK) {
-                    if (key.keyval == '+') { // Expand dialog
-                        carousel_spacing = carousel_spacing+200;
-                        caraousel.set_spacing(carousel_spacing);
-                        change_size(60);
-                        return true;
-                    }
-                    if (key.keyval == '-') { // Contract dialog
-                        carousel_spacing = carousel_spacing-50;
-                        caraousel.set_spacing(carousel_spacing);
-                        change_size(-60);
-                        return true;
-                    }
-                }
                 switch (key.keyval) {   // Esc for exiting the application
                     case KEY_CODE_ESCAPE:
                         quit();
@@ -124,25 +112,6 @@ namespace regolith_onboarding {
         }
         public void set_seat(Gdk.Seat seat) {
             this.seat = seat;
-        }
-        // Resize the dialog, bigger or smaller
-        void change_size(int delta) {
-            int width, height;
-            get_size(out width, out height);
-
-            width += delta;
-            height += delta;
-
-            // Ignore changes past min bounds
-            if (width < MIN_WINDOW_WIDTH || height < MIN_WINDOW_HEIGHT || height > MAX_WINDOW_HEIGHT || width > MAX_WINDOW_WIDTH) return;
-
-            var monitor = this.get_screen ().get_display ().get_monitor (0); //Assume first monitor
-            if (monitor != null) {
-                var geometry = monitor.get_geometry ();
-                if (width >= geometry.width || height >= geometry.height) return;
-            }
-
-            resize (width, height);
         }
     }
 }
