@@ -46,6 +46,10 @@ namespace regolith_onboarding {
             tables["Modes"] = resource_path+"/resize.jpeg";
             tables["Ilia"] = resource_path+"/ilia.jpeg";
             tables["Floating Windows"] = resource_path+"/floating.jpeg";
+            tables["Ili"] = resource_path+"/ilia.jpeg";
+            tables["Floating Wind"] = resource_path+"/floating.jpeg";
+            tables["Il"] = resource_path+"/ilia.jpeg";
+            tables["Floating"] = resource_path+"/floating.jpeg";
             var carousel = new Hdy.Carousel();
 
             // adding carrousel and indicators

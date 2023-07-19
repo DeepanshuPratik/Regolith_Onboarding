@@ -10,7 +10,10 @@ namespace regolith_onboarding {
         private Json.Array workflow_sequence;
 
         public WorkFlows(HashTable<string,string> workflowList){
+            this.set_margin_start (20);
+            this.set_margin_bottom (20);
             this.set_margin_top (20);
+            this.set_margin_end (20);
             this.set_orientation (Gtk.Orientation.VERTICAL);
             this.set_spacing (40);
             var headerText = new Label("Regolith Onboarding"); 
@@ -19,11 +22,12 @@ namespace regolith_onboarding {
             grid.set_row_homogeneous(true);
             grid.set_column_homogeneous(true);
             var scrolledWindow = new Gtk.ScrolledWindow(null, null);
-            scrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC);
-            //this.add(scrolledWindow);
-            this.add(grid);
-            grid.set_column_spacing (48);
-            grid.set_row_spacing (10);
+            this.add(scrolledWindow);
+            scrolledWindow.add(grid);
+            scrolledWindow.set_min_content_height (350);
+            scrolledWindow.set_min_content_width (800);
+            grid.set_column_spacing (20);
+            grid.set_row_spacing (30);
             
             var workflowLabels = workflowList.get_keys_as_array ();
             // Create and add workflows to the grid
