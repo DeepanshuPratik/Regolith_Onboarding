@@ -17,9 +17,15 @@ namespace regolith_onboarding {
         public const int KEY_CODE_ESCAPE = 65307;
         const int MIN_WINDOW_WIDTH = 160;
         const int MIN_WINDOW_HEIGHT = 100;
-        private File file = File.new_for_path("../resources");
+        // file for resources
+        private File res_file = File.new_for_path("../resources");
+        // directory for JSON data
+        private string directory = "../data"; 
+        private Dir dir_data;
+        private Json.Array jsonArray;
         // Controls access to keyboard and mouse
-        protected Gdk.Seat seat;
+        private Gdk.Seat seat;
+        private Json.Parser parser;
 
         public CarouselSetup () {
 
@@ -38,8 +44,8 @@ namespace regolith_onboarding {
 
             var tables = new HashTable<string, string>(str_hash,str_equal);
             
-            // resources loading
-            resource_path = file.get_path();
+            // resources loading  // sample data
+            resource_path = res_file.get_path();
             tables["Sessions"] = resource_path+"/floating.jpeg";
             tables["Navigation"] = resource_path+"/Navigation.jpeg";
             tables["Workspace"] = resource_path+"/workspaces.jpeg";
@@ -57,6 +63,30 @@ namespace regolith_onboarding {
             var carousel_indicator = new Hdy.CarouselIndicatorDots();
             carousel_indicator.set_carousel(carousel);
             container.add(carousel_indicator);
+
+
+            // LOADING JSON DATA
+            try{ 
+                dir_data = Dir.open("../workflows", 0);
+                while ((name = dir_data.read_name ()) != null) {
+                    string path = Path.build_filename (directory, name);
+                    parser = new Json.Parser();
+                    try{
+                        parser.load_from_file(path);
+                        Json.Node node = parser.get_root ();
+                        jsonArray = node.get_array();
+                    }
+                    catch(Error e){
+                        print ("Unable to parse `%s': %s\n", path, e.message);
+                    }
+
+                }
+            }
+            catch (FileError err) {
+                stderr.printf (err.message);
+            }
+            //  parser = new Json.Parser ();
+            //  parser.load_from_file(data_file.get_path());
 
             var worflowsListPage = new WorkFlows(tables);
             var introPage = new IntroPage( ()=>{
