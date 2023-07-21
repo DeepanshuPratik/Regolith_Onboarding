@@ -39,7 +39,7 @@ namespace regolith_onboarding {
             next_button.add(next_arrow);
             int h,l;
             next_button.get_size_request(out l, out h);
-            stdout.printf("%d %d",l,h);
+            //stdout.printf("%d %d",l,h);
             this.add(next_button);
 
         }
