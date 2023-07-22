@@ -78,11 +78,18 @@ namespace regolith_onboarding {
                 while ((name = dir_data.read_name ()) != null) {
                     string path = Path.build_filename (directory, name);
                     stdout.printf(path+"\n");
+                    File file = File.new_for_path(path);
                     parser = new Json.Parser();
                     try{
-                        parser.load_from_file(path);
-                        Json.Node node = parser.get_root ();
-                        process(node);
+                      uint8[] contents;
+		              string etag_out;
+                      if(file.load_contents(null, out contents,out etag_out)){
+                        //parser.load_from_data(file_content);
+                        string file_content = contents.get_data();
+                        stdout.printf("File content:\n%s\n", file_content);
+                        //Json.Node node = parser.get_root ();
+                        //process(node);
+                      }
                     }
                     catch(Error e){
                         print ("Unable to parse `%s': %s\n", path, e.message);
@@ -155,7 +162,7 @@ namespace regolith_onboarding {
         public void set_seat(Gdk.Seat seat) {
             this.seat = seat;
         }
-        public static void process (Json.Node node) throws Error {
+        public void process (Json.Node node) throws Error {
             if (node.get_node_type () != Json.NodeType.OBJECT) {
                 throw new MyError.INVALID_FORMAT ("Unexpected element type %s", node.type_name ());
             }
@@ -173,7 +180,7 @@ namespace regolith_onboarding {
                 }
             }
         }
-        public static void process_workspaces (Json.Node node) throws Error {
+        public void process_workspaces (Json.Node node) throws Error {
             if (node.get_node_type () != Json.NodeType.OBJECT) {
                 throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", node.type_name ());
             }
