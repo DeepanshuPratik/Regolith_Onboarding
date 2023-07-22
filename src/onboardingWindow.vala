@@ -25,11 +25,11 @@ namespace regolith_onboarding {
         // directory for JSON data
         private string directory = File.new_for_path("../workflows").get_path(); 
         private Dir dir_data;
-        private Json.Array jsonArray;
         // Controls access to keyboard and mouse
         private Gdk.Seat seat;
         private Json.Parser parser;
         private WorkspaceDataHolder workspaceJson;
+        private HashTable<string, WorkspaceDataHolder> workspacesInfoHolder;
 
         public CarouselSetup () {
 
@@ -71,6 +71,7 @@ namespace regolith_onboarding {
 
             // workspace_data_holder
             workspaceJson = new WorkspaceDataHolder();
+            var workspaceArray = new Array<string> ();
             // LOADING JSON DATA
             try{ 
                 stdout.printf(directory+"\n");
@@ -79,30 +80,20 @@ namespace regolith_onboarding {
                     string path = Path.build_filename (directory, name);
                     stdout.printf(path+"\n");
                     File file = File.new_for_path(path);
-                    parser = new Json.Parser();
-                    try{
-                      uint8[] contents;
-		              string etag_out;
-                      if(file.load_contents(null, out contents,out etag_out)){
-                        //parser.load_from_data(file_content);
-                        string file_content = contents.get_data();
-                        stdout.printf("File content:\n%s\n", file_content);
-                        //Json.Node node = parser.get_root ();
-                        //process(node);
-                      }
-                    }
-                    catch(Error e){
-                        print ("Unable to parse `%s': %s\n", path, e.message);
-                    }
-
+                    var reader = new JsonReader(file);
+                    string output = reader.output;
+                    workspaceArray.append_val(output);    
                 }
             }
             catch (FileError err) {
                 stderr.printf ("ERR::::"+err.message);
             }
-            //  parser = new Json.Parser ();
-            //  parser.load_from_file(data_file.get_path());
-
+            parser = new Json.Parser ();
+            foreach(string workflow in workspaceArray){
+              parser.load_from_data(workflow);
+              Json.Node root = parser.get_root();
+              process(root);
+            }
             var worflowsListPage = new WorkFlows(tables);
             var introPage = new IntroPage( ()=>{
                 carousel.scroll_to_full(worflowsListPage,800);
@@ -218,6 +209,7 @@ namespace regolith_onboarding {
                         throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
                     }
                     workspaceJson.set_workflow_description(obj.get_string_member ("key_bindings_sequence"));
+                    workspacesInfoHolder.insert (workspaceJson.get_workflow_name(), workspaceJson);
                     break;
 
                 default:
