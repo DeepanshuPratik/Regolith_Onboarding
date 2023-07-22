@@ -13,6 +13,9 @@ namespace regolith_onboarding {
     // Controls access to keyboard and mouse
     protected Gdk.Seat seat;
 
+    public errordomain MyError {
+        INVALID_FORMAT
+    }
     public class CarouselSetup : Window {
         public const int KEY_CODE_ESCAPE = 65307;
         const int MIN_WINDOW_WIDTH = 160;
@@ -20,12 +23,13 @@ namespace regolith_onboarding {
         // file for resources
         private File res_file = File.new_for_path("../resources");
         // directory for JSON data
-        private string directory = "../data"; 
+        private string directory = File.new_for_path("../workflows").get_path(); 
         private Dir dir_data;
         private Json.Array jsonArray;
         // Controls access to keyboard and mouse
         private Gdk.Seat seat;
         private Json.Parser parser;
+        private WorkspaceDataHolder workspaceJson;
 
         public CarouselSetup () {
 
@@ -56,7 +60,7 @@ namespace regolith_onboarding {
             tables["Floating Wind"] = resource_path+"/floating.jpeg";
             tables["Il"] = resource_path+"/ilia.jpeg";
             tables["Floating"] = resource_path+"/floating.jpeg";
-            var carousel = new Hdy.Carousel();
+            carousel = new Hdy.Carousel();
 
             // adding carrousel and indicators
             container.add(carousel);
@@ -65,16 +69,27 @@ namespace regolith_onboarding {
             container.add(carousel_indicator);
 
 
+            // workspace_data_holder
+            workspaceJson = new WorkspaceDataHolder();
             // LOADING JSON DATA
             try{ 
-                dir_data = Dir.open("../workflows", 0);
+                stdout.printf(directory+"\n");
+                dir_data = Dir.open(directory, 0);
                 while ((name = dir_data.read_name ()) != null) {
                     string path = Path.build_filename (directory, name);
+                    stdout.printf(path+"\n");
+                    File file = File.new_for_path(path);
                     parser = new Json.Parser();
                     try{
-                        parser.load_from_file(path);
-                        Json.Node node = parser.get_root ();
-                        jsonArray = node.get_array();
+                      uint8[] contents;
+		              string etag_out;
+                      if(file.load_contents(null, out contents,out etag_out)){
+                        //parser.load_from_data(file_content);
+                        string file_content = contents.get_data();
+                        stdout.printf("File content:\n%s\n", file_content);
+                        //Json.Node node = parser.get_root ();
+                        //process(node);
+                      }
                     }
                     catch(Error e){
                         print ("Unable to parse `%s': %s\n", path, e.message);
@@ -83,7 +98,7 @@ namespace regolith_onboarding {
                 }
             }
             catch (FileError err) {
-                stderr.printf (err.message);
+                stderr.printf ("ERR::::"+err.message);
             }
             //  parser = new Json.Parser ();
             //  parser.load_from_file(data_file.get_path());
@@ -147,6 +162,70 @@ namespace regolith_onboarding {
         public void set_seat(Gdk.Seat seat) {
             this.seat = seat;
         }
+        public void process (Json.Node node) throws Error {
+            if (node.get_node_type () != Json.NodeType.OBJECT) {
+                throw new MyError.INVALID_FORMAT ("Unexpected element type %s", node.type_name ());
+            }
+            unowned Json.Object obj = node.get_object ();
+
+            foreach (unowned string name in obj.get_members ()) {
+                switch (name) {
+                case "workspaces":
+                    unowned Json.Node item = obj.get_member (name);
+                    process_workspaces (item);
+                    break;
+
+                default:
+                    throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", name);
+                }
+            }
+        }
+        public void process_workspaces (Json.Node node) throws Error {
+            if (node.get_node_type () != Json.NodeType.OBJECT) {
+                throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", node.type_name ());
+            }
+            unowned Json.Object obj = node.get_object ();
+
+            foreach (unowned string name in obj.get_members ()) {
+                switch (name) {
+                case "workflow_name":
+                    unowned Json.Node item = obj.get_member (name);
+                    if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
+                    }
+                    workspaceJson.set_workflow_name(obj.get_string_member ("workflow_name"));
+                    break;
+
+                case "image":
+                    unowned Json.Node item = obj.get_member (name);
+                    if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
+                    }
+                    workspaceJson.set_workflow_description(obj.get_string_member ("image"));
+                    break;
+
+                case "workflow_description":
+                    unowned Json.Node item = obj.get_member (name);
+                    if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
+                    }
+                    workspaceJson.set_workflow_description(obj.get_string_member ("workflow_description"));
+                    break;
+                
+                case "key_bindings_sequence":
+                    unowned Json.Node item = obj.get_member (name);
+                    if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
+                    }
+                    workspaceJson.set_workflow_description(obj.get_string_member ("key_bindings_sequence"));
+                    break;
+
+                default:
+                    throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", name);
+                }
+            }
+        }
+
     }
 }
 
