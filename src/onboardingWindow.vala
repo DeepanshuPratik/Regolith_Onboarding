@@ -25,11 +25,11 @@ namespace regolith_onboarding {
         // directory for JSON data
         private string directory = File.new_for_path("../workflows").get_path(); 
         private Dir dir_data;
-        private Json.Array jsonArray;
         // Controls access to keyboard and mouse
         private Gdk.Seat seat;
         private Json.Parser parser;
         private WorkspaceDataHolder workspaceJson;
+        private Array<WorkspaceDataHolder> workspacesInfoHolder;
 
         public CarouselSetup () {
 
@@ -70,7 +70,7 @@ namespace regolith_onboarding {
 
 
             // workspace_data_holder
-            workspaceJson = new WorkspaceDataHolder();
+            var workspaceArray = new Array<string> ();
             // LOADING JSON DATA
             try{ 
                 stdout.printf(directory+"\n");
@@ -79,30 +79,25 @@ namespace regolith_onboarding {
                     string path = Path.build_filename (directory, name);
                     stdout.printf(path+"\n");
                     File file = File.new_for_path(path);
-                    parser = new Json.Parser();
-                    try{
-                      uint8[] contents;
-		              string etag_out;
-                      if(file.load_contents(null, out contents,out etag_out)){
-                        //parser.load_from_data(file_content);
-                        string file_content = contents.get_data();
-                        stdout.printf("File content:\n%s\n", file_content);
-                        //Json.Node node = parser.get_root ();
-                        //process(node);
-                      }
-                    }
-                    catch(Error e){
-                        print ("Unable to parse `%s': %s\n", path, e.message);
-                    }
-
+                    var reader = new JsonReader(file);
+                    string output = reader.output;
+                    workspaceArray.append_val(output);    
                 }
             }
             catch (FileError err) {
                 stderr.printf ("ERR::::"+err.message);
             }
-            //  parser = new Json.Parser ();
-            //  parser.load_from_file(data_file.get_path());
-
+            workspacesInfoHolder = new Array<WorkspaceDataHolder>();
+            foreach(string workflow in workspaceArray){
+              parser = new Json.Parser ();
+              parser.load_from_data(workflow);
+              Json.Node root = parser.get_root();
+              process(root);
+            }
+            foreach(unowned WorkspaceDataHolder item in workspacesInfoHolder){
+              stdout.printf ("\n workflow_name : %s \n",item.get_workflow_name ());
+              stdout.printf ("\n workflow_description : %s \n",item.get_workflow_description ());
+            }
             var worflowsListPage = new WorkFlows(tables);
             var introPage = new IntroPage( ()=>{
                 carousel.scroll_to_full(worflowsListPage,800);
@@ -164,7 +159,7 @@ namespace regolith_onboarding {
         }
         public void process (Json.Node node) throws Error {
             if (node.get_node_type () != Json.NodeType.OBJECT) {
-                throw new MyError.INVALID_FORMAT ("Unexpected element type %s", node.type_name ());
+                throw new MyError.INVALID_FORMAT ("Unexpected element type %s process() line 158", node.type_name ());
             }
             unowned Json.Object obj = node.get_object ();
 
@@ -172,57 +167,66 @@ namespace regolith_onboarding {
                 switch (name) {
                 case "workspaces":
                     unowned Json.Node item = obj.get_member (name);
+                    // stdout.printf("\n %s : initial parse \n",item.type_name());
                     process_workspaces (item);
                     break;
 
                 default:
-                    throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", name);
+                    throw new MyError.INVALID_FORMAT ("Unexpected element '%s' process() line 171 ", name);
                 }
             }
         }
         public void process_workspaces (Json.Node node) throws Error {
-            if (node.get_node_type () != Json.NodeType.OBJECT) {
-                throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", node.type_name ());
+            if (node.get_node_type () != Json.NodeType.ARRAY) {
+                throw new MyError.INVALID_FORMAT ("Unexpected element '%s' process_workspaces() line 177", node.type_name ());
             }
-            unowned Json.Object obj = node.get_object ();
+            unowned Json.Array objArray = node.get_array ();
+            if (objArray != null) {
+              for(int i=0; i<objArray.get_length();i++){
+                Json.Object? obj = objArray.get_element(i).get_object();
+                workspaceJson = new WorkspaceDataHolder();
+                foreach (unowned string name in obj.get_members ()) {
+                  switch (name) {
+                    case "workflow_name":
+                      unowned Json.Node item = obj.get_member (name);
+                      if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 186", item.type_name ());
+                      }
+                      workspaceJson.set_workflow_name(obj.get_string_member (name));
+                      break;
 
-            foreach (unowned string name in obj.get_members ()) {
-                switch (name) {
-                case "workflow_name":
-                    unowned Json.Node item = obj.get_member (name);
-                    if (item.get_node_type () != Json.NodeType.VALUE) {
-                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
-                    }
-                    workspaceJson.set_workflow_name(obj.get_string_member ("workflow_name"));
-                    break;
+                    case "image":
+                      unowned Json.Node item = obj.get_member (name);
+                      if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 194", item.type_name ());
+                      }
+                      workspaceJson.set_workflow_image(obj.get_string_member (name));
+                      break;
 
-                case "image":
-                    unowned Json.Node item = obj.get_member (name);
-                    if (item.get_node_type () != Json.NodeType.VALUE) {
-                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
-                    }
-                    workspaceJson.set_workflow_description(obj.get_string_member ("image"));
-                    break;
-
-                case "workflow_description":
-                    unowned Json.Node item = obj.get_member (name);
-                    if (item.get_node_type () != Json.NodeType.VALUE) {
-                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
-                    }
-                    workspaceJson.set_workflow_description(obj.get_string_member ("workflow_description"));
-                    break;
+                    case "workflow_description":
+                      unowned Json.Node item = obj.get_member (name);
+                      if (item.get_node_type () != Json.NodeType.VALUE) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 202", item.type_name ());
+                      }
+                      workspaceJson.set_workflow_description(obj.get_string_member (name));
+                      break;
                 
-                case "key_bindings_sequence":
-                    unowned Json.Node item = obj.get_member (name);
-                    if (item.get_node_type () != Json.NodeType.VALUE) {
-                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s", item.type_name ());
-                    }
-                    workspaceJson.set_workflow_description(obj.get_string_member ("key_bindings_sequence"));
-                    break;
+                    case "key_bindings_sequence":
+                      unowned Json.Node item = obj.get_member (name);
+                      // stdout.printf ("Reached here sequence ... ");
+                      if (item.get_node_type () != Json.NodeType.ARRAY) {
+                        throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 210", item.type_name ());
+                      }
+                      workspaceJson.set_workflow_sequence(obj.get_array_member(name));
+                      // stdout.printf ("\n name : %s \n descr: %s \n image: %s \n",obj.get_string_member ("workflow_name"),obj.get_string_member ("workflow_description"),obj.get_string_member ("image"));
+                      workspacesInfoHolder.append_val(workspaceJson);
+                      break;
 
-                default:
-                    throw new MyError.INVALID_FORMAT ("Unexpected element '%s'", name);
+                    default:
+                      throw new MyError.INVALID_FORMAT ("Unexpected element '%s' process_workspaces() line 217", name);
+                  }
                 }
+              }
             }
         }
 

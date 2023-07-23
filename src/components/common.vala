@@ -25,10 +25,11 @@ namespace regolith_onboarding{
       this.key_bindings_sequence = new Json.Array();
     }
     public string get_workflow_name(){
+      // stdout.printf("\n holder get function workflow_name : %s \n", this.workflow_name);
       return this.workflow_name;
     }
     public string get_workflow_description(){
-      return this.workflow_name;
+      return this.workflow_description;
     }
     public string get_workflow_image(){
       return this.image_url;
@@ -38,9 +39,11 @@ namespace regolith_onboarding{
     }
     public void set_workflow_name(string workflow_name){
       this.workflow_name = workflow_name;
+      // stdout.printf("\n holder set function workflow_name : %s set variable: %s \n", workflow_name,this.workflow_name);
     }
-    public void set_workflow_description(string workflow_name){
-      this.workflow_name = workflow_name;
+    public void set_workflow_description(string workflow_description){
+      this.workflow_description = workflow_description;
+      // stdout.printf("\n holder set function workflow_description : %s set variable: %s \n", this.workflow_description,this.workflow_name);
     }
     public void set_workflow_image(string image_url){
       this.image_url = image_url;
