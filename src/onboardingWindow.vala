@@ -50,16 +50,16 @@ namespace regolith_onboarding {
             
             // resources loading  // sample data
             resource_path = res_file.get_path();
-            tables["Sessions"] = resource_path+"/floating.jpeg";
-            tables["Navigation"] = resource_path+"/Navigation.jpeg";
-            tables["Workspace"] = resource_path+"/workspaces.jpeg";
-            tables["Modes"] = resource_path+"/resize.jpeg";
-            tables["Ilia"] = resource_path+"/ilia.jpeg";
-            tables["Floating Windows"] = resource_path+"/floating.jpeg";
-            tables["Ili"] = resource_path+"/ilia.jpeg";
-            tables["Floating Wind"] = resource_path+"/floating.jpeg";
-            tables["Il"] = resource_path+"/ilia.jpeg";
-            tables["Floating"] = resource_path+"/floating.jpeg";
+           // tables["Sessions"] = resource_path+"/floating.jpeg";
+           // tables["Navigation"] = resource_path+"/Navigation.jpeg";
+           // tables["Workspace"] = resource_path+"/workspaces.jpeg";
+           // tables["Modes"] = resource_path+"/resize.jpeg";
+           // tables["Ilia"] = resource_path+"/ilia.jpeg";
+           // tables["Floating Windows"] = resource_path+"/floating.jpeg";
+           // tables["Ili"] = resource_path+"/ilia.jpeg";
+           // tables["Floating Wind"] = resource_path+"/floating.jpeg";
+           // tables["Il"] = resource_path+"/ilia.jpeg";
+           // tables["Floating"] = resource_path+"/floating.jpeg";
             carousel = new Hdy.Carousel();
 
             // adding carrousel and indicators
@@ -94,11 +94,11 @@ namespace regolith_onboarding {
               Json.Node root = parser.get_root();
               process(root);
             }
-            foreach(unowned WorkspaceDataHolder item in workspacesInfoHolder){
-              stdout.printf ("\n workflow_name : %s \n",item.get_workflow_name ());
-              stdout.printf ("\n workflow_description : %s \n",item.get_workflow_description ());
-            }
-            var worflowsListPage = new WorkFlows(tables);
+            // foreach(unowned WorkspaceDataHolder item in workspacesInfoHolder){
+            //  stdout.printf ("\n workflow_name : %s \n",item.get_workflow_name ());
+            //  stdout.printf ("\n workflow_description : %s \n",item.get_workflow_description ());
+            // }
+            var worflowsListPage = new WorkFlows(workspacesInfoHolder);
             var introPage = new IntroPage( ()=>{
                 carousel.scroll_to_full(worflowsListPage,800);
             });
@@ -200,7 +200,7 @@ namespace regolith_onboarding {
                       if (item.get_node_type () != Json.NodeType.VALUE) {
                         throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 194", item.type_name ());
                       }
-                      workspaceJson.set_workflow_image(obj.get_string_member (name));
+                      workspaceJson.set_workflow_image(resource_path+obj.get_string_member (name));
                       break;
 
                     case "workflow_description":

@@ -9,7 +9,7 @@ namespace regolith_onboarding {
         private Gtk.Grid grid;
         private Json.Array workflow_sequence;
 
-        public WorkFlows(HashTable<string,string> workflowList){
+        public WorkFlows(Array<WorkspaceDataHolder> workflowList){
             this.set_margin_start (20);
             this.set_margin_bottom (20);
             this.set_margin_top (20);
@@ -29,17 +29,19 @@ namespace regolith_onboarding {
             grid.set_column_spacing (20);
             grid.set_row_spacing (30);
             
-            var workflowLabels = workflowList.get_keys_as_array ();
+            // var workflowLabels = workflowList.get_keys_as_array ();
             // Create and add workflows to the grid
-            for (int i = 0; i < workflowLabels.length; i++) {  
-                var container = new Box(Gtk.Orientation.VERTICAL, 5);
-                var label = workflowLabels[i];
-                var image = new Gtk.Image.from_file(workflowList[label]);
-                Gdk.Pixbuf pixbuf = image.get_pixbuf();
-                var img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple (200, 100,Gdk.InterpType.BILINEAR));
-                container.add(img);
-                container.add(new Label(label));
-                grid.attach(container, i % 3, i / 3, 1, 1);
+            int i=0;
+            foreach(unowned WorkspaceDataHolder item in workflowList){
+               var container = new Box(Gtk.Orientation.VERTICAL, 5);
+               var label = item.get_workflow_name (); 
+               var image = new Gtk.Image.from_file(item.get_workflow_image ());
+               Gdk.Pixbuf pixbuf = image.get_pixbuf();
+               var img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple (200, 100,Gdk.InterpType.BILINEAR));
+               container.add(img);
+               container.add(new Label(label));
+               grid.attach(container, i % 3, i / 3, 1, 1);
+               i++;
             }
             var workflowPage = new WorkFlowPage();
         }

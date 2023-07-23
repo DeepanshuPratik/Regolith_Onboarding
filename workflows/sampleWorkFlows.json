@@ -3,7 +3,7 @@
         {
             "workflow_name": "Navigation",
             "workflow_description" : "It will teach how all the possible ways you can navigate between workspaces in different ways",
-            "image":"image_url",
+            "image":"/Navigation.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"Navigate_52",
@@ -30,7 +30,7 @@
         {
             "workflow_name": "Session",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
-            "image":"image_url",
+            "image":"/ilia.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
