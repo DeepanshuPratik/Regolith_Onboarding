@@ -1,7 +1,7 @@
 {
     "workspaces":[
         {
-            "workflow_name": "Navigation",
+            "workflow_name": "Git",
             "workflow_description" : "It will teach how all the possible ways you can navigate between workspaces in different ways",
             "image":"/Navigation.jpeg",
             "key_bindings_sequence": [
@@ -28,7 +28,7 @@
             ]
         },
         {
-            "workflow_name": "Navigation",
+            "workflow_name": "Logs",
             "workflow_description" : "It will teach how all the possible ways you can navigate between workspaces in different ways",
             "image":"/Navigation.jpeg",
             "key_bindings_sequence": [
@@ -55,7 +55,7 @@
             ]
         },
         {
-            "workflow_name": "Session",
+            "workflow_name": "Resize",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
             "image":"/ilia.jpeg",
             "key_bindings_sequence": [
@@ -78,7 +78,7 @@
             ]
         },
         {
-            "workflow_name": "Session",
+            "workflow_name": "Ilia",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
             "image":"/ilia.jpeg",
             "key_bindings_sequence": [

@@ -7,9 +7,7 @@ namespace regolith_onboarding {
     const int MIN_WINDOW_HEIGHT = 100;
     bool allow_scroll_wheel = false;
     private string resource_path;
-    protected Hdy.Carousel carousel;
     private uint carousel_spacing;
-    
     // Controls access to keyboard and mouse
     protected Gdk.Seat seat;
 
@@ -25,6 +23,13 @@ namespace regolith_onboarding {
         // directory for JSON data
         private string directory = File.new_for_path("../workflows").get_path(); 
         private Dir dir_data;
+        // required elements of application
+        private Hdy.Carousel carousel;
+        private Hdy.CarouselIndicatorDots carousel_indicator; 
+        private WorkFlowPage workflowPage;
+        private Gtk.Box container;
+        //private var prev_child;
+        //private var cur_child;
         // Controls access to keyboard and mouse
         private Gdk.Seat seat;
         private Json.Parser parser;
@@ -42,36 +47,22 @@ namespace regolith_onboarding {
                 set_default_size (800,450);
             }
 
-            var container = new Box(Gtk.Orientation.VERTICAL, 30);
+            container = new Box(Gtk.Orientation.VERTICAL, 30);
             this.add(container);
 
-
-            var tables = new HashTable<string, string>(str_hash,str_equal);
-            
-            // resources loading  // sample data
             resource_path = res_file.get_path();
-           // tables["Sessions"] = resource_path+"/floating.jpeg";
-           // tables["Navigation"] = resource_path+"/Navigation.jpeg";
-           // tables["Workspace"] = resource_path+"/workspaces.jpeg";
-           // tables["Modes"] = resource_path+"/resize.jpeg";
-           // tables["Ilia"] = resource_path+"/ilia.jpeg";
-           // tables["Floating Windows"] = resource_path+"/floating.jpeg";
-           // tables["Ili"] = resource_path+"/ilia.jpeg";
-           // tables["Floating Wind"] = resource_path+"/floating.jpeg";
-           // tables["Il"] = resource_path+"/ilia.jpeg";
-           // tables["Floating"] = resource_path+"/floating.jpeg";
             carousel = new Hdy.Carousel();
 
             // adding carrousel and indicators
             container.add(carousel);
-            var carousel_indicator = new Hdy.CarouselIndicatorDots();
+            carousel_indicator = new Hdy.CarouselIndicatorDots();
             carousel_indicator.set_carousel(carousel);
             container.add(carousel_indicator);
 
 
             // workspace_data_holder
             var workspaceArray = new Array<string> ();
-            // LOADING JSON DATA
+            // LOADING JSON DATA of multiple files as Array of string where each string represent each file data
             try{ 
                 stdout.printf(directory+"\n");
                 dir_data = Dir.open(directory, 0);
@@ -88,17 +79,25 @@ namespace regolith_onboarding {
                 stderr.printf ("ERR::::"+err.message);
             }
             workspacesInfoHolder = new Array<WorkspaceDataHolder>();
-            foreach(string workflow in workspaceArray){
-              parser = new Json.Parser ();
-              parser.load_from_data(workflow);
-              Json.Node root = parser.get_root();
-              process(root);
+            try {
+              foreach(string workflow in workspaceArray){
+                parser = new Json.Parser();
+                parser.load_from_data(workflow);
+                Json.Node root = parser.get_root();
+                process(root);
+              }
+            }catch(Error err){
+              stderr.printf("Array of string is null ERR: %s ",err.message);
             }
-            // foreach(unowned WorkspaceDataHolder item in workspacesInfoHolder){
-            //  stdout.printf ("\n workflow_name : %s \n",item.get_workflow_name ());
-            //  stdout.printf ("\n workflow_description : %s \n",item.get_workflow_description ());
-            // }
-            var worflowsListPage = new WorkFlows(workspacesInfoHolder);
+            var worflowsListPage = new WorkFlows(workspacesInfoHolder, (workflow_sequence)=>{
+              create_practice_page(workflow_sequence); 
+              carousel.hide ();
+              carousel_indicator.hide();
+              //container.remove(carousel_indicator);
+              container.add(workflowPage);
+              //stdout.printf ("%u",workspaceArray.length);
+              stdout.printf ("%s","added workflow page!");
+            });
             var introPage = new IntroPage( ()=>{
                 carousel.scroll_to_full(worflowsListPage,800);
             });
@@ -148,7 +147,14 @@ namespace regolith_onboarding {
             });
 
         }
-
+        public void create_practice_page(Json.Array keyBindings){
+          workflowPage = new WorkFlowPage(keyBindings, ()=>{
+            // remove itself from container and add carousel
+            workflowPage.hide();
+            carousel.show();
+            carousel_indicator.show();
+          });
+        }
         public void quit() {
             if (seat != null) seat.ungrab ();
             hide ();
