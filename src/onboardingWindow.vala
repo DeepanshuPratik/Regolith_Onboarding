@@ -18,20 +18,19 @@ namespace regolith_onboarding {
         public const int KEY_CODE_ESCAPE = 65307;
         const int MIN_WINDOW_WIDTH = 160;
         const int MIN_WINDOW_HEIGHT = 100;
-        // file for resources
-        private File res_file = File.new_for_path("../resources");
         // directory for JSON data
         private string directory = File.new_for_path("../workflows").get_path(); 
         private Dir dir_data;
-        // required elements of application
+        // required Widgets of application
+        private Gtk.Box container;
         private Hdy.Carousel carousel;
         private Hdy.CarouselIndicatorDots carousel_indicator; 
         private WorkFlowPage workflowPage;
-        private Gtk.Box container;
-        //private var prev_child;
-        //private var cur_child;
+        private Gtk.Widget prev_child;
+        private Gtk.Widget cur_child;
         // Controls access to keyboard and mouse
         private Gdk.Seat seat;
+        // parsing variables
         private Json.Parser parser;
         private WorkspaceDataHolder workspaceJson;
         private Array<WorkspaceDataHolder> workspacesInfoHolder;
@@ -47,10 +46,11 @@ namespace regolith_onboarding {
                 set_default_size (800,450);
             }
 
+            // initializing file path for resources
+            resource_path = File.new_for_path("../resources").get_path();
             container = new Box(Gtk.Orientation.VERTICAL, 30);
             this.add(container);
 
-            resource_path = res_file.get_path();
             carousel = new Hdy.Carousel();
 
             // adding carrousel and indicators
@@ -58,7 +58,6 @@ namespace regolith_onboarding {
             carousel_indicator = new Hdy.CarouselIndicatorDots();
             carousel_indicator.set_carousel(carousel);
             container.add(carousel_indicator);
-
 
             // workspace_data_holder
             var workspaceArray = new Array<string> ();
@@ -91,17 +90,18 @@ namespace regolith_onboarding {
             }
             var worflowsListPage = new WorkFlows(workspacesInfoHolder, (workflow_sequence)=>{
               create_practice_page(workflow_sequence); 
-              carousel.hide ();
-              carousel_indicator.hide();
-              //container.remove(carousel_indicator);
-              container.add(workflowPage);
-              //stdout.printf ("%u",workspaceArray.length);
+              cur_child = workflowPage;
+              prev_child = container;
+              this.remove(prev_child);
+              this.add(cur_child);
               stdout.printf ("%s","added workflow page!");
             });
+            workflowPage = new WorkFlowPage(null,()=>{});
             var introPage = new IntroPage( ()=>{
                 carousel.scroll_to_full(worflowsListPage,800);
             });
             carousel.insert(introPage, 0);
+            // trial
             carousel.insert(worflowsListPage,1);
             carousel_spacing = 100;
             carousel.set_spacing(carousel_spacing);
@@ -150,9 +150,8 @@ namespace regolith_onboarding {
         public void create_practice_page(Json.Array keyBindings){
           workflowPage = new WorkFlowPage(keyBindings, ()=>{
             // remove itself from container and add carousel
-            workflowPage.hide();
-            carousel.show();
-            carousel_indicator.show();
+            this.remove(cur_child);
+            this.add(prev_child);
           });
         }
         public void quit() {
