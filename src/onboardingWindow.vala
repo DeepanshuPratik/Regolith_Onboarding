@@ -94,7 +94,7 @@ namespace regolith_onboarding {
               prev_child = container;
               this.remove(prev_child);
               this.add(cur_child);
-              stdout.printf ("%s","added workflow page!");
+              this.show_all();
             });
             workflowPage = new WorkFlowPage(null,()=>{});
             var introPage = new IntroPage( ()=>{
@@ -150,8 +150,10 @@ namespace regolith_onboarding {
         public void create_practice_page(Json.Array keyBindings){
           workflowPage = new WorkFlowPage(keyBindings, ()=>{
             // remove itself from container and add carousel
-            this.remove(cur_child);
-            this.add(prev_child);
+            cur_child = container;
+            prev_child = workflowPage;
+            this.remove(prev_child);
+            this.add(cur_child);
           });
         }
         public void quit() {
