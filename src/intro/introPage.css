@@ -1,0 +1,9 @@
+.introText {
+  font-size: 19px;
+}
+
+.nextButton {
+  margin-right: 100px;
+  margin-left: 100px;
+  background-color: snow;
+}

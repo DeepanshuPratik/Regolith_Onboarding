@@ -7,21 +7,25 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Navigate_52",
+                    "heading":"Navigate Left",
                     "function":"Navigate Relative Left Window"
                     
                 },
                 {
                     "key_id":"Navigate_56",
+                    "heading":"Traverse Left",
                     "function":"Traversing into left Workspace"
                     
                 },
                 {
                     "key_id":"Navigate_57",
+                    "heading":"Move Application to Workspace",
                     "function":"Moving Application to Workspace"
                     
                 },
                 {
                     "key_id":"Navigate_58",
+                    "heading":"Switching workspace",
                     "function":"Switching to next workspace"
                     
                 }
@@ -34,21 +38,25 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Navigate_52",
+                    "heading":"Navigate Left",
                     "function":"Navigate Relative Left Window"
                     
                 },
                 {
                     "key_id":"Navigate_56",
+                    "heading":"Traverse Left",
                     "function":"Traversing into left Workspace"
                     
                 },
                 {
                     "key_id":"Navigate_57",
+                    "heading":"Move Application to Workspace",
                     "function":"Moving Application to Workspace"
                     
                 },
                 {
                     "key_id":"Navigate_58",
+                    "heading":"Switching Workspace",
                     "function":"Switching to next workspace"
                     
                 }
@@ -61,18 +69,22 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
+                    "heading":"Exit Application",
                     "function":"Can exit application"  
                 },
                 {
                     "key_id":"Session_26",
+                    "heading":"Terminate Application",
                     "function":"Terminate application"
                 },
                 {
                     "key_id":"Session_27",
+                    "heading":"Reload all config",
                     "function":"Reload the config"
                 },
                 {
                     "key_id":"Session_29",
+                    "heading":"Restart Session",
                     "function":"Restart the sessions"
                 }
             ]
@@ -84,18 +96,22 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
+                    "heading":"Exit Application",
                     "function":"Can exit application"  
                 },
                 {
                     "key_id":"Session_26",
+                    "heading":"Terminate Application",
                     "function":"Terminate application"
                 },
                 {
                     "key_id":"Session_27",
+                    "heading":"Reload all config",
                     "function":"Reload the config"
                 },
                 {
                     "key_id":"Session_29",
+                    "heading":"Restart Session",
                     "function":"Restart the sessions"
                 }
             ]
@@ -107,18 +123,22 @@
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
+                    "heading":"Exit Application",
                     "function":"Can exit application"  
                 },
                 {
                     "key_id":"Session_26",
+                    "heading":"Terminate Application",
                     "function":"Terminate application"
                 },
                 {
                     "key_id":"Session_27",
+                    "heading":"Reload all config",
                     "function":"Reload the config"
                 },
                 {
                     "key_id":"Session_29",
+                    "heading":"Restart Session",
                     "function":"Restart the sessions"
                 }
             ]

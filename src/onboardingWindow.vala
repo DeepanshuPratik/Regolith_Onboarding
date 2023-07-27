@@ -45,7 +45,8 @@ namespace regolith_onboarding {
             } else {
                 set_default_size (800,450);
             }
-
+              
+            
             // initializing file path for resources
             resource_path = File.new_for_path("../resources").get_path();
             container = new Box(Gtk.Orientation.VERTICAL, 30);
@@ -101,7 +102,6 @@ namespace regolith_onboarding {
                 carousel.scroll_to_full(worflowsListPage,800);
             });
             carousel.insert(introPage, 0);
-            // trial
             carousel.insert(worflowsListPage,1);
             carousel_spacing = 100;
             carousel.set_spacing(carousel_spacing);
@@ -133,8 +133,7 @@ namespace regolith_onboarding {
                 var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
         
                 if (click_out_bounds) {
-                    //this.set
-                    container.set_opacity(0.5);
+                    container.set_opacity(0.6);
                     seat.ungrab();
                 }
                 if(!click_out_bounds){
@@ -174,7 +173,6 @@ namespace regolith_onboarding {
                 switch (name) {
                 case "workspaces":
                     unowned Json.Node item = obj.get_member (name);
-                    // stdout.printf("\n %s : initial parse \n",item.type_name());
                     process_workspaces (item);
                     break;
 
@@ -220,12 +218,10 @@ namespace regolith_onboarding {
                 
                     case "key_bindings_sequence":
                       unowned Json.Node item = obj.get_member (name);
-                      // stdout.printf ("Reached here sequence ... ");
                       if (item.get_node_type () != Json.NodeType.ARRAY) {
                         throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 210", item.type_name ());
                       }
                       workspaceJson.set_workflow_sequence(obj.get_array_member(name));
-                      // stdout.printf ("\n name : %s \n descr: %s \n image: %s \n",obj.get_string_member ("workflow_name"),obj.get_string_member ("workflow_description"),obj.get_string_member ("image"));
                       workspacesInfoHolder.append_val(workspaceJson);
                       break;
 
