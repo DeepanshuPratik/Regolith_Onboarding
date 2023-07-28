@@ -26,8 +26,8 @@ namespace regolith_onboarding {
         private Hdy.Carousel carousel;
         private Hdy.CarouselIndicatorDots carousel_indicator; 
         private WorkFlowPage workflowPage;
-        private Gtk.Widget prev_child;
-        private Gtk.Widget cur_child;
+        private GLib.Object prev_child;
+        private GLib.Object cur_child;
         // Controls access to keyboard and mouse
         private Gdk.Seat seat;
         // parsing variables
@@ -91,10 +91,10 @@ namespace regolith_onboarding {
             }
             var worflowsListPage = new WorkFlows(workspacesInfoHolder, (workflow_sequence)=>{
               create_practice_page(workflow_sequence); 
-              cur_child = workflowPage;
-              prev_child = container;
-              this.remove(prev_child);
-              this.add(cur_child);
+              cur_child = workflowPage.ref();
+              prev_child = container.ref();
+              this.remove(container);
+              this.add(workflowPage);
               this.show_all();
             });
             workflowPage = new WorkFlowPage(null,()=>{});
@@ -149,10 +149,10 @@ namespace regolith_onboarding {
         public void create_practice_page(Json.Array keyBindings){
           workflowPage = new WorkFlowPage(keyBindings, ()=>{
             // remove itself from container and add carousel
-            cur_child = container;
-            prev_child = workflowPage;
-            this.remove(prev_child);
-            this.add(cur_child);
+            cur_child = container.ref();
+            prev_child = workflowPage.ref();
+            this.remove(workflowPage);
+            this.add(container);
           });
         }
         public void quit() {

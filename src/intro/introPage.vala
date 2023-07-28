@@ -24,6 +24,7 @@ namespace regolith_onboarding {
                 error ("Cannot load CSS stylesheet: %s", e.message);
               }
             }
+
             this.set_orientation(Gtk.Orientation.VERTICAL);
             this.set_spacing(30);
             var container = new Box(Gtk.Orientation.VERTICAL, 5);

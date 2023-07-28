@@ -11,8 +11,26 @@ namespace regolith_onboarding {
         private uint current_key_sequence = 0;  
         
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
+          
           this.set_orientation(Gtk.Orientation.VERTICAL);
           this.set_spacing(10);
+          
+          // Adding CSS File
+          var screen = this.get_screen ();
+          var css_provider = new Gtk.CssProvider();
+          string css_path = File.new_for_path("../src/flow/flow.css").get_path();
+          if (FileUtils.test (css_path, FileTest.EXISTS)) {
+            try {
+              css_provider.load_from_path(css_path);
+              Gtk.StyleContext.add_provider_for_screen(screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+            } catch (Error e) {
+              error ("Cannot load CSS stylesheet: %s", e.message);
+            }
+          }else {
+            stderr.printf ("file not found for css : flow_window.vala");
+          }
+
+
           if(key_binding_info != null){
             var button_next = new Button();
             Json.Object obj = key_binding_info.get_element (current_key_sequence).get_object ();
@@ -41,6 +59,7 @@ namespace regolith_onboarding {
             });
           }
           var button = new Gtk.Button();
+          button.get_style_context ().add_class ("cancelButton");
           button.set_label("cancel");
           this.add(button);
           button.clicked.connect(()=>{
