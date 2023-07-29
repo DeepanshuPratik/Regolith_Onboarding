@@ -40,16 +40,15 @@ namespace regolith_onboarding {
             introText.get_style_context().add_class("introText");
             this.add(introText);
 
-            var next_button = new circularButton();
+            var next_button = new Button();
             next_button.get_style_context().add_class("nextButton");
-            next_button.set_size_request(10, 5);
             next_button.clicked.connect(() => {
               nextPage();
             });
 
 
             var next_arrow = new Gtk.Image();
-            next_arrow.set_from_icon_name("go-next", Gtk.IconSize.BUTTON );
+            next_arrow.set_from_icon_name("go-next", Gtk.IconSize.SMALL_TOOLBAR );
             next_arrow.set_size_request(10,5);
             next_button.add(next_arrow);
             int h,l;

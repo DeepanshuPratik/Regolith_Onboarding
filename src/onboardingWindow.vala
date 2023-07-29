@@ -47,6 +47,22 @@ namespace regolith_onboarding {
             }
               
             
+            // Adding css file
+            var screen = this.get_screen ();
+            var css_provider = new Gtk.CssProvider();
+            string css_path = File.new_for_path("../src/onboardingWindow.css").get_path();
+            stdout.printf(css_path); 
+            if (FileUtils.test (css_path, FileTest.EXISTS)) {
+              try {
+                css_provider.load_from_path(css_path);
+                Gtk.StyleContext.add_provider_for_screen(screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+              } catch (Error e) {
+                error ("Cannot load CSS stylesheet: %s", e.message);
+              }
+            }
+
+            //this.get_style_context().add_class("GtkWindow");
+
             // initializing file path for resources
             resource_path = File.new_for_path("../resources").get_path();
             container = new Box(Gtk.Orientation.VERTICAL, 30);
