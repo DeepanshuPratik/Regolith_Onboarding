@@ -24,9 +24,10 @@ namespace regolith_onboarding {
                 error ("Cannot load CSS stylesheet: %s", e.message);
               }
             }
-
+            
             this.set_orientation(Gtk.Orientation.VERTICAL);
             this.set_spacing(30);
+            this.get_style_context().add_class("intro_page");
             var container = new Box(Gtk.Orientation.VERTICAL, 5);
             this.add(container);
             
@@ -46,11 +47,10 @@ namespace regolith_onboarding {
               nextPage();
             });
 
-
-            var next_arrow = new Gtk.Image();
-            next_arrow.set_from_icon_name("go-next", Gtk.IconSize.SMALL_TOOLBAR );
-            next_arrow.set_size_request(10,5);
-            next_button.add(next_arrow);
+            
+            var button_icon = new Gtk.Image.from_file(resource_path+"/arrow-circle-right.png");
+            next_button.set_image(button_icon);
+            next_button.set_always_show_image(true);
             int h,l;
             next_button.get_size_request(out l, out h);
             //stdout.printf("%d %d",l,h);

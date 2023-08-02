@@ -60,7 +60,7 @@ namespace regolith_onboarding {
                 error ("Cannot load CSS stylesheet: %s", e.message);
               }
             }
-
+            this.get_style_context().add_class("carousel");
             //this.get_style_context().add_class("GtkWindow");
 
             // initializing file path for resources

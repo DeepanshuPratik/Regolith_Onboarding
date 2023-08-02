@@ -1,11 +1,11 @@
 /**
- * A client library for i3-wm that deserializes into idomatic Vala response types : copyrights to ILia
+ * A client library for i3-wm that deserializes into idomatic Vala response types
  */
 
 using GLib;
 using Gee;
 
-namespace Ilia {
+namespace regolith_onboarding {
     enum I3_COMMAND {
         RUN_COMMAND,
         GET_WORKSPACES,
