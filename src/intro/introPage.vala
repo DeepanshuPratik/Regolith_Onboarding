@@ -28,6 +28,7 @@ namespace regolith_onboarding {
             this.set_orientation(Gtk.Orientation.VERTICAL);
             this.set_spacing(30);
             this.get_style_context().add_class("intro_page");
+            this.set_halign(Gtk.Align.CENTER);
             var container = new Box(Gtk.Orientation.VERTICAL, 5);
             this.add(container);
             

@@ -1,10 +1,30 @@
 using Gtk;
 
 namespace regolith_onboarding {
-    const int MAX_WINDOW_WIDTH = 1200;
-    const int MAX_WINDOW_HEIGHT = 800;
-    const int MIN_WINDOW_WIDTH = 200;
-    const int MIN_WINDOW_HEIGHT = 100;
+    
+    // key press variables
+    public const int KEY_CODE_ESCAPE = 65307;
+    public const int KEY_CODE_LEFT_ALT = 65513;
+    public const int KEY_CODE_RIGHT_ALT = 65514;
+    public const int KEY_CODE_SUPER = 65515;
+    public const int KEY_CODE_UP = 65364;
+    public const int KEY_CODE_DOWN = 65362;
+    public const int KEY_CODE_ENTER = 65293;
+    public const int KEY_CODE_PGDOWN = 65366;
+    public const int KEY_CODE_PGUP = 65365;
+    public const int KEY_CODE_RIGHT = 65363;
+    public const int KEY_CODE_LEFT = 65361;
+    public const int KEY_CODE_PLUS = 43;
+    public const int KEY_CODE_MINUS = 45;
+    public const int KEY_CODE_QUESTION = 63;
+    public const int KEY_CODE_PRINTSRC = 65377;
+    public const int KEY_CODE_BRIGHT_UP = 269025026;
+    public const int KEY_CODE_BRIGHT_DOWN = 269025027;
+    public const int KEY_CODE_MIC_MUTE = 269025202;
+    public const int KEY_CODE_VOLUME_UP = 269025043;
+    public const int KEY_CODE_VOLUME_DOWN = 269025041;
+    public const int KEY_CODE_VOLUME_MUTE = 269025042;
+    
     bool allow_scroll_wheel = false;
     private string resource_path;
     private uint carousel_spacing;
@@ -15,9 +35,8 @@ namespace regolith_onboarding {
         INVALID_FORMAT
     }
     public class CarouselSetup : Window {
-        public const int KEY_CODE_ESCAPE = 65307;
-        const int MIN_WINDOW_WIDTH = 160;
-        const int MIN_WINDOW_HEIGHT = 100;
+        
+
         // directory for JSON data
         private string directory = File.new_for_path("../workflows").get_path(); 
         private Dir dir_data;
@@ -38,7 +57,7 @@ namespace regolith_onboarding {
         public CarouselSetup () {
 
             Object(type: Gtk.WindowType.POPUP); // Window is unmanaged
-            window_position = WindowPosition.CENTER_ALWAYS;
+            window_position = WindowPosition.CENTER;
 
             if (IS_SESSION_WAYLAND) {
                 set_size_request (800,450);
@@ -149,11 +168,13 @@ namespace regolith_onboarding {
                 var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
         
                 if (click_out_bounds) {
-                    container.set_opacity(0.6);
+                    this.opacity = 0.7;
+                    // container.set_opacity(0.6);
                     seat.ungrab();
                 }
                 if(!click_out_bounds){
-                    container.set_opacity(1.0);
+                    this.opacity = 1.0;
+                    //container.set_opacity(1.0);
                     Gdk.Window gdkwin = this.get_window ();
                     seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
                 }

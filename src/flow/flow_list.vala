@@ -50,7 +50,6 @@ namespace regolith_onboarding {
                 }
             }
 
-            // var workflowLabels = workflowList.get_keys_as_array ();
             // Create and add workflows to the grid
             int i=0;
             foreach(unowned WorkspaceDataHolder item in workflowList){
@@ -62,18 +61,12 @@ namespace regolith_onboarding {
                var gridButton = new Grid();
                button.always_show_image = true;
                button.relief = Gtk.ReliefStyle.NONE;
-               img.set_hexpand (true);
-               label.set_hexpand (true);
                gridButton.attach (img, 0,0,2,1);
                gridButton.attach (label, 0,1,2,1);
                button.add(gridButton);
                button.set_border_width (0);
-               //button.set_image(img);
-               //container.add(button);
-               //container.add(label);
-               button.clicked.connect (()=>{
+               button.clicked.connect ((btn)=>{
                  workflow_element(item.get_workflow_sequence());
-                 //var workflowPage = new WorkFlowPage();
                }); 
                grid.attach(button, i % column, i / column, 1, 1);
                i++;

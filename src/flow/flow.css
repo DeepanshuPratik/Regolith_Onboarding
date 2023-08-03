@@ -3,3 +3,16 @@
   margin-left: 100px;
   background-color: snow;
 }
+
+.playButton{
+  border-color: transparent;
+  margin-right: 100px;
+  margin-left: 100px;
+  background-color: snow;
+}
+.playButton:active,:focus{
+  border-color: transparent;
+  margin-right: 100px;
+  margin-left: 100px;
+  background-color: transparent;
+}
