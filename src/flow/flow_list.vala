@@ -9,15 +9,17 @@ namespace regolith_onboarding {
         private Gtk.Grid grid;
         private int column = 3;
         public delegate void workflowElement(Json.Array workflow_sequence);
-        Map<string, ArrayList<Keybinding> > kbmodel;
+        // Map<string, ArrayList<Keybinding>> kbmodel;
 
         public WorkFlows(Array<WorkspaceDataHolder> workflowList,owned workflowElement workflow_element){
+            
             this.set_margin_start (20);
             this.set_margin_bottom (20);
             this.set_margin_top (20);
             this.set_margin_end (20);
             this.set_orientation (Gtk.Orientation.VERTICAL);
             this.set_spacing (40);
+            
             var headerText = new Label("Regolith Onboarding"); 
             this.add(headerText);
             grid = new Gtk.Grid();
@@ -35,20 +37,23 @@ namespace regolith_onboarding {
             else if(workflowList.length <=4)
               column = 1;
             
-            // fetching all the keybindings
-            read_i3_config.begin((obj,res) => {
-              read_i3_config.end(res);
-            }); 
-            foreach (var entry in kbmodel.entries) {
-                var category = entry.key;
-                var bindings = entry.value;
-
-                foreach (var binding in bindings) {
-                    var formatted_spec = format_spec (binding.spec);
-                    var summary = category + " - " + binding.label;
-                    stdout.printf("\n Formatted Spec: %s \n Summary: %s",formatted_spec,summary);
-                }
-            }
+           // Fetching all the keybindings of the SYSTEM
+           
+           // var configManager = new configManager();
+           // configManager.read_i3_config.begin((obj,res) => {
+           //   read_i3_config.end(res);
+           // });
+           // kbmodel = configManager.kbmodel;
+           // // iterating over all key bindings 
+           // foreach (var entry in kbmodel.entries) {
+           //     var category = entry.key;
+           //     var bindings = entry.value;
+           //     foreach (var binding in bindings) {
+           //         var formatted_spec = format_spec (binding.spec);
+           //         var summary = category + " - " + binding.label;
+           //         stdout.printf("\n Raw spec: %s Formatted Spec: %s \n Summary: %s",binding.spec,formatted_spec,summary);
+           //     }
+           // }
 
             // Create and add workflows to the grid
             int i=0;
@@ -71,26 +76,6 @@ namespace regolith_onboarding {
                grid.attach(button, i % column, i / column, 1, 1);
                i++;
             }
-        }
-        private async void read_i3_config () {
-          try {
-              var i3_client = new I3Client ();
-              var config_file = i3_client.getConfig ().config;
-              var parser = new ConfigParser (config_file, "");
-
-              kbmodel = parser.parse ();
-
-          } catch (GLib.Error err) {
-              // TODO consistent error handling
-              stderr.printf ("Failed to read config from %s: %s\n", WM_NAME, err.message);
-          }
-        }
-        public static string format_spec (string raw_keybinding) {
-            // TODO: this won't work for keybindings with < > characters
-            return raw_keybinding
-                    .replace ("<", "")
-                    .replace (">", " ")
-                    .replace ("  ", " ");
         }
     }
 }

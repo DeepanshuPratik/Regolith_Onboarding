@@ -1,32 +1,20 @@
 {
     "workspaces":[
         {
-            "workflow_name": "Navigation",
-            "workflow_description" : "It will teach how all the possible ways you can navigate between workspaces in different ways",
+            "workflow_name": "Launching Application",
+            "workflow_description" : "It will teach how to launch different applications",
             "image":"/Navigation.jpeg",
             "key_bindings_sequence": [
                 {
-                    "key_id":"Navigate_52",
-                    "heading":"Navigate Left",
-                    "function":"Navigate Relative Left Window"
+                    "key_id":"<> Enter",
+                    "heading":"Launch Terminal",
+                    "function":"It will launch Terminal"
                     
                 },
                 {
-                    "key_id":"Navigate_56",
-                    "heading":"Traverse Left",
-                    "function":"Traversing into left Workspace"
-                    
-                },
-                {
-                    "key_id":"Navigate_57",
-                    "heading":"Move Application to Workspace",
-                    "function":"Moving Application to Workspace"
-                    
-                },
-                {
-                    "key_id":"Navigate_58",
-                    "heading":"Switching workspace",
-                    "function":"Switching to next workspace"
+                    "key_id":"<><Shift> Enter",
+                    "heading":"Launch Browser",
+                    "function":"It will launch browser and will align it to the right of terminal"
                     
                 }
             ]

@@ -10,12 +10,16 @@ namespace regolith_onboarding {
         private string description = " ";
         private uint current_key_sequence = 0;  
         private bool isPlayed = false;
-        private string keyCombination = "";
-
+        // private string keyCombination = "";
+        private KeybindingsHandler keypressHandler; 
+        
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
           
           this.set_orientation(Gtk.Orientation.VERTICAL);
           this.set_spacing(10);
+          
+          // setting up map
+          // NOTE: need to create a new class that loads modifier table and non modifier table with signal numbers and for non modifier , we need to check for whether the values are of ASCII or not  
           
           // Adding CSS File
           var screen = this.get_screen ();
@@ -32,20 +36,7 @@ namespace regolith_onboarding {
             stderr.printf ("file not found for css : flow_window.vala");
           }
 
-          
-          // Route keys based on function
-          key_press_event.connect ((key) => {
-              keyCombination = keyCombination + key.keyval.to_string () + "+";
-              stdout.printf ("key combination : %s \n",keyCombination);
-              switch (key.keyval) {   
-                  case KEY_CODE_SUPER:
-                      stdout.printf ("\n Windows \n");
-                      main_quit ();
-                      break;
-              }
-              return false;
-          });
-
+          keypressHandler = new KeybindingsHandler();
 
           if(key_binding_info != null){
             var button_next = new Button();
@@ -60,11 +51,34 @@ namespace regolith_onboarding {
             this.add (new Label(description));
             this.add(button_next);
             stdout.printf (heading+"\n");
+             
+            // Route keys based on function
+            key_press_event.connect ((key) => {
+                stdout.printf ("\n %u %c \n", key.keyval ,(char)key.keyval);
+                var configmanager = new configManager ();
+                var formated_command = configmanager.format_spec(command);
+                string[] splitFormatedCommands = formated_command.split(" ");
+                foreach(string item in splitFormatedCommands){
+                  stdout.printf (" %s ",item);
+                } 
+                uint COMMAND_MASK=1;
+                for(int i=0;i<splitFormatedCommands.length-1;i++){
+                  COMMAND_MASK = COMMAND_MASK | keypressHandler.modifierMasks[splitFormatedCommands[i]]; 
+                }
+                // handle upper case and lower case of a-z
+                var matched = keypressHandler.match (key, COMMAND_MASK, keypressHandler.nonModifiers[splitFormatedCommands[splitFormatedCommands.length-1]]); // add uint for non modifiers which is not ascii
+                //matched =  matched || keypressHandler.match (key, Gdk.ModifierType.SUPER_MASK | Gdk.ModifierType.SHIFT_MASK, KEY_CODE_RIGHT);
+                stdout.printf ("MATCHED: %b", matched);
+                stdout.flush ();
+                return false;
+            });
+
+
             button_next.clicked.connect (()=>{
               current_key_sequence++;
               if(current_key_sequence >= key_binding_info.get_length ()){
-                var window = this.get_window (); 
-                new handleScreenMode(window,"WINDOW");
+                var window = (Gtk.Window) this.get_toplevel () ;
+                new HandleScreenMode(window,"WINDOW");
                 workflowList();
                 this.destroy();
               }
@@ -88,16 +102,17 @@ namespace regolith_onboarding {
           // turning play to capturing 
           play_button.clicked.connect(()=>{
             if(!isPlayed){
-              var window = this.get_window (); 
-              new handleScreenMode(window,"TILEUP");
+              var window = (Gtk.Window) this.get_toplevel () ;
+              new HandleScreenMode(window,"TILEUP");
               isPlayed = true;
               play_button.set_label("CAPTURING");
               play_button.set_border_width (0);
             }
           });
+          // to cancel the workflow in between
           button.clicked.connect(()=>{
-            var window = this.get_window ();
-            new handleScreenMode(window,"WINDOW");
+            var window = (Gtk.Window) this.get_toplevel () ;
+            new HandleScreenMode(window,"WINDOW");
             workflowList();
             this.destroy();
           });
