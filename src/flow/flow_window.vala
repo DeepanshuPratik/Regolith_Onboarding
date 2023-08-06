@@ -35,6 +35,7 @@ namespace regolith_onboarding {
           }else {
             stderr.printf ("file not found for css : flow_window.vala");
           }
+          
 
           keypressHandler = new KeybindingsHandler();
 
@@ -46,48 +47,61 @@ namespace regolith_onboarding {
             }catch(Error e){
               stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
             }
-            this.add (new Label(heading)); 
-            this.add (new Label(command)); 
-            this.add (new Label(description));
+
+
+            // setting up display components 
+            Label headingLabel = new Label (heading);
+            Label commandLabel = new Label (command);
+            Label descriptionLabel = new Label (description);
+
+            this.add (headingLabel); 
+            this.add (commandLabel); 
+            this.add (descriptionLabel);
             this.add(button_next);
             stdout.printf (heading+"\n");
              
             // Route keys based on function
             key_press_event.connect ((key) => {
-                stdout.printf ("\n %u %c \n", key.keyval ,(char)key.keyval);
+                stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
                 var configmanager = new configManager ();
                 var formated_command = configmanager.format_spec(command);
                 string[] splitFormatedCommands = formated_command.split(" ");
-                foreach(string item in splitFormatedCommands){
-                  stdout.printf (" %s ",item);
-                } 
-                uint COMMAND_MASK=1;
-                for(int i=0;i<splitFormatedCommands.length-1;i++){
-                  COMMAND_MASK = COMMAND_MASK | keypressHandler.modifierMasks[splitFormatedCommands[i]]; 
+                uint COMMAND_MASK = 0;
+                uint command_size = splitFormatedCommands.length;
+                for(int i=0; i<splitFormatedCommands.length-1; i++){
+                  COMMAND_MASK = COMMAND_MASK | keypressHandler.modifierMasks[splitFormatedCommands[i]];
                 }
-                // handle upper case and lower case of a-z
-                var matched = keypressHandler.match (key, COMMAND_MASK, keypressHandler.nonModifiers[splitFormatedCommands[splitFormatedCommands.length-1]]); // add uint for non modifiers which is not ascii
-                //matched =  matched || keypressHandler.match (key, Gdk.ModifierType.SUPER_MASK | Gdk.ModifierType.SHIFT_MASK, KEY_CODE_RIGHT);
+                bool matched = false;
+                if(keypressHandler.nonModifiers.get(splitFormatedCommands[command_size-1]) != (uint)null){
+                  matched = keypressHandler.match (key, COMMAND_MASK, keypressHandler.nonModifiers[splitFormatedCommands[command_size-1]]);
+                }
+                else{
+                  stdout.printf ("reached else %u ",(uint)splitFormatedCommands[command_size-1][0]);
+                  matched = keypressHandler.match (key, COMMAND_MASK, (uint)splitFormatedCommands[command_size-1][0]); 
+                }
                 stdout.printf ("MATCHED: %b", matched);
+                if(matched){
+                  COMMAND_MASK = 0;
+                  current_key_sequence++;
+                  if(current_key_sequence >= key_binding_info.get_length ()){
+                    var window = (Gtk.Window) this.get_toplevel () ;
+                    new HandleScreenMode(window,"WINDOW");
+                    workflowList();
+                    this.destroy();
+                  }
+                  obj = key_binding_info.get_element (current_key_sequence).get_object ();
+                  try{ 
+                    process_workflow_sequence (obj);
+                    headingLabel.set_label(heading);
+                    commandLabel.set_label(command);
+                    descriptionLabel.set_label(description);
+                    stdout.printf("Command _ Mask :%u \n",COMMAND_MASK);
+                  }catch(Error e){
+                    stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
+                  }
+                }
                 stdout.flush ();
                 return false;
-            });
-
-
-            button_next.clicked.connect (()=>{
-              current_key_sequence++;
-              if(current_key_sequence >= key_binding_info.get_length ()){
-                var window = (Gtk.Window) this.get_toplevel () ;
-                new HandleScreenMode(window,"WINDOW");
-                workflowList();
-                this.destroy();
-              }
-              obj = key_binding_info.get_element (current_key_sequence).get_object ();
-              try{ 
-                process_workflow_sequence (obj);
-              }catch(Error e){
-                stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
-              }
             });
           }
           var button = new Gtk.Button();

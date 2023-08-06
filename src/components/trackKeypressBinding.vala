@@ -23,9 +23,18 @@ namespace regolith_onboarding{
     }
 
     public bool match(Gdk.EventKey key, uint modifierMask, uint nonModifier){
-     stdout.printf("\n keyval : %u nonmodifier :  %u \n", key.keyval,nonModifier); 
-     if ((key.state & modifierMask) == modifierMask && key.keyval == nonModifier) {
-       stdout.printf("matched!"); 
+     // stdout.printf("\n keyState: %u keyState&modifierMask : %u keyval : %u nonmodifier :  %u \n",key.state, key.state & modifierMask, key.keyval,nonModifier); 
+
+     if ((modifierMask & modifierMasks["Shift"]) == modifierMasks["Shift"]) {
+       var upped = nonModifier.to_string("%c").up();
+       nonModifier = upped[0];
+       stdout.printf("\nshifted nonmod: %s\n", upped);
+     }
+
+     var isModifierMatch = (key.state & modifierMask) == modifierMask;
+     var isNonModifierMatch = key.keyval == nonModifier; 
+
+     if ( isModifierMatch && isNonModifierMatch) {
        return true;
      } 
      return false;
