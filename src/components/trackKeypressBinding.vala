@@ -22,10 +22,10 @@ namespace regolith_onboarding{
       modifierMasks.insert ("CAPS",Gdk.ModifierType.LOCK_MASK);
     }
 
-    public bool match(Gdk.EventKey key, uint modifierMask, uint nonModifier){
+    public bool match(Gdk.EventKey key, uint modifierMask, uint nonModifier, bool isOnNonModifierMap){
      // stdout.printf("\n keyState: %u keyState&modifierMask : %u keyval : %u nonmodifier :  %u \n",key.state, key.state & modifierMask, key.keyval,nonModifier); 
 
-     if ((modifierMask & modifierMasks["Shift"]) == modifierMasks["Shift"]) {
+     if ((modifierMask & modifierMasks["Shift"]) == modifierMasks["Shift"] && !isOnNonModifierMap) {
        var upped = nonModifier.to_string("%c").up();
        nonModifier = upped[0];
        stdout.printf("\nshifted nonmod: %s\n", upped);

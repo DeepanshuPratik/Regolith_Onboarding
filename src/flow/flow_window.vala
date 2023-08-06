@@ -5,10 +5,13 @@ namespace regolith_onboarding {
     public class WorkFlowPage : Box {
 
         public delegate void workflowList();
+        // variables for holding json data to be displayed
         private string heading = "";
         private string command = " ";
         private string description = " ";
-        private uint current_key_sequence = 0;  
+        // Json iterator 
+        private uint current_key_sequence = 0;
+        // to update it for size of window
         private bool isPlayed = false;
         // private string keyCombination = "";
         private KeybindingsHandler keypressHandler; 
@@ -17,9 +20,6 @@ namespace regolith_onboarding {
           
           this.set_orientation(Gtk.Orientation.VERTICAL);
           this.set_spacing(10);
-          
-          // setting up map
-          // NOTE: need to create a new class that loads modifier table and non modifier table with signal numbers and for non modifier , we need to check for whether the values are of ASCII or not  
           
           // Adding CSS File
           var screen = this.get_screen ();
@@ -40,14 +40,12 @@ namespace regolith_onboarding {
           keypressHandler = new KeybindingsHandler();
 
           if(key_binding_info != null){
-            var button_next = new Button();
             Json.Object obj = key_binding_info.get_element (current_key_sequence).get_object ();
             try{ 
               process_workflow_sequence (obj);
             }catch(Error e){
               stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
             }
-
 
             // setting up display components 
             Label headingLabel = new Label (heading);
@@ -57,12 +55,11 @@ namespace regolith_onboarding {
             this.add (headingLabel); 
             this.add (commandLabel); 
             this.add (descriptionLabel);
-            this.add(button_next);
             stdout.printf (heading+"\n");
              
             // Route keys based on function
             key_press_event.connect ((key) => {
-                stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
+                // stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
                 var configmanager = new configManager ();
                 var formated_command = configmanager.format_spec(command);
                 string[] splitFormatedCommands = formated_command.split(" ");
@@ -73,13 +70,13 @@ namespace regolith_onboarding {
                 }
                 bool matched = false;
                 if(keypressHandler.nonModifiers.get(splitFormatedCommands[command_size-1]) != (uint)null){
-                  matched = keypressHandler.match (key, COMMAND_MASK, keypressHandler.nonModifiers[splitFormatedCommands[command_size-1]]);
+                  matched = keypressHandler.match (key, COMMAND_MASK, keypressHandler.nonModifiers[splitFormatedCommands[command_size-1]],true);
                 }
                 else{
-                  stdout.printf ("reached else %u ",(uint)splitFormatedCommands[command_size-1][0]);
-                  matched = keypressHandler.match (key, COMMAND_MASK, (uint)splitFormatedCommands[command_size-1][0]); 
+                  // stdout.printf ("reached else %u ",(uint)splitFormatedCommands[command_size-1][0]);
+                  matched = keypressHandler.match (key, COMMAND_MASK, (uint)splitFormatedCommands[command_size-1][0],false); 
                 }
-                stdout.printf ("MATCHED: %b", matched);
+                // stdout.printf ("MATCHED: %b", matched);
                 if(matched){
                   COMMAND_MASK = 0;
                   current_key_sequence++;
@@ -95,7 +92,7 @@ namespace regolith_onboarding {
                     headingLabel.set_label(heading);
                     commandLabel.set_label(command);
                     descriptionLabel.set_label(description);
-                    stdout.printf("Command _ Mask :%u \n",COMMAND_MASK);
+                    // stdout.printf("Command _ Mask :%u \n",COMMAND_MASK);
                   }catch(Error e){
                     stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
                   }
