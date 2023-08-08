@@ -9,12 +9,16 @@ namespace regolith_onboarding {
         private string heading = "";
         private string command = " ";
         private string description = " ";
+        private string image = "";
         // Json iterator 
         private uint current_key_sequence = 0;
         // to update it for size of window
         private bool isPlayed = false;
+        private Gtk.Button play_button;
         // private string keyCombination = "";
-        private KeybindingsHandler keypressHandler; 
+        private KeybindingsHandler keypressHandler;
+        private GLib.Object tutorial_ref;
+        private Gtk.Image demo;
         
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
           
@@ -80,9 +84,9 @@ namespace regolith_onboarding {
                 if(matched){
                   COMMAND_MASK = 0;
                   current_key_sequence++;
+                  var window = (Gtk.Window) this.get_toplevel () ;    
+                  new HandleScreenMode(window,"WINDOW");
                   if(current_key_sequence >= key_binding_info.get_length ()){
-                    var window = (Gtk.Window) this.get_toplevel () ;
-                    new HandleScreenMode(window,"WINDOW");
                     workflowList();
                     this.destroy();
                   }
@@ -92,19 +96,28 @@ namespace regolith_onboarding {
                     headingLabel.set_label(heading);
                     commandLabel.set_label(command);
                     descriptionLabel.set_label(description);
+                    demo = new Gtk.Image.from_file (resource_path+image);
                     // stdout.printf("Command _ Mask :%u \n",COMMAND_MASK);
                   }catch(Error e){
                     stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
                   }
+                  this.add (demo);
+                  this.reorder_child (demo, 3);
+                  play_button.set_label("Play");
+                  isPlayed = false; 
+                  this.show_all ();
                 }
                 stdout.flush ();
                 return false;
             });
           }
+          stdout.printf ("\n demo path: %s\n", resource_path+image);
+          demo = new Gtk.Image.from_file (resource_path+image);
+          this.add(demo);
           var button = new Gtk.Button();
           button.get_style_context ().add_class ("cancelButton");
           button.set_label("cancel");
-          var play_button = new Button ();
+          play_button = new Button ();
           play_button.get_style_context ().add_class ("playButton");
           play_button.set_label ("PLAY");
           this.add(button);
@@ -115,6 +128,8 @@ namespace regolith_onboarding {
             if(!isPlayed){
               var window = (Gtk.Window) this.get_toplevel () ;
               new HandleScreenMode(window,"TILEUP");
+              tutorial_ref = demo.ref ();
+              this.remove (demo);
               isPlayed = true;
               play_button.set_label("CAPTURING");
               play_button.set_border_width (0);
@@ -155,6 +170,14 @@ namespace regolith_onboarding {
                   throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 202", item.type_name ());
                 }
                 heading = obj.get_string_member (name);
+                break;
+
+              case "image":
+                unowned Json.Node item = obj.get_member (name);
+                if (item.get_node_type () != Json.NodeType.VALUE) {
+                  throw new MyError.INVALID_FORMAT ("Unexpected element type %s process_workspaces() line 202", item.type_name ());
+                }
+                image = obj.get_string_member (name);
                 break;
           
               default:

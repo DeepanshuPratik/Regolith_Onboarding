@@ -8,13 +8,15 @@
                 {
                     "key_id":"<> Enter",
                     "heading":"Launch Terminal",
-                    "function":"It will launch Terminal"
+                    "function":"It will launch Terminal",
+                    "image":"/terminalSplit.gif"
                     
                 },
                 {
                     "key_id":"<><Shift> Enter",
                     "heading":"Launch Browser",
-                    "function":"It will launch browser and will align it to the right of terminal"
+                    "function":"It will launch browser and will align it to the right of terminal",
+                    "image":"/terminalSplit.gif"
                     
                 }
             ]
