@@ -9,10 +9,15 @@
   margin-right: 100px;
   margin-left: 100px;
   background-color: snow;
+  margin-bottom: 15px;
 }
 .playButton:active,:focus{
   border-color: transparent;
   margin-right: 100px;
   margin-left: 100px;
   background-color: transparent;
+}
+.heading{
+  margin-top: 15px;
+  font-size: 20px;
 }

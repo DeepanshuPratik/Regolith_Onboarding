@@ -46,9 +46,6 @@ public static int main (string[] args) {
             }
             window.set_seat (seat);
         }
-    
-    
-    
         Gtk.main ();
         
         return 0;

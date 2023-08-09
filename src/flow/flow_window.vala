@@ -19,7 +19,12 @@ namespace regolith_onboarding {
         private KeybindingsHandler keypressHandler;
         private GLib.Object tutorial_ref;
         private Gtk.Image demo;
-        
+        private Gtk.Button cancel_button;
+        private GLib.Object cancel_ref;
+        // UI components
+        private Gtk.Box midBox; 
+        private Gtk.Box instructionAndPlayHolder;
+
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
           
           this.set_orientation(Gtk.Orientation.VERTICAL);
@@ -42,7 +47,7 @@ namespace regolith_onboarding {
           
 
           keypressHandler = new KeybindingsHandler();
-
+          var configmanager = new configManager ();
           if(key_binding_info != null){
             Json.Object obj = key_binding_info.get_element (current_key_sequence).get_object ();
             try{ 
@@ -53,7 +58,8 @@ namespace regolith_onboarding {
 
             // setting up display components 
             Label headingLabel = new Label (heading);
-            Label commandLabel = new Label (command);
+            Label commandLabel = new Label (configmanager.format_spec_display (command));
+            headingLabel.get_style_context().add_class("heading");
             Label descriptionLabel = new Label (description);
 
             this.add (headingLabel); 
@@ -64,7 +70,6 @@ namespace regolith_onboarding {
             // Route keys based on function
             key_press_event.connect ((key) => {
                 // stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
-                var configmanager = new configManager ();
                 var formated_command = configmanager.format_spec(command);
                 string[] splitFormatedCommands = formated_command.split(" ");
                 uint COMMAND_MASK = 0;
@@ -94,16 +99,17 @@ namespace regolith_onboarding {
                   try{ 
                     process_workflow_sequence (obj);
                     headingLabel.set_label(heading);
-                    commandLabel.set_label(command);
+                    commandLabel.set_label(configmanager.format_spec_display (command));
                     descriptionLabel.set_label(description);
                     demo = new Gtk.Image.from_file (resource_path+image);
-                    // stdout.printf("Command _ Mask :%u \n",COMMAND_MASK);
                   }catch(Error e){
                     stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
                   }
                   this.add (demo);
                   this.reorder_child (demo, 3);
                   play_button.set_label("Play");
+                  this.add(cancel_button);
+                  this.reorder_child(cancel_button,4);
                   isPlayed = false; 
                   this.show_all ();
                 }
@@ -114,13 +120,13 @@ namespace regolith_onboarding {
           stdout.printf ("\n demo path: %s\n", resource_path+image);
           demo = new Gtk.Image.from_file (resource_path+image);
           this.add(demo);
-          var button = new Gtk.Button();
-          button.get_style_context ().add_class ("cancelButton");
-          button.set_label("cancel");
+          cancel_button = new Gtk.Button();
+          cancel_button.get_style_context ().add_class ("cancelButton");
+          cancel_button.set_label("cancel");
           play_button = new Button ();
           play_button.get_style_context ().add_class ("playButton");
           play_button.set_label ("PLAY");
-          this.add(button);
+          this.add(cancel_button);
           this.add(play_button);
           
           // turning play to capturing 
@@ -128,6 +134,8 @@ namespace regolith_onboarding {
             if(!isPlayed){
               var window = (Gtk.Window) this.get_toplevel () ;
               new HandleScreenMode(window,"TILEUP");
+              cancel_ref = cancel_button.ref();
+              this.remove(cancel_button);
               tutorial_ref = demo.ref ();
               this.remove (demo);
               isPlayed = true;
@@ -136,7 +144,7 @@ namespace regolith_onboarding {
             }
           });
           // to cancel the workflow in between
-          button.clicked.connect(()=>{
+          cancel_button.clicked.connect(()=>{
             var window = (Gtk.Window) this.get_toplevel () ;
             new HandleScreenMode(window,"WINDOW");
             workflowList();
@@ -185,6 +193,9 @@ namespace regolith_onboarding {
             }
           }
 
+        }
+        public Gtk.Box createBox(){
+          
         }
     }
 }

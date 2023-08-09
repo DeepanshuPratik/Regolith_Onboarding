@@ -28,5 +28,11 @@ namespace regolith_onboarding{
                 .replace (">", " ")
                 .replace ("  ", " ");
     }
+    public  string format_spec_display (string raw_keybinding) {
+        // TODO: this won't work for keybindings with < > characters
+        return raw_keybinding
+                .replace ("<", " ")
+                .replace (">", " ");
+    }
   }  
 }
