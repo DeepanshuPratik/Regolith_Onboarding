@@ -174,7 +174,7 @@ namespace regolith_onboarding {
                 var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
         
                 if (click_out_bounds) {
-                    this.opacity = 0.7;
+                    this.opacity = 0.98;
                     // container.set_opacity(0.6);
                     seat.ungrab();
                 }

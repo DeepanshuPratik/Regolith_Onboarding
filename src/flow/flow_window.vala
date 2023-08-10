@@ -20,7 +20,6 @@ namespace regolith_onboarding {
         private Gtk.Image demo;
         private Gtk.Box demo_box;
         private Gtk.Button cancel_button;
-        private GLib.Object cancel_ref;
         // UI components
         private Gtk.Box midBox; 
         private Gtk.Box instructionAndPlayHolder;
@@ -87,6 +86,8 @@ namespace regolith_onboarding {
             play_button.set_label ("PLAY");
             buttonHolder.add(play_button);
             buttonHolder.add(cancel_button);
+            buttonHolder.expand = false;
+            buttonHolder.set_halign(Gtk.Align.CENTER); 
             instructionAndPlayHolder.add(buttonHolder);
         
             // Route keys based on function
@@ -120,6 +121,7 @@ namespace regolith_onboarding {
                   obj = key_binding_info.get_element (current_key_sequence).get_object ();
                   try{ 
                     process_workflow_sequence (obj);
+                    instructionAndPlayHolder.remove(headingLabel);
                     instructionAndPlayHolder.remove(commandLabel);
                     headingLabel = new Label(heading);
                     headingLabel.get_style_context().add_class("heading");
@@ -130,8 +132,7 @@ namespace regolith_onboarding {
                     demo_box.add (demo);
                     play_button.get_style_context ().add_class ("playButton");
                     play_button.set_label("PLAY");
-                    play_button.focus_on_click = false;
-                    instructionAndPlayHolder.reorder_child(buttonHolder, 4); 
+                    instructionAndPlayHolder.reorder_child(buttonHolder,3); 
                     isPlayed = false; 
                     this.show_all ();
                   }catch(Error e){
@@ -148,7 +149,11 @@ namespace regolith_onboarding {
                 var window = (Gtk.Window) this.get_toplevel () ;
                 new HandleScreenMode(window,"TILEUP");
                 instructionAndPlayHolder.remove(descriptionLabel);
-                instructionAndPlayHolder.remove(headingLabel);
+                //instructionAndPlayHolder.remove(headingLabel);
+                instructionAndPlayHolder.margin = 0;
+                this.margin = 0;
+                play_button.margin = 0;
+                cancel_button.margin = 0;
                 demo_box.remove (demo);
                 isPlayed = true;
                 play_button.set_label("CAPTURING");

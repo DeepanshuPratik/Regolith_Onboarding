@@ -68,6 +68,8 @@ namespace regolith_onboarding {
                button.relief = Gtk.ReliefStyle.NONE;
                gridButton.attach (img, 0,0,2,1);
                gridButton.attach (label, 0,1,2,1);
+               button.expand = false;
+               button.set_halign(Gtk.Align.CENTER);
                button.add(gridButton);
                button.set_border_width (0);
                button.clicked.connect ((btn)=>{
