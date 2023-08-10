@@ -17,19 +17,23 @@ namespace regolith_onboarding {
         private Gtk.Button play_button;
         // private string keyCombination = "";
         private KeybindingsHandler keypressHandler;
-        private GLib.Object tutorial_ref;
         private Gtk.Image demo;
+        private Gtk.Box demo_box;
         private Gtk.Button cancel_button;
         private GLib.Object cancel_ref;
         // UI components
         private Gtk.Box midBox; 
         private Gtk.Box instructionAndPlayHolder;
+        private Label headingLabel;
+        private Label commandLabel;
+        private Label descriptionLabel;
 
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
           
           this.set_orientation(Gtk.Orientation.VERTICAL);
           this.set_spacing(10);
-          
+          this.margin = 10;
+
           // Adding CSS File
           var screen = this.get_screen ();
           var css_provider = new Gtk.CssProvider();
@@ -45,7 +49,7 @@ namespace regolith_onboarding {
             stderr.printf ("file not found for css : flow_window.vala");
           }
           
-
+          var buttonHolder = new Box(Gtk.Orientation.HORIZONTAL,2);
           keypressHandler = new KeybindingsHandler();
           var configmanager = new configManager ();
           if(key_binding_info != null){
@@ -57,16 +61,34 @@ namespace regolith_onboarding {
             }
 
             // setting up display components 
-            Label headingLabel = new Label (heading);
-            Label commandLabel = new Label (configmanager.format_spec_display (command));
+            headingLabel = new Label (heading);
+            commandLabel = new Label ("PRESS: "+configmanager.format_spec_display (command));
             headingLabel.get_style_context().add_class("heading");
-            Label descriptionLabel = new Label (description);
-
-            this.add (headingLabel); 
-            this.add (commandLabel); 
-            this.add (descriptionLabel);
-            stdout.printf (heading+"\n");
+            headingLabel.margin = 10;
+            descriptionLabel = new Label (description);
+            instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL,10);
+            createInstructionBox();
+            midBox = new Box(Gtk.Orientation.HORIZONTAL,10);
+            midBox.get_style_context().add_class("contentHolder");
+            // stdout.printf (heading+"\n");
              
+            // stdout.printf ("\n demo path: %s\n", resource_path+image);
+            demo = new Gtk.Image.from_file (resource_path+image);
+            demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL,5);
+            demo_box.add(demo);
+            midBox.add(instructionAndPlayHolder);
+            midBox.add(demo_box);
+            this.add (midBox); 
+            cancel_button = new Gtk.Button();
+            cancel_button.get_style_context ().add_class ("cancelButton");
+            cancel_button.set_label("CANCEL");
+            play_button = new Button ();
+            play_button.get_style_context ().add_class ("playButton");
+            play_button.set_label ("PLAY");
+            buttonHolder.add(play_button);
+            buttonHolder.add(cancel_button);
+            instructionAndPlayHolder.add(buttonHolder);
+        
             // Route keys based on function
             key_press_event.connect ((key) => {
                 // stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
@@ -98,58 +120,49 @@ namespace regolith_onboarding {
                   obj = key_binding_info.get_element (current_key_sequence).get_object ();
                   try{ 
                     process_workflow_sequence (obj);
-                    headingLabel.set_label(heading);
-                    commandLabel.set_label(configmanager.format_spec_display (command));
-                    descriptionLabel.set_label(description);
+                    instructionAndPlayHolder.remove(commandLabel);
+                    headingLabel = new Label(heading);
+                    headingLabel.get_style_context().add_class("heading");
+                    commandLabel = new Label("PRESS: "+configmanager.format_spec_display (command));
+                    descriptionLabel = new Label(description);
+                    createInstructionBox();
                     demo = new Gtk.Image.from_file (resource_path+image);
+                    demo_box.add (demo);
+                    play_button.get_style_context ().add_class ("playButton");
+                    play_button.set_label("PLAY");
+                    play_button.focus_on_click = false;
+                    instructionAndPlayHolder.reorder_child(buttonHolder, 4); 
+                    isPlayed = false; 
+                    this.show_all ();
                   }catch(Error e){
                     stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
                   }
-                  this.add (demo);
-                  this.reorder_child (demo, 3);
-                  play_button.set_label("Play");
-                  this.add(cancel_button);
-                  this.reorder_child(cancel_button,4);
-                  isPlayed = false; 
-                  this.show_all ();
                 }
                 stdout.flush ();
                 return false;
             });
-          }
-          stdout.printf ("\n demo path: %s\n", resource_path+image);
-          demo = new Gtk.Image.from_file (resource_path+image);
-          this.add(demo);
-          cancel_button = new Gtk.Button();
-          cancel_button.get_style_context ().add_class ("cancelButton");
-          cancel_button.set_label("cancel");
-          play_button = new Button ();
-          play_button.get_style_context ().add_class ("playButton");
-          play_button.set_label ("PLAY");
-          this.add(cancel_button);
-          this.add(play_button);
-          
-          // turning play to capturing 
-          play_button.clicked.connect(()=>{
-            if(!isPlayed){
+            
+            // turning play to capturing 
+            play_button.clicked.connect(()=>{
+              if(!isPlayed){
+                var window = (Gtk.Window) this.get_toplevel () ;
+                new HandleScreenMode(window,"TILEUP");
+                instructionAndPlayHolder.remove(descriptionLabel);
+                instructionAndPlayHolder.remove(headingLabel);
+                demo_box.remove (demo);
+                isPlayed = true;
+                play_button.set_label("CAPTURING");
+                //play_button.set_border_width (0);
+              }
+            });
+            // to cancel the workflow in between
+            cancel_button.clicked.connect(()=>{
               var window = (Gtk.Window) this.get_toplevel () ;
-              new HandleScreenMode(window,"TILEUP");
-              cancel_ref = cancel_button.ref();
-              this.remove(cancel_button);
-              tutorial_ref = demo.ref ();
-              this.remove (demo);
-              isPlayed = true;
-              play_button.set_label("CAPTURING");
-              play_button.set_border_width (0);
-            }
-          });
-          // to cancel the workflow in between
-          cancel_button.clicked.connect(()=>{
-            var window = (Gtk.Window) this.get_toplevel () ;
-            new HandleScreenMode(window,"WINDOW");
-            workflowList();
-            this.destroy();
-          });
+              new HandleScreenMode(window,"WINDOW");
+              workflowList();
+              this.destroy();
+            });
+          }
         }
         
         public void process_workflow_sequence (Json.Object obj) throws Error {
@@ -194,8 +207,11 @@ namespace regolith_onboarding {
           }
 
         }
-        public Gtk.Box createBox(){
-          
+        public void createInstructionBox(){
+          instructionAndPlayHolder.get_style_context().add_class("commandDetailHolder"); 
+          instructionAndPlayHolder.add(headingLabel);
+          instructionAndPlayHolder.add(descriptionLabel);
+          instructionAndPlayHolder.add(commandLabel);
         }
     }
 }

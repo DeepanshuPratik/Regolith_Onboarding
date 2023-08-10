@@ -25,7 +25,7 @@ namespace regolith_onboarding {
     public const int KEY_CODE_QUESTION = 63;
     public const int KEY_CODE_PRINTSRC = 65377;
     public const int KEY_CODE_BRIGHT_UP = 269025027;
-    public const int KEY_CODE_BRIGHT_DOWN = 269025026;
+    public const int KEY_CODE_BRIGHT_DOWN = 269025027;
     public const int KEY_CODE_MIC_MUTE = 269025202;
     public const int KEY_CODE_VOLUME_UP = 269025043;
     public const int KEY_CODE_VOLUME_DOWN = 269025041;
