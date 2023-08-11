@@ -164,29 +164,29 @@ namespace regolith_onboarding {
             });
 
             // changes opacity
-            this.button_press_event.connect ((event) => {
+            // this.button_press_event.connect ((event) => {
 
-                int window_width = 0, window_height = 0;
-                this.get_size(out window_width, out window_height);
-                int mouse_x = (int) event.x;
-                int mouse_y = (int) event.y;
+            //     int window_width = 0, window_height = 0;
+            //     this.get_size(out window_width, out window_height);
+            //     int mouse_x = (int) event.x;
+            //     int mouse_y = (int) event.y;
         
-                var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
+            //     var click_out_bounds = ((mouse_x < 0 || mouse_y < 0) || (mouse_x > window_width || mouse_y > window_height));
         
-                if (click_out_bounds) {
-                    this.opacity = 0.98;
-                    // container.set_opacity(0.6);
-                    seat.ungrab();
-                }
-                if(!click_out_bounds){
-                    this.opacity = 1.0;
-                    //container.set_opacity(1.0);
-                    Gdk.Window gdkwin = this.get_window ();
-                    seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
-                }
+            //     if (click_out_bounds) {
+            //         this.opacity = 0.98;
+            //         // container.set_opacity(0.6);
+            //         seat.ungrab();
+            //     }
+            //     if(!click_out_bounds){
+            //         this.opacity = 1.0;
+            //         //container.set_opacity(1.0);
+            //         Gdk.Window gdkwin = this.get_window ();
+            //         seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
+            //     }
         
-                return !click_out_bounds;
-            });
+            //     return !click_out_bounds;
+            // });
 
         }
         public void create_practice_page(Json.Array keyBindings){

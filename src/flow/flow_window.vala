@@ -20,6 +20,9 @@ namespace regolith_onboarding {
         private Gtk.Image demo;
         private Gtk.Box demo_box;
         private Gtk.Button cancel_button;
+
+        // button Ref
+        
         // UI components
         private Gtk.Box midBox; 
         private Gtk.Box instructionAndPlayHolder;
@@ -31,8 +34,10 @@ namespace regolith_onboarding {
           
           this.set_orientation(Gtk.Orientation.VERTICAL);
           this.set_spacing(10);
-          this.margin = 10;
-
+          this.margin = 20;
+          this.set_valign(Gtk.Align.CENTER);
+          this.set_halign(Gtk.Align.CENTER);
+          
           // Adding CSS File
           var screen = this.get_screen ();
           var css_provider = new Gtk.CssProvider();
@@ -47,9 +52,11 @@ namespace regolith_onboarding {
           }else {
             stderr.printf ("file not found for css : flow_window.vala");
           }
-          
+         
+          // @widget buttonHolder will have the buttons: @widget play_button and @widget cancel_button
           var buttonHolder = new Box(Gtk.Orientation.HORIZONTAL,2);
           keypressHandler = new KeybindingsHandler();
+          // config manager will provide functions to reformat the commands extracted
           var configmanager = new configManager ();
           if(key_binding_info != null){
             Json.Object obj = key_binding_info.get_element (current_key_sequence).get_object ();
@@ -63,11 +70,11 @@ namespace regolith_onboarding {
             headingLabel = new Label (heading);
             commandLabel = new Label ("PRESS: "+configmanager.format_spec_display (command));
             headingLabel.get_style_context().add_class("heading");
-            headingLabel.margin = 10;
             descriptionLabel = new Label (description);
             instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL,10);
+            instructionAndPlayHolder.set_valign(Gtk.Align.CENTER);
             createInstructionBox();
-            midBox = new Box(Gtk.Orientation.HORIZONTAL,10);
+            midBox = new Box(Gtk.Orientation.HORIZONTAL,20);
             midBox.get_style_context().add_class("contentHolder");
             // stdout.printf (heading+"\n");
              
@@ -121,6 +128,11 @@ namespace regolith_onboarding {
                   obj = key_binding_info.get_element (current_key_sequence).get_object ();
                   try{ 
                     process_workflow_sequence (obj);
+                    this.margin = 20;
+                    play_button.margin_end = 5;
+                    cancel_button.margin = 0;
+                    midBox.set_spacing(20);
+                    midBox.margin = 3;
                     instructionAndPlayHolder.remove(headingLabel);
                     instructionAndPlayHolder.remove(commandLabel);
                     headingLabel = new Label(heading);
@@ -148,16 +160,20 @@ namespace regolith_onboarding {
               if(!isPlayed){
                 var window = (Gtk.Window) this.get_toplevel () ;
                 new HandleScreenMode(window,"TILEUP");
+
                 instructionAndPlayHolder.remove(descriptionLabel);
-                //instructionAndPlayHolder.remove(headingLabel);
                 instructionAndPlayHolder.margin = 0;
-                this.margin = 0;
+                this.margin = 20;
                 play_button.margin = 0;
                 cancel_button.margin = 0;
+                midBox.set_spacing(0);
+                midBox.margin = 0;
+                this.expand = false;
+                this.set_halign(Gtk.Align.CENTER); 
                 demo_box.remove (demo);
                 isPlayed = true;
                 play_button.set_label("CAPTURING");
-                //play_button.set_border_width (0);
+                this.show_all();
               }
             });
             // to cancel the workflow in between

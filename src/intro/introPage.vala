@@ -44,8 +44,7 @@ namespace regolith_onboarding {
 
             var next_button = new Button();
             next_button.get_style_context().add_class("nextButton");
-            next_button.set_vexpand(false);
-            next_button.set_vexpand_set(true);
+            next_button.expand = false;
             next_button.clicked.connect(() => {
               nextPage();
             });
