@@ -20,8 +20,11 @@ namespace regolith_onboarding {
         private Gtk.Image demo;
         private Gtk.Box demo_box;
         private Gtk.Button cancel_button;
+        private Gtk.Box checkedCommand;
+        private Gtk.Image checkTicked;
 
         // button Ref
+        private GLib.Object commandLabelRef;
         
         // UI components
         private Gtk.Box midBox; 
@@ -119,37 +122,48 @@ namespace regolith_onboarding {
                 if(matched){
                   COMMAND_MASK = 0;
                   current_key_sequence++;
-                  var window = (Gtk.Window) this.get_toplevel () ;    
-                  new HandleScreenMode(window,"WINDOW");
-                  if(current_key_sequence >= key_binding_info.get_length ()){
-                    workflowList();
-                    this.destroy();
-                  }
-                  obj = key_binding_info.get_element (current_key_sequence).get_object ();
-                  try{ 
-                    process_workflow_sequence (obj);
-                    this.margin = 20;
-                    play_button.margin_end = 5;
-                    cancel_button.margin = 0;
-                    midBox.set_spacing(20);
-                    midBox.margin = 3;
-                    instructionAndPlayHolder.remove(headingLabel);
-                    instructionAndPlayHolder.remove(commandLabel);
-                    headingLabel = new Label(heading);
-                    headingLabel.get_style_context().add_class("heading");
-                    commandLabel = new Label("PRESS: "+configmanager.format_spec_display (command));
-                    descriptionLabel = new Label(description);
-                    createInstructionBox();
-                    demo = new Gtk.Image.from_file (resource_path+image);
-                    demo_box.add (demo);
-                    play_button.get_style_context ().add_class ("playButton");
-                    play_button.set_label("PLAY");
-                    instructionAndPlayHolder.reorder_child(buttonHolder,3); 
-                    isPlayed = false; 
-                    this.show_all ();
-                  }catch(Error e){
-                    stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
-                  }
+
+                  stdout.printf("\n **** reached before 2 sec\n");
+                  // Handelling the tick and moving forward to next key binding
+                  handleTick();
+                  this.show_all();
+
+                  GLib.Timeout.add_seconds(4,()=>{
+                    var window = (Gtk.Window) this.get_toplevel () ;    
+                    new HandleScreenMode(window,"WINDOW");
+                    if(current_key_sequence >= key_binding_info.get_length ()){
+                      workflowList();
+                      this.destroy();
+                    }
+                    obj = key_binding_info.get_element (current_key_sequence).get_object ();
+                    try{ 
+                      process_workflow_sequence (obj);
+                      this.margin = 20;
+                      play_button.margin_end = 5;
+                      cancel_button.margin = 0;
+                      midBox.set_spacing(20);
+                      midBox.margin = 3;
+                      instructionAndPlayHolder.remove(headingLabel);
+                      instructionAndPlayHolder.remove(commandLabel);
+                      instructionAndPlayHolder.remove(checkedCommand);
+                      headingLabel = new Label(heading);
+                      headingLabel.get_style_context().add_class("heading");
+                      commandLabel = new Label("PRESS: "+configmanager.format_spec_display (command));
+                      descriptionLabel = new Label(description);
+                      createInstructionBox();
+                      demo = new Gtk.Image.from_file (resource_path+image);
+                      demo_box.add (demo);
+                      play_button.get_style_context ().add_class ("playButton");
+                      play_button.set_label("PLAY");
+                      instructionAndPlayHolder.reorder_child(buttonHolder,3); 
+                      isPlayed = false; 
+                      this.show_all ();
+                    }catch(Error e){
+                      stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
+                    }
+                    return false;
+                  });
+
                 }
                 stdout.flush ();
                 return false;
@@ -233,6 +247,17 @@ namespace regolith_onboarding {
           instructionAndPlayHolder.add(headingLabel);
           instructionAndPlayHolder.add(descriptionLabel);
           instructionAndPlayHolder.add(commandLabel);
+        }
+        public void handleTick(){
+          var configmanager = new configManager();
+          checkedCommand = new Box(Gtk.Orientation.HORIZONTAL, 20);
+          checkTicked = new Gtk.Image.from_file (resource_path+"/checktick.gif");
+          checkedCommand.add(new Label(configmanager.format_spec_display (command)));
+          checkedCommand.add(checkTicked);
+          instructionAndPlayHolder.add(checkedCommand);
+          instructionAndPlayHolder.remove(commandLabel);
+          checkedCommand.set_halign(Gtk.Align.CENTER);
+          instructionAndPlayHolder.reorder_child(checkedCommand,1);
         }
     }
 }
