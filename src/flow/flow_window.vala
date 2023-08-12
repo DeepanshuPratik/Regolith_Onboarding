@@ -128,7 +128,7 @@ namespace regolith_onboarding {
                   handleTick();
                   this.show_all();
 
-                  GLib.Timeout.add_seconds(4,()=>{
+                  GLib.Timeout.add_seconds(2,()=>{
                     var window = (Gtk.Window) this.get_toplevel () ;    
                     new HandleScreenMode(window,"WINDOW");
                     if(current_key_sequence >= key_binding_info.get_length ()){
@@ -176,6 +176,8 @@ namespace regolith_onboarding {
                 new HandleScreenMode(window,"TILEUP");
 
                 instructionAndPlayHolder.remove(descriptionLabel);
+                checkedCommand.add(checkTicked);
+                checkTicked.opacity = 0;
                 instructionAndPlayHolder.margin = 0;
                 this.margin = 20;
                 play_button.margin = 0;
@@ -246,18 +248,14 @@ namespace regolith_onboarding {
           instructionAndPlayHolder.get_style_context().add_class("commandDetailHolder"); 
           instructionAndPlayHolder.add(headingLabel);
           instructionAndPlayHolder.add(descriptionLabel);
-          instructionAndPlayHolder.add(commandLabel);
-        }
-        public void handleTick(){
-          var configmanager = new configManager();
           checkedCommand = new Box(Gtk.Orientation.HORIZONTAL, 20);
           checkTicked = new Gtk.Image.from_file (resource_path+"/checktick.gif");
-          checkedCommand.add(new Label(configmanager.format_spec_display (command)));
-          checkedCommand.add(checkTicked);
+          checkedCommand.add(commandLabel);
           instructionAndPlayHolder.add(checkedCommand);
-          instructionAndPlayHolder.remove(commandLabel);
           checkedCommand.set_halign(Gtk.Align.CENTER);
-          instructionAndPlayHolder.reorder_child(checkedCommand,1);
+        }
+        public void handleTick(){
+          checkTicked.opacity = 1.0; 
         }
     }
 }
