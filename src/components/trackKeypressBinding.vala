@@ -5,9 +5,12 @@ namespace regolith_onboarding{
   public class KeybindingsHandler {
     public HashTable<string,uint> nonModifiers; 
     public HashTable<string,int> modifierMasks;
+    public HashTable<string,string> commandConverter;
     public KeybindingsHandler() {
       nonModifiers = new HashTable<string, uint>(str_hash, str_equal);
       modifierMasks = new HashTable<string, int>(str_hash, str_equal);
+      commandConverter = new HashTable<string,string> (str_hash, str_equal);
+      
       nonModifiers.insert ("Enter",KEY_CODE_ENTER);
       nonModifiers.insert ("↑", KEY_CODE_UP);
       nonModifiers.insert ("↓", KEY_CODE_DOWN);
@@ -15,11 +18,18 @@ namespace regolith_onboarding{
       nonModifiers.insert ("→", KEY_CODE_RIGHT);
       nonModifiers.insert ("Tab",KEY_CODE_TAB);
       nonModifiers.insert ("Escape", KEY_CODE_ESCAPE);
+      
       modifierMasks.insert ("", Gdk.ModifierType.SUPER_MASK);
       modifierMasks.insert ("Shift",Gdk.ModifierType.SHIFT_MASK);
       modifierMasks.insert ("Alt", Gdk.ModifierType.MOD1_MASK);
       modifierMasks.insert ("Ctrl",Gdk.ModifierType.CONTROL_MASK);
       modifierMasks.insert ("CAPS",Gdk.ModifierType.LOCK_MASK);
+
+      commandConverter.insert ("", Gdk.ModifierType.SUPER_MASK);
+      commandConverter.insert ("Shift",Gdk.ModifierType.SHIFT_MASK);
+      commandConverter.insert ("Alt", Gdk.ModifierType.MOD1_MASK);
+      commandConverter.insert ("Ctrl",Gdk.ModifierType.CONTROL_MASK);
+      commandConverter.insert ("CAPS",Gdk.ModifierType.LOCK_MASK);
     }
 
     public bool match(Gdk.EventKey key, uint modifierMask, uint nonModifier, bool isOnNonModifierMap){

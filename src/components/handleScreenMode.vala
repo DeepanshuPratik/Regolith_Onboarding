@@ -19,7 +19,7 @@ namespace regolith_onboarding{
             var d = Gdk.Display.get_default ();
             var monitor = d.get_monitor_at_window (gdk_window);
             workarea = monitor.get_workarea ();
-            gdk_window.move_resize (workarea.width+workarea.width/2 - 400 , workarea.height/2 - 225, 800, 450);
+            gdk_window.move_resize (workarea.width/2 - 400 , workarea.height/2 - 225, 800, 450);
           }
           break;
         }
@@ -33,7 +33,7 @@ namespace regolith_onboarding{
             var d = Gdk.Display.get_default ();
             var monitor = d.get_monitor_at_window (gdk_window);
             workarea = monitor.get_workarea ();
-            gdk_window.move_resize (workarea.width+workarea.width/2-100, 0, 200, 150);
+            gdk_window.move_resize (workarea.width/2-100, 0, 200, 150);
           }
           break;
         }
