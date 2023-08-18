@@ -23,8 +23,6 @@ namespace regolith_onboarding {
         private Gtk.Box checkedCommand;
         private Gtk.Image checkTicked;
 
-        // button Ref
-        private GLib.Object commandLabelRef;
         
         // UI components
         private Gtk.Box midBox; 
@@ -125,9 +123,16 @@ namespace regolith_onboarding {
 
                   stdout.printf("\n **** reached before 2 sec\n");
                   // Handelling the tick and moving forward to next key binding
-                  handleTick();
-                  this.show_all();
+                  regolith_onboarding.seat.ungrab(); 
+                  Posix.system("xdotool sleep 0.1 key --clearmodifiers Super_L+Return");
+                  GLib.Timeout.add_seconds(1, ()=>{
+                    handleTick();
 
+                    Gdk.Window gdkwin = this.get_window ();
+                    regolith_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
+                    return false;
+                  });
+                  this.show_all();
                   GLib.Timeout.add_seconds(2,()=>{
                     var window = (Gtk.Window) this.get_toplevel () ;    
                     new HandleScreenMode(window,"WINDOW");
