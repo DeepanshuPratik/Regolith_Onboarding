@@ -10,6 +10,7 @@ namespace regolith_onboarding {
         private string command = " ";
         private string description = " ";
         private string image = "";
+        private string execCommand = "";
         // Json iterator 
         private uint current_key_sequence = 0;
         // to update it for size of window
@@ -70,6 +71,7 @@ namespace regolith_onboarding {
             // setting up display components 
             headingLabel = new Label (heading);
             commandLabel = new Label ("PRESS: "+configmanager.format_spec_display (command));
+
             headingLabel.get_style_context().add_class("heading");
             descriptionLabel = new Label (description);
             instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL,10);
@@ -97,10 +99,11 @@ namespace regolith_onboarding {
             buttonHolder.expand = false;
             buttonHolder.set_halign(Gtk.Align.CENTER); 
             instructionAndPlayHolder.add(buttonHolder);
-        
+            
             // Route keys based on function
             key_press_event.connect ((key) => {
                 // stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
+                // if (!isPlayed) return false;
                 var formated_command = configmanager.format_spec(command);
                 string[] splitFormatedCommands = formated_command.split(" ");
                 uint COMMAND_MASK = 0;
@@ -121,17 +124,14 @@ namespace regolith_onboarding {
                   COMMAND_MASK = 0;
                   current_key_sequence++;
 
-                  stdout.printf("\n **** reached before 2 sec\n");
                   // Handelling the tick and moving forward to next key binding
                   regolith_onboarding.seat.ungrab(); 
-                  Posix.system("xdotool sleep 0.1 key --clearmodifiers Super_L+Return");
-                  GLib.Timeout.add_seconds(1, ()=>{
-                    handleTick();
-
-                    Gdk.Window gdkwin = this.get_window ();
-                    regolith_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
-                    return false;
-                  });
+                  Posix.system(execCommand);
+                  
+                  // stdout.printf("\n **** reached before 2 sec\n");
+                  handleTick();
+                  Gdk.Window gdkwin = this.get_window ();
+                  regolith_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
                   this.show_all();
                   GLib.Timeout.add_seconds(2,()=>{
                     var window = (Gtk.Window) this.get_toplevel () ;    
@@ -160,8 +160,9 @@ namespace regolith_onboarding {
                       demo_box.add (demo);
                       play_button.get_style_context ().add_class ("playButton");
                       play_button.set_label("PLAY");
-                      instructionAndPlayHolder.reorder_child(buttonHolder,3); 
                       isPlayed = false; 
+                      stderr.printf ("isPlayed %b", isPlayed);
+                      instructionAndPlayHolder.reorder_child(buttonHolder,3); 
                       this.show_all ();
                     }catch(Error e){
                       stderr.printf ("Error in calling process_workflow_sequence : %s \n",e.message);
@@ -193,6 +194,7 @@ namespace regolith_onboarding {
                 this.set_halign(Gtk.Align.CENTER); 
                 demo_box.remove (demo);
                 isPlayed = true;
+                execCommandString();
                 play_button.set_label("CAPTURING");
                 this.show_all();
               }
@@ -261,6 +263,21 @@ namespace regolith_onboarding {
         }
         public void handleTick(){
           checkTicked.opacity = 1.0; 
+        }
+        public void execCommandString(){
+            var configmanager = new configManager ();
+            execCommand = "xdotool sleep 0.1 key --clearmodifiers ";
+            string[] splitCommands = configmanager.format_spec(command).split(" "); 
+            for(int i=0; i<splitCommands.length-1; i++){
+              execCommand += keypressHandler.remontoireSymToKey[splitCommands[i]] + "+";
+            }
+            if(keypressHandler.remontoireSymToKey.get(splitCommands[splitCommands.length-1]) != (string)null){
+              execCommand += keypressHandler.remontoireSymToKey[splitCommands[splitCommands.length-1]];
+            }
+            else{
+              execCommand += splitCommands[splitCommands.length-1];
+            }
+            // stdout.printf("execute command : %s \n", execCommand);
         }
     }
 }

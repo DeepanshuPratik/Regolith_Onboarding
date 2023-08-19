@@ -5,11 +5,11 @@ namespace regolith_onboarding{
   public class KeybindingsHandler {
     public HashTable<string,uint> nonModifiers; 
     public HashTable<string,int> modifierMasks;
-    public HashTable<string,string> commandConverter;
+    public HashTable<string,string> remontoireSymToKey;
     public KeybindingsHandler() {
       nonModifiers = new HashTable<string, uint>(str_hash, str_equal);
       modifierMasks = new HashTable<string, int>(str_hash, str_equal);
-      commandConverter = new HashTable<string,string> (str_hash, str_equal);
+      remontoireSymToKey = new HashTable<string,string> (str_hash, str_equal);
       
       nonModifiers.insert ("Enter",KEY_CODE_ENTER);
       nonModifiers.insert ("↑", KEY_CODE_UP);
@@ -25,11 +25,16 @@ namespace regolith_onboarding{
       modifierMasks.insert ("Ctrl",Gdk.ModifierType.CONTROL_MASK);
       modifierMasks.insert ("CAPS",Gdk.ModifierType.LOCK_MASK);
 
-      commandConverter.insert ("", Gdk.ModifierType.SUPER_MASK);
-      commandConverter.insert ("Shift",Gdk.ModifierType.SHIFT_MASK);
-      commandConverter.insert ("Alt", Gdk.ModifierType.MOD1_MASK);
-      commandConverter.insert ("Ctrl",Gdk.ModifierType.CONTROL_MASK);
-      commandConverter.insert ("CAPS",Gdk.ModifierType.LOCK_MASK);
+      remontoireSymToKey.insert ("", "Super_L");
+      remontoireSymToKey.insert ("Shift","Shift_L");
+      remontoireSymToKey.insert ("Alt", "Alt_L");
+      remontoireSymToKey.insert ("Ctrl","Control_L");
+      remontoireSymToKey.insert ("CAPS","Caps_Lock");
+      remontoireSymToKey.insert ("Enter","Return");
+      remontoireSymToKey.insert ("↑","Up");
+      remontoireSymToKey.insert ("↓","Down");
+      remontoireSymToKey.insert ("←","Left");
+      remontoireSymToKey.insert ("→","Right");
     }
 
     public bool match(Gdk.EventKey key, uint modifierMask, uint nonModifier, bool isOnNonModifierMap){
