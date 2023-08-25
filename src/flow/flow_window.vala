@@ -228,6 +228,8 @@ namespace regolith_onboarding {
             // to cancel the workflow in between
             cancel_button.clicked.connect(()=>{
               var window = (Gtk.Window) this.get_toplevel () ;
+              if(curr_x == 0 && curr_y == 0)
+                window.get_position(out curr_x, out curr_y);
               new HandleScreenMode(window,"WINDOW",curr_x,curr_y);
               mode = "WINDOW";
               workflowList();
