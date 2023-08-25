@@ -1,26 +1,29 @@
+/****************************************************************************************
+ * Copyright (c) 2023 Deepanshu Pratik <deepanshu.pratik@gmail.com>                     *
+ *                                                                                      *
+ * This program is free software; you can redistribute it and/or modify it under        *
+ * the terms of the Apache License as published by the Free Software                    *
+ * Foundation; either version 2 of the License, or (at your option) any later           *
+ * version.                                                                             *
+ *                                                                                      *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
+ * PARTICULAR PURPOSE. See the Apache License for more details.                         *
+ *                                                                                      *
+ * You should have received a copy of the Apache License along with this program.       *
+ *  If not, see <http://www.apache.org/licenses/>.                                      *
+ ****************************************************************************************/
 using Gtk;
 using Gee;
 
 namespace regolith_onboarding{
+
   public class configManager{
     
-    public Map<string, ArrayList<Keybinding> > kbmodel;
     public configManager(){
 
     }
     
-    public async void read_i3_config () {
-      try {
-          var i3_client = new I3Client ();
-          var config_file = i3_client.getConfig ().config;
-          var parser = new ConfigParser (config_file, "");
-
-          kbmodel = parser.parse ();
-      } catch (GLib.Error err) {
-          // TODO consistent error handling
-          stderr.printf ("Failed to read config from %s: %s\n", WM_NAME, err.message);
-      }
-    }
     public  string format_spec (string raw_keybinding) {
         // TODO: this won't work for keybindings with < > characters
         return raw_keybinding

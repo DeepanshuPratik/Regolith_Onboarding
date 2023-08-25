@@ -1,3 +1,18 @@
+/****************************************************************************************
+ * Copyright (c) 2023 Deepanshu Pratik <deepanshu.pratik@gmail.com>                     *
+ *                                                                                      *
+ * This program is free software; you can redistribute it and/or modify it under        *
+ * the terms of the Apache License as published by the Free Software                    *
+ * Foundation; either version 2 of the License, or (at your option) any later           *
+ * version.                                                                             *
+ *                                                                                      *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
+ * PARTICULAR PURPOSE. See the Apache License for more details.                         *
+ *                                                                                      *
+ * You should have received a copy of the Apache License along with this program.       *
+ *  If not, see <http://www.apache.org/licenses/>.                                      *
+ ****************************************************************************************/
 using Gtk;
 using Gee;
 
@@ -37,23 +52,6 @@ namespace regolith_onboarding {
             else if(workflowList.length <=4)
               column = 1;
             
-           // Fetching all the keybindings of the SYSTEM
-           
-           // var configManager = new configManager();
-           // configManager.read_i3_config.begin((obj,res) => {
-           //   read_i3_config.end(res);
-           // });
-           // kbmodel = configManager.kbmodel;
-           // // iterating over all key bindings 
-           // foreach (var entry in kbmodel.entries) {
-           //     var category = entry.key;
-           //     var bindings = entry.value;
-           //     foreach (var binding in bindings) {
-           //         var formatted_spec = format_spec (binding.spec);
-           //         var summary = category + " - " + binding.label;
-           //         stdout.printf("\n Raw spec: %s Formatted Spec: %s \n Summary: %s",binding.spec,formatted_spec,summary);
-           //     }
-           // }
 
             // Create and add workflows to the grid
             int i=0;

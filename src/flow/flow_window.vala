@@ -1,3 +1,18 @@
+/****************************************************************************************
+ * Copyright (c) 2023 Deepanshu Pratik <deepanshu.pratik@gmail.com>                     *
+ *                                                                                      *
+ * This program is free software; you can redistribute it and/or modify it under        *
+ * the terms of the Apache License as published by the Free Software                    *
+ * Foundation; either version 2 of the License, or (at your option) any later           *
+ * version.                                                                             *
+ *                                                                                      *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY      *
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A      *
+ * PARTICULAR PURPOSE. See the Apache License for more details.                         *
+ *                                                                                      *
+ * You should have received a copy of the Apache License along with this program.       *
+ *  If not, see <http://www.apache.org/licenses/>.                                      *
+ ****************************************************************************************/
 using Gtk;
 
 namespace regolith_onboarding {
@@ -11,6 +26,11 @@ namespace regolith_onboarding {
         private string description = " ";
         private string image = "";
         private string execCommand = "";
+
+        // window positions storing variables
+        private int curr_x = 0;
+        private int curr_y = 0;
+
         // Json iterator 
         private uint current_key_sequence = 0;
         // to update it for size of window
@@ -23,7 +43,7 @@ namespace regolith_onboarding {
         private Gtk.Button cancel_button;
         private Gtk.Box checkedCommand;
         private Gtk.Image checkTicked;
-
+        private string mode = "";
         
         // UI components
         private Gtk.Box midBox; 
@@ -104,6 +124,8 @@ namespace regolith_onboarding {
             key_press_event.connect ((key) => {
                 // stdout.printf ("\n KEY PRESSED:%u %c \n", key.keyval ,(char)key.keyval);
                 // if (!isPlayed) return false;
+                if(mode != "TILEUP")
+                  return false;
                 var formated_command = configmanager.format_spec(command);
                 string[] splitFormatedCommands = formated_command.split(" ");
                 uint COMMAND_MASK = 0;
@@ -126,16 +148,18 @@ namespace regolith_onboarding {
 
                   // Handelling the tick and moving forward to next key binding
                   regolith_onboarding.seat.ungrab(); 
+                  stdout.printf("\n **** reached before %s\n",execCommand);
                   Posix.system(execCommand);
                   
-                  // stdout.printf("\n **** reached before 2 sec\n");
+                  stdout.printf("\n **** reached after %s\n",execCommand);
                   handleTick();
                   Gdk.Window gdkwin = this.get_window ();
                   regolith_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
                   this.show_all();
                   GLib.Timeout.add_seconds(2,()=>{
                     var window = (Gtk.Window) this.get_toplevel () ;    
-                    new HandleScreenMode(window,"WINDOW");
+                    new HandleScreenMode(window,"WINDOW",curr_x,curr_y);
+                    mode = "WINDOW";
                     if(current_key_sequence >= key_binding_info.get_length ()){
                       workflowList();
                       this.destroy();
@@ -179,8 +203,10 @@ namespace regolith_onboarding {
             play_button.clicked.connect(()=>{
               if(!isPlayed){
                 var window = (Gtk.Window) this.get_toplevel () ;
-                new HandleScreenMode(window,"TILEUP");
-
+                if(curr_x == 0 && curr_y == 0)
+                  window.get_position(out curr_x, out curr_y);
+                new HandleScreenMode(window,"TILEUP",curr_x,curr_y);
+                mode = "TILEUP";
                 instructionAndPlayHolder.remove(descriptionLabel);
                 checkedCommand.add(checkTicked);
                 checkTicked.opacity = 0;
@@ -202,7 +228,8 @@ namespace regolith_onboarding {
             // to cancel the workflow in between
             cancel_button.clicked.connect(()=>{
               var window = (Gtk.Window) this.get_toplevel () ;
-              new HandleScreenMode(window,"WINDOW");
+              new HandleScreenMode(window,"WINDOW",curr_x,curr_y);
+              mode = "WINDOW";
               workflowList();
               this.destroy();
             });
@@ -266,7 +293,7 @@ namespace regolith_onboarding {
         }
         public void execCommandString(){
             var configmanager = new configManager ();
-            execCommand = "xdotool sleep 0.1 key --clearmodifiers ";
+            execCommand = "xdotool sleep 0.5 key --clearmodifiers ";
             string[] splitCommands = configmanager.format_spec(command).split(" "); 
             for(int i=0; i<splitCommands.length-1; i++){
               execCommand += keypressHandler.remontoireSymToKey[splitCommands[i]] + "+";
