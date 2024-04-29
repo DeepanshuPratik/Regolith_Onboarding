@@ -14,6 +14,7 @@
  *  If not, see <http://www.apache.org/licenses/>.                                      *
  ****************************************************************************************/
 using Gtk;
+using GtkLayerShell;
 
 namespace regolith_onboarding{
 
