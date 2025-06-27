@@ -1,4 +1,21 @@
 project('regolith_onboarding', 'vala', version: '1.12.1')
+
+# 2. Import Modules
+gnome = import('gnome')  
+
+project_sources = []
+subdir('src')
+subdir('src/components')
+subdir('src/flow')
+subdir('src/intro')
+subdir('src/parser')
+
+project_resources = gnome.compile_resources(
+  'project-resources',
+  'data/app.gresource.xml',
+  source_dir: 'data'
+)
+
 add_project_arguments(['--pkg', 'GtkLayerShell-0.1'], language: 'vala')
 add_project_arguments(['--pkg', 'posix'], language: 'vala')
 
@@ -23,7 +40,8 @@ regolith_onboarding_deps += dependency('json-glib-1.0')
 
 executable(
   'regolith_onboarding',
-  sources: ['src/main.vala', 'src/intro/introPage.vala','src/flow/flow_list.vala','src/flow/flow_window.vala','src/components/buttons.vala','src/onboardingWindow.vala','src/components/jsonDataHolder.vala','src/parser/jsonReader.vala','src/components/handleScreenMode.vala','src/components/trackKeypressBinding.vala','src/components/configManager.vala'],
+  project_sources, 
+  project_resources,
   dependencies: regolith_onboarding_deps,
   install: true
 )

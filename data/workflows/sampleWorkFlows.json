@@ -3,7 +3,7 @@
         {
             "workflow_name": "Launching Application",
             "workflow_description" : "It will teach how to launch different applications",
-            "image":"/Navigation.jpeg",
+            "image":"images/Navigation.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"<> Enter",
@@ -24,7 +24,7 @@
         {
             "workflow_name": "Navigation",
             "workflow_description" : "It will teach how all the possible ways you can navigate between workspaces in different ways",
-            "image":"/Navigation.jpeg",
+            "image":"images/Navigation.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"<> 2",
@@ -57,7 +57,7 @@
         {
             "workflow_name": "Session",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
-            "image":"/ilia.jpeg",
+            "image":"images/ilia.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
@@ -84,7 +84,7 @@
         {
             "workflow_name": "Session",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
-            "image":"/ilia.jpeg",
+            "image":"images/ilia.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
@@ -111,7 +111,7 @@
         {
             "workflow_name": "Session",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
-            "image":"/ilia.jpeg",
+            "image":"images/ilia.jpeg",
             "key_bindings_sequence": [
                 {
                     "key_id":"Session_25",
