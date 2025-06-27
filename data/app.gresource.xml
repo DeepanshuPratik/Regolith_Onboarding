@@ -1,16 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/com/github/DeepanshuPratik/Regolith_Onboarding">
-    <!-- CSS -->
-    <file>css/introPage.css</file>
+    <file>css/Regolith_Onboarding.css</file>
     <file>css/flow.css</file>
-
-    <!-- Images -->
+    <file>css/introPage.css</file>
+    <file>images/arrow-circle-right.png</file>
+    <file>images/checkedTask.gif</file>
+    <file>images/checktick.gif</file>
+    <file>images/floating.jpeg</file>
+    <file>images/ilia.jpeg</file>
+    <file>images/Navigation.jpeg</file>
+    <file>images/regolith light theme.jpeg</file>
+    <file>images/regolith-logo.avif</file>
     <file>images/regolith-onboarding_logo.png</file>
+    <file>images/resize.jpeg</file>
+    <file>images/sample1.jpeg</file>
+    <file>images/sample2.mp4</file>
+    <file>images/sample3.jpeg</file>
+    <file>images/sample4.jpeg</file>
     <file>images/terminalSplit.gif</file>
-    <!-- ...all other images... -->
-
-    <!-- JSON Workflows -->
+    <file>images/tick.gif</file>
+    <file>images/workspaces.jpeg</file>
     <file>workflows/sampleWorkFlows.json</file>
     <file>workflows/sampleWorkFlows2.json</file>
   </gresource>

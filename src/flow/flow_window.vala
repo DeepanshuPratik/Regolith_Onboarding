@@ -53,27 +53,19 @@ namespace regolith_onboarding {
         private Label descriptionLabel;
 
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
-          
-          this.set_orientation(Gtk.Orientation.VERTICAL);
-          this.set_spacing(10);
+          Object(orientation: Gtk.Orientation.VERTICAL, spacing: 10);
           this.margin = 20;
           this.set_valign(Gtk.Align.CENTER);
           this.set_halign(Gtk.Align.CENTER);
           
           // Adding CSS File
-          var screen = this.get_screen ();
           var css_provider = new Gtk.CssProvider();
-          string css_path = File.new_for_path("../src/flow/flow.css").get_path();
-          if (FileUtils.test (css_path, FileTest.EXISTS)) {
             try {
-              css_provider.load_from_path(css_path);
-              Gtk.StyleContext.add_provider_for_screen(screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+              css_provider.load_from_resource(APP_PATH + "/css/flow.css");
+              Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
             } catch (Error e) {
               error ("Cannot load CSS stylesheet: %s", e.message);
             }
-          }else {
-            stderr.printf ("file not found for css : flow_window.vala");
-          }
          
           // @widget buttonHolder will have the buttons: @widget play_button and @widget cancel_button
           var buttonHolder = new Box(Gtk.Orientation.HORIZONTAL,2);
@@ -102,7 +94,8 @@ namespace regolith_onboarding {
             // stdout.printf (heading+"\n");
              
             // stdout.printf ("\n demo path: %s\n", resource_path+image);
-            demo = new Gtk.Image.from_file (resource_path+image);
+            string image_path_from_json = image; // 'image' is populated by process_workflow_sequence
+            demo = new Gtk.Image.from_resource(APP_PATH + "/" + image_path_from_json);
             demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL,5);
             demo_box.add(demo);
             midBox.add(instructionAndPlayHolder);
@@ -180,7 +173,8 @@ namespace regolith_onboarding {
                       commandLabel = new Label("PRESS: "+configmanager.format_spec_display (command));
                       descriptionLabel = new Label(description);
                       createInstructionBox();
-                      demo = new Gtk.Image.from_file (resource_path+image);
+                      image_path_from_json = image; 
+                      demo = new Gtk.Image.from_resource(APP_PATH + "/" + image_path_from_json);
                       demo_box.add (demo);
                       play_button.get_style_context ().add_class ("playButton");
                       play_button.set_label("PLAY");
@@ -285,7 +279,7 @@ namespace regolith_onboarding {
           instructionAndPlayHolder.add(headingLabel);
           instructionAndPlayHolder.add(descriptionLabel);
           checkedCommand = new Box(Gtk.Orientation.HORIZONTAL, 20);
-          checkTicked = new Gtk.Image.from_file (resource_path+"/checktick.gif");
+          checkTicked = new Gtk.Image.from_resource(APP_PATH + "/images/checktick.gif");
           checkedCommand.add(commandLabel);
           instructionAndPlayHolder.add(checkedCommand);
           checkedCommand.set_halign(Gtk.Align.CENTER);
