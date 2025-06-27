@@ -1,3 +1,32 @@
-.DialogWindow{
-    font-size: large;
+.main-container {
+    /* Create the rounded corners. 16px is a nice modern radius. */
+    border-radius: 16px;
+
+    /* Add padding around all the content inside the window. */
+    padding: 24px;
+
+    /*
+     * This is crucial for theme compatibility.
+     * It uses the standard named color for a window's background
+     * from the user's current GTK theme. This ensures your app
+     * will look native in both light and dark themes.
+     */
+    background-color: @window_bg_color;
+}
+
+.workflow-button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 10px;
+}
+
+.workflow-button:hover {
+    background-color: alpha(currentColor, 0.08); /* A subtle hover effect */
+    border-radius: 12px;
+}
+
+.workflow-button .heading {
+    font-weight: bold;
+    font-size: 1.1em;
 }
