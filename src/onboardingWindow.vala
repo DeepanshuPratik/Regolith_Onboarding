@@ -87,6 +87,7 @@
  
              // Main container setup
              container = new Box(Gtk.Orientation.VERTICAL, 30);
+             container.get_style_context().add_class("main-container");
              this.add(container);
  
              carousel = new Hdy.Carousel();

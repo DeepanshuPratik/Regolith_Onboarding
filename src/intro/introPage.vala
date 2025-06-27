@@ -22,32 +22,48 @@ namespace regolith_onboarding {
         public delegate void NextPage();
          
         public IntroPage (owned NextPage nextPage) {
-            Object(orientation: Gtk.Orientation.VERTICAL, spacing: 30);
+            Object(orientation: Gtk.Orientation.VERTICAL, spacing: 20);
+            this.set_halign(Gtk.Align.CENTER);
+            this.set_valign(Gtk.Align.CENTER);
+            
             var css_provider = new Gtk.CssProvider();
             css_provider.load_from_resource(APP_PATH + "/css/introPage.css");
             Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-            this.get_style_context().add_class("intro_page");
-            this.set_halign(Gtk.Align.CENTER);
-            this.set_margin_top (40);
 
-            var img = new Gtk.Image.from_resource(APP_PATH + "/images/regolith-onboarding_logo.png");
-            this.add(img);
+            var original_pixbuf = new Gdk.Pixbuf.from_resource(APP_PATH + "/images/regolith-onboarding_logo.png");
 
-            var introText = new Label("Getting started with regolith"); 
-            introText.get_style_context().add_class("introText");
-            this.add(introText);
+            // 2. Create a NEW, scaled-down Pixbuf from the original data.
+            //    This is the most reliable way to force a size in GTK3.
+            var scaled_pixbuf = original_pixbuf.scale_simple(128, 128, Gdk.InterpType.BILINEAR);
+            
+            // 3. Create the Gtk.Image widget FROM the new, correctly-sized Pixbuf.
+            var logo = new Gtk.Image.from_pixbuf(scaled_pixbuf);
+            logo.margin_bottom = 24; // Add space below the logo
 
-            var next_button = new Button();
-            next_button.get_style_context().add_class("nextButton");
-            next_button.expand = false;
-            next_button.clicked.connect(() => {
-              nextPage();
+            this.add(logo);
+            
+            // --- Rest of the layout ---
+            
+            var title = new Label("Welcome to Regolith");
+            title.get_style_context().add_class("title-main");
+            title.wrap = true;
+            title.justify = Gtk.Justification.CENTER;
+            this.add(title);
+            
+            var subtitle = new Label("Your journey into tiling window management starts here. This guide will help you master the essentials.");
+            subtitle.get_style_context().add_class("text-secondary");
+            subtitle.wrap = true;
+            subtitle.justify = Gtk.Justification.CENTER;
+            this.add(subtitle);
+            
+            var start_button = new Button.with_label("Get Started");
+            start_button.set_halign(Gtk.Align.CENTER);
+            start_button.get_style_context().add_class("pill-button");
+            start_button.get_style_context().add_class("suggested-action");
+            start_button.clicked.connect(() => {
+                nextPage();
             });
-
-            var button_icon = new Gtk.Image.from_resource(APP_PATH + "/images/arrow-circle-right.png");
-            next_button.set_image(button_icon);
-            next_button.set_always_show_image(true);
-            this.add(next_button);
+            this.add(start_button);
         }
     }
 }

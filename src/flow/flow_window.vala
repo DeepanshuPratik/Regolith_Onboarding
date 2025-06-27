@@ -51,22 +51,18 @@ namespace regolith_onboarding {
         private Label headingLabel;
         private Label commandLabel;
         private Label descriptionLabel;
-
+        
         public WorkFlowPage(Json.Array? key_binding_info,owned workflowList workflowList){
           Object(orientation: Gtk.Orientation.VERTICAL, spacing: 10);
           this.margin = 20;
           this.set_valign(Gtk.Align.CENTER);
           this.set_halign(Gtk.Align.CENTER);
-          
-          // Adding CSS File
+          this.get_style_context().add_class("practice-page");
+
           var css_provider = new Gtk.CssProvider();
-            try {
-              css_provider.load_from_resource(APP_PATH + "/css/flow.css");
-              Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-            } catch (Error e) {
-              error ("Cannot load CSS stylesheet: %s", e.message);
-            }
-         
+          css_provider.load_from_resource(APP_PATH + "/css/flow.css");
+          Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+
           // @widget buttonHolder will have the buttons: @widget play_button and @widget cancel_button
           var buttonHolder = new Box(Gtk.Orientation.HORIZONTAL,2);
           keypressHandler = new KeybindingsHandler();

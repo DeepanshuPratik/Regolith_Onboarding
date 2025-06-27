@@ -16,5 +16,50 @@
 .heading{
   font-size: 20px;
 }
-.contentHolder{
+/* Main container for the practice page content.
+   Gives it a max-width for readability on large screens. */
+   .practice-page {
+    max-width: 900px;
+}
+
+/* Big, prominent heading for the current step */
+.practice-heading {
+    font-size: 2.2em;
+    font-weight: 300;
+}
+
+/* Sub-text for the command to be pressed */
+.practice-command {
+    font-size: 1.1em;
+    font-family: monospace;
+    font-weight: bold;
+    margin-top: 4px;
+    margin-bottom: 12px;
+    color: @theme_selected_bg_color; /* Use the theme's accent color */
+}
+
+/* Descriptive text for the action */
+.practice-description {
+    font-size: 1.1em;
+    opacity: 0.8;
+}
+
+/* Container for the media (the GIF) */
+.media-container {
+    border-radius: 12px;
+    background-color: alpha(currentColor, 0.05); /* Subtle background */
+    padding: 12px;
+}
+
+/* Ensure the GIF itself also has rounded corners */
+.media-container image {
+    border-radius: 8px;
+}
+
+/* General button styling for this page */
+.practice-button {
+    font-size: 1em;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 8px;
 }

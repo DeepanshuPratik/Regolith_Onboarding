@@ -22,26 +22,27 @@ namespace regolith_onboarding {
       public delegate void workflowElement(Json.Array workflow_sequence);
 
       public WorkFlows(Array<WorkspaceDataHolder> workflowList, owned workflowElement workflow_element){
-        Object(orientation: Gtk.Orientation.VERTICAL, spacing: 40);
+        Object(orientation: Gtk.Orientation.VERTICAL, spacing: 20);
         this.set_margin_start(20);
         this.set_margin_bottom(20);
         this.set_margin_top(20);
         this.set_margin_end(20);
         
-        var headerText = new Label("Regolith Onboarding"); 
+        var headerText = new Label("Select a Workflow to Practice"); 
+        headerText.get_style_context().add_class("title-1"); // Use a standard title style
         this.add(headerText);
         
         var grid = new Gtk.Grid();
-        grid.set_row_homogeneous(true);
-        grid.set_column_homogeneous(true);
-        grid.set_column_spacing(30);
+        grid.set_column_spacing(20);
         grid.set_row_spacing(20);
 
         var scrolledWindow = new Gtk.ScrolledWindow(null, null);
         scrolledWindow.add(grid);
-        scrolledWindow.set_min_content_height(350);
-        scrolledWindow.set_min_content_width(800);
+        scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC); // Hide horizontal scrollbar
+        scrolledWindow.set_vexpand(true);
+
         this.add(scrolledWindow);
+
         
         int column = (workflowList.length > 4) ? 2 : 1;
         
@@ -55,11 +56,12 @@ namespace regolith_onboarding {
            var scaled_img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple(300, 150, Gdk.InterpType.BILINEAR));
            
            var button = new Button();
+           button.get_style_context().add_class("workflow-button"); // Use CSS for styling
+
            var gridButton = new Grid();
-           button.always_show_image = true;
-           button.relief = Gtk.ReliefStyle.NONE;
-           gridButton.attach(scaled_img, 0, 0, 2, 1);
-           gridButton.attach(label, 0, 1, 2, 1);
+           gridButton.set_row_spacing(10);
+           gridButton.attach(scaled_img, 0, 0, 1, 1);
+           gridButton.attach(label, 0, 1, 1, 1);
            button.add(gridButton);
            
            button.clicked.connect((btn) => {
