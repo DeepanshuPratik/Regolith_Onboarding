@@ -1,5 +1,6 @@
 # filename: src/meson.build
 project_sources += files(
   'main.vala',
-  'onboardingWindow.vala'
+  'onboardingWindow.vala',
+  'Constants.vala'
 )
