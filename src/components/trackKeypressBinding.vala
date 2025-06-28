@@ -53,7 +53,7 @@ namespace regolith_onboarding{
     }
 
     public bool match(Gdk.EventKey key, uint modifierMask, uint nonModifier, bool isOnNonModifierMap){
-     // stdout.printf("\n keyState: %u keyState&modifierMask : %u keyval : %u nonmodifier :  %u \n",key.state, key.state & modifierMask, key.keyval,nonModifier); 
+     stdout.printf("\n keyState: %u keyState&modifierMask : %u keyval : %u nonmodifier :  %u \n",key.state, key.state & modifierMask, key.keyval,nonModifier); 
 
      if ((modifierMask & modifierMasks["Shift"]) == modifierMasks["Shift"] && !isOnNonModifierMap) {
        var upped = nonModifier.to_string("%c").up();

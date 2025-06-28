@@ -1,25 +1,17 @@
 .cancelButton {
   border-color: snow;
-  background-color: snow;
   border-radius: 10%;
 }
 
 .playButton{
   border-color: snow;
-  background-color: snow;
   border-radius: 10%;
 }
 .playButton:focus{
   border-color: snow;
-  background-color: snow;
 }
 .heading{
   font-size: 20px;
-}
-/* Main container for the practice page content.
-   Gives it a max-width for readability on large screens. */
-   .practice-page {
-    max-width: 900px;
 }
 
 /* Big, prominent heading for the current step */
@@ -34,8 +26,7 @@
     font-family: monospace;
     font-weight: bold;
     margin-top: 4px;
-    margin-bottom: 12px;
-    color: @theme_selected_bg_color; /* Use the theme's accent color */
+    margin-bottom: 12px; 
 }
 
 /* Descriptive text for the action */
@@ -62,4 +53,10 @@
     font-weight: bold;
     padding: 10px 20px;
     border-radius: 8px;
+}
+
+.title1 {
+    font-size: 2.2em;
+    font-weight: 300;
+    margin-bottom: 20px;
 }

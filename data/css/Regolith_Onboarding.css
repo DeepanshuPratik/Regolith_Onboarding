@@ -5,13 +5,6 @@
     /* Add padding around all the content inside the window. */
     padding: 24px;
 
-    /*
-     * This is crucial for theme compatibility.
-     * It uses the standard named color for a window's background
-     * from the user's current GTK theme. This ensures your app
-     * will look native in both light and dark themes.
-     */
-    background-color: @window_bg_color;
 }
 
 .workflow-button {

@@ -130,12 +130,14 @@
                  }
                  return false;
              });
- 
+
+             this.realize.connect(() => {
              // Handle platform-specific input grabbing
              if (IS_SESSION_WAYLAND) {
-                 GtkLayerShell.init_for_window (this);
-                 GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
-                 GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
+                GtkLayerShell.init_for_window (this);
+                GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
+                GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
+
              } else {
                  // This call can be slow, so do it after the window is conceptually ready
                  var gdkwin = this.get_window ();
@@ -149,12 +151,13 @@
                      }
                  }
              }
+            });
          }
+         
          
          private void load_all_workflows() {
             workspacesInfoHolder = new Array<WorkspaceDataHolder>();
             
-            // --- PART 1: Load default workflows from GResource ---
             // These are now resource PATHS, not URIs.
             string[] default_workflow_paths = {
                 APP_PATH + "/workflows/sampleWorkFlows.json",

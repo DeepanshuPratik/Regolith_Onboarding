@@ -8,15 +8,15 @@
                 {
                     "key_id":"<> Enter",
                     "heading":"Launch Terminal",
-                    "function":"It will launch Terminal",
-                    "image":"/terminalSplit.gif"
+                    "description":"It will launch Terminal",
+                    "animation":"/terminalSplit.gif"
                     
                 },
                 {
                     "key_id":"<><Shift> Enter",
                     "heading":"Launch Browser",
-                    "function":"It will launch browser and will align it to the right of terminal",
-                    "image":"/terminalSplit.gif"
+                    "description":"It will launch browser and will align it to the right of terminal",
+                    "animation":"/terminalSplit.gif"
                     
                 }
             ]
@@ -29,55 +29,82 @@
                 {
                     "key_id":"<> 2",
                     "heading":"Navigate Workspace",
-                    "function":"Navigate to Workspace 2",
-                    "image":"/terminalSplit.gif"
+                    "description":"Navigate to Workspace 2",
+                    "animation":"/terminalSplit.gif"
                     
                 },
                 {
                     "key_id":"<> 1",
                     "heading":"Traverse Back",
-                    "function":"Traversing back to previous Workspace",
-                    "image":"/terminalSplit.gif"
+                    "description":"Traversing back to previous Workspace",
+                    "animation":"/terminalSplit.gif"
                     
                 },
                 {
                     "key_id":"<><Shift> Enter",
                     "heading":"Open Browser",
-                    "function":"Moving Application to Workspace"
+                    "description":"Moving Application to Workspace"
                     
                 },
                 {
                     "key_id":"<><Shift> 2",
                     "heading":"Shift Application's Workspace",
-                    "function":"Move Application to Workspace"
+                    "description":"Move Application to Workspace"
                     
                 }
             ]
         },
         {
-            "workflow_name": "Session",
+            "workflow_name": "Session1",
             "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
             "image":"images/ilia.jpeg",
             "key_bindings_sequence": [
                 {
-                    "key_id":"Session_25",
+                    "key_id":"<Ctrl><Shift> 2",
                     "heading":"Exit Application",
-                    "function":"Can exit application"  
+                    "description":"Can exit application"  
                 },
                 {
                     "key_id":"Session_26",
                     "heading":"Terminate Application",
-                    "function":"Terminate application"
+                    "description":"Terminate application"
                 },
                 {
                     "key_id":"Session_27",
                     "heading":"Reload all config",
-                    "function":"Reload the config"
+                    "description":"Reload the config"
                 },
                 {
                     "key_id":"Session_29",
                     "heading":"Restart Session",
-                    "function":"Restart the sessions"
+                    "description":"Restart the sessions"
+                }
+            ]
+        },
+        {
+            "workflow_name": "Session2",
+            "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
+            "image":"images/ilia.jpeg",
+            "key_bindings_sequence": [
+                {
+                    "key_id":"<Control><Shift> 2",
+                    "heading":"Exit Application",
+                    "description":"Can exit application"  
+                },
+                {
+                    "key_id":"Session_26",
+                    "heading":"Terminate Application",
+                    "description":"Terminate application"
+                },
+                {
+                    "key_id":"Session_27",
+                    "heading":"Reload all config",
+                    "description":"Reload the config"
+                },
+                {
+                    "key_id":"Session_29",
+                    "heading":"Restart Session",
+                    "description":"Restart the sessions"
                 }
             ]
         },
@@ -89,53 +116,24 @@
                 {
                     "key_id":"Session_25",
                     "heading":"Exit Application",
-                    "function":"Can exit application"  
+                    "description":"Can exit application"  
                 },
                 {
                     "key_id":"Session_26",
                     "heading":"Terminate Application",
-                    "function":"Terminate application"
+                    "description":"Terminate application"
                 },
                 {
                     "key_id":"Session_27",
                     "heading":"Reload all config",
-                    "function":"Reload the config"
+                    "description":"Reload the config"
                 },
                 {
                     "key_id":"Session_29",
                     "heading":"Restart Session",
-                    "function":"Restart the sessions"
-                }
-            ]
-        },
-        {
-            "workflow_name": "Session",
-            "workflow_description" : "It will teach how all the possible ways you can control existing sessions",
-            "image":"images/ilia.jpeg",
-            "key_bindings_sequence": [
-                {
-                    "key_id":"Session_25",
-                    "heading":"Exit Application",
-                    "function":"Can exit application"  
-                },
-                {
-                    "key_id":"Session_26",
-                    "heading":"Terminate Application",
-                    "function":"Terminate application"
-                },
-                {
-                    "key_id":"Session_27",
-                    "heading":"Reload all config",
-                    "function":"Reload the config"
-                },
-                {
-                    "key_id":"Session_29",
-                    "heading":"Restart Session",
-                    "function":"Restart the sessions"
+                    "description":"Restart the sessions"
                 }
             ]
         }
-
-
     ]
 }

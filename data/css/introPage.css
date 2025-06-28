@@ -3,7 +3,7 @@
 /* The main content column. */
 .intro-page {
   margin: 60px;
-  max-width: 550px;
+  border-radius: 16px;
 }
 
 /* Main title styling */
@@ -17,7 +17,6 @@
 .text-secondary {
   font-size: 1.1em;
   opacity: 0.7;
-  line-height: 1.5;
   margin-bottom: 28px;
 }
 

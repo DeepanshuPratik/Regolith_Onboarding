@@ -28,8 +28,12 @@ namespace regolith_onboarding {
         this.set_margin_top(20);
         this.set_margin_end(20);
         
+        var css_provider = new Gtk.CssProvider();
+        css_provider.load_from_resource(APP_PATH + "/css/flow.css");
+        Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+
         var headerText = new Label("Select a Workflow to Practice"); 
-        headerText.get_style_context().add_class("title-1"); // Use a standard title style
+        headerText.get_style_context().add_class("title1"); 
         this.add(headerText);
         
         var grid = new Gtk.Grid();
@@ -49,14 +53,14 @@ namespace regolith_onboarding {
         int i = 0;
         foreach(unowned WorkspaceDataHolder item in workflowList){
            var label = new Label(item.get_workflow_name()); 
-           string image_path = item.get_workflow_image(); // returns "images/Navigation.jpeg" etc.
+           string image_path = item.get_workflow_image(); 
            
            var image = new Gtk.Image.from_resource(APP_PATH + "/" + image_path);
            Gdk.Pixbuf pixbuf = image.get_pixbuf();
            var scaled_img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple(300, 150, Gdk.InterpType.BILINEAR));
            
            var button = new Button();
-           button.get_style_context().add_class("workflow-button"); // Use CSS for styling
+           button.get_style_context().add_class("workflow-button"); 
 
            var gridButton = new Grid();
            gridButton.set_row_spacing(10);
