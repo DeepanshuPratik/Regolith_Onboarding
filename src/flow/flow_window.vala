@@ -150,6 +150,9 @@ namespace regolith_onboarding {
                     new HandleScreenMode(window,"WINDOW",curr_x,curr_y);
                     mode = "WINDOW";
                     if(current_key_sequence >= key_binding_info.get_length ()){
+                      if (IS_SESSION_WAYLAND) {
+                          regolith_onboarding.seat.ungrab();
+                      }
                       workflowList();
                       this.destroy();
                     }
@@ -212,11 +215,26 @@ namespace regolith_onboarding {
                 isPlayed = true;
                 execCommandString();
                 play_button.set_label("CAPTURING");
+                if (IS_SESSION_WAYLAND) {
+                    var gdkwin = this.get_window ();
+                    if (gdkwin != null) {
+                        var grabbed_seat = grab_inputs(gdkwin);
+                        if (grabbed_seat != null) {
+                            regolith_onboarding.seat = grabbed_seat;
+                        } else {
+                            stderr.printf ("Failed to acquire access to input devices for practice, aborting.");
+                            // perhaps quit or something
+                        }
+                    }
+                }
                 this.show_all();
               }
             });
             // to cancel the workflow in between
             cancel_button.clicked.connect(()=>{
+              if (IS_SESSION_WAYLAND) {
+                  regolith_onboarding.seat.ungrab();
+              }
               var window = (Gtk.Window) this.get_toplevel () ;
               if(curr_x == 0 && curr_y == 0)
                 window.get_position(out curr_x, out curr_y);
@@ -297,6 +315,41 @@ namespace regolith_onboarding {
               execCommand += splitCommands[splitCommands.length-1];
             }
             // stdout.printf("execute command : %s \n", execCommand);
+        }
+
+        // Grabs the input devices for a given window
+        private Gdk.Seat ? grab_inputs (Gdk.Window gdkwin) {
+            var display = gdkwin.get_display ();
+            if (display == null) {
+                stderr.printf ("Failed to get Display\n");
+                return null;
+            }
+
+            var seat = display.get_default_seat ();
+            if (seat == null) {
+                stdout.printf ("Failed to get Seat from Display\n");
+                return null;
+            }
+
+            int attempt = 0;
+            Gdk.GrabStatus ? grabStatus = null;
+            int wait_time = 1000;
+
+            do {
+                grabStatus = seat.grab (gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
+                if (grabStatus != Gdk.GrabStatus.SUCCESS) {
+                    attempt++;
+                    wait_time = wait_time * 2;
+                    GLib.Thread.usleep (wait_time);
+                }
+            } while (grabStatus != Gdk.GrabStatus.SUCCESS && attempt < 8);
+
+            if (grabStatus != Gdk.GrabStatus.SUCCESS) {
+                stderr.printf ("Aborting, failed to grab input: %d\n", grabStatus);
+                return null;
+            } else {
+                return seat;
+            }
         }
     }
 }
