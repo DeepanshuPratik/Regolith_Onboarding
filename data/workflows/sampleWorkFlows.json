@@ -9,14 +9,14 @@
                     "key_id":"<> Enter",
                     "heading":"Launch Terminal",
                     "function":"It will launch Terminal",
-                    "image":"/terminalSplit.gif"
+                    "image":"images/terminalSplit.gif"
                     
                 },
                 {
                     "key_id":"<><Shift> Enter",
                     "heading":"Launch Browser",
                     "function":"It will launch browser and will align it to the right of terminal",
-                    "image":"/terminalSplit.gif"
+                    "image":"images/terminalSplit.gif"
                     
                 }
             ]
@@ -30,14 +30,14 @@
                     "key_id":"<> 2",
                     "heading":"Navigate Workspace",
                     "function":"Navigate to Workspace 2",
-                    "image":"/terminalSplit.gif"
+                    "image":"images/terminalSplit.gif"
                     
                 },
                 {
                     "key_id":"<> 1",
                     "heading":"Traverse Back",
                     "function":"Traversing back to previous Workspace",
-                    "image":"/terminalSplit.gif"
+                    "image":"images/terminalSplit.gif"
                     
                 },
                 {
