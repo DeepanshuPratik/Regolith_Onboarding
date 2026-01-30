@@ -20,6 +20,11 @@
    Gives it a max-width for readability on large screens. */
    .practice-page {
     max-width: 900px;
+    border-radius: 16px;
+    border: 1px solid alpha(currentColor, 0.2);
+    box-shadow: 0 4px 16px alpha(currentColor, 0.1);
+    padding: 20px;
+    background-color: @window_bg_color;
 }
 
 /* Big, prominent heading for the current step */
