@@ -12,6 +12,12 @@
      * will look native in both light and dark themes.
      */
     background-color: @window_bg_color;
+
+    /* Add a subtle border for better definition */
+    border: 1px solid alpha(currentColor, 0.2);
+
+    /* Add a subtle shadow for a modern look */
+    box-shadow: 0 4px 16px alpha(currentColor, 0.1);
 }
 
 .workflow-button {
