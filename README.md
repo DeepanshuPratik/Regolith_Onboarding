@@ -32,14 +32,13 @@ To install and run this project, follow these steps:
 
 ## Screenshots (Adaptive to themes)
 <img alt="Sample1"
-        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/resources/sample1.jpeg />
+        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/data/images/sample1.jpeg />
 <img alt="Sample2"
-        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/resources/sample3.jpeg />
+        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/data/images/sample3.jpeg />
 <img alt="Sample2"
-        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/resources/sample4.jpeg />
+        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/data/images/sample4.jpeg />
 <img alt="Sample2"
-        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/resources/regolith%20light%20theme.jpeg />
-
+        height="200" src=https://github.com/DeepanshuPratik/Regolith_Onboarding/blob/main/data/images/regolith%20light%20theme.jpeg />
 
 https://github.com/DeepanshuPratik/Regolith_Onboarding/assets/65304599/008f26af-aaad-40a2-bf5b-1510d4468325
 
