@@ -216,57 +216,6 @@ using Gee;
             stdout.printf("============================================\n");
             stdout.flush();
 
-            // collect all key bindings
-            var key_set = new Gee.HashSet<string>();
-            foreach (var workspace in workspacesInfoHolder) {
-                var seq = workspace.get_workflow_sequence();
-                for(int j=0; j<seq.get_length(); j++){
-                    Json.Object? seq_obj = seq.get_element(j).get_object();
-                    var key_id = seq_obj.get_string_member("key_id");
-                    var formatted = new configManager().format_spec(key_id);
-                    key_set.add(formatted);
-                }
-            }
-
-            if (IS_SESSION_WAYLAND) {
-                // create mode file
-                var mode_file_path = "/tmp/regolith_onboarding_mode";
-                try {
-                    var mode_file = File.new_for_path(mode_file_path);
-                    var stream = mode_file.replace(null, false, FileCreateFlags.NONE);
-                    var writer = new DataOutputStream(stream);
-                    writer.put_string("mode \"regolith_onboarding\" {\n");
-                    foreach (var key in key_set) {
-                        writer.put_string("    bindsym " + key + " nop\n");
-                    }
-                    writer.put_string("}\n");
-                    writer.close();
-
-                    // modify config
-                    var config_dir = WM_NAME == "sway" ? "sway" : "i3";
-                    var config_path = Path.build_filename(Environment.get_home_dir(), ".config", config_dir, "config");
-                    var config_file = File.new_for_path(config_path);
-                    uint8[] contents_bytes;
-                    string etag;
-                    config_file.load_contents(null, out contents_bytes, out etag);
-                    string contents = (string) contents_bytes;
-                    var include_line = "include " + mode_file_path;
-                    if (!contents.contains(include_line)) {
-                        contents += "\n" + include_line + "\n";
-                        string etag_out;
-                        config_file.replace_contents(contents.data, null, false, FileCreateFlags.NONE, out etag_out);
-                    }
-
-                    // reload
-                    var cmd = WM_NAME == "sway" ? "swaymsg" : "i3-msg";
-                    Process.spawn_command_line_sync(cmd + " reload");
-
-                    // enter mode
-                    Process.spawn_command_line_sync(cmd + " mode regolith_onboarding");
-                } catch (Error e) {
-                    stderr.printf("Failed to setup mode: %s\n", e.message);
-                }
-            }
         }
 
          public void create_practice_page(Json.Array keyBindings){
@@ -386,36 +335,35 @@ using Gee;
          }
 
          private void clean_config() {
-             if (IS_SESSION_WAYLAND) {
-                 var cmd = WM_NAME == "sway" ? "swaymsg" : "i3-msg";
-                 try {
-                     Process.spawn_command_line_sync(cmd + " mode default");
-                 } catch (Error e) {
-                     // ignore
+             if (WM_NAME != "sway" && WM_NAME != "i3") return;
+
+             var cmd = WM_NAME == "sway" ? "swaymsg" : "i3-msg";
+             try { Process.spawn_command_line_sync(cmd + " mode default"); } catch (Error e) {}
+
+             // Delete the mode block file from config.d if it was left behind,
+             // then reload so the mode is fully removed.
+             string[] candidates;
+             if (WM_NAME == "sway") {
+                 candidates = {
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d", "regolith_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d", "regolith_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d", "regolith_onboarding_mode"),
+                 };
+             } else {
+                 candidates = {
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "i3", "config.d", "regolith_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "i3", "config.d", "regolith_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d", "regolith_onboarding_mode"),
+                 };
+             }
+             bool deleted = false;
+             foreach (var path in candidates) {
+                 if (FileUtils.test(path, FileTest.EXISTS)) {
+                     try { File.new_for_path(path).delete(); deleted = true; } catch (Error e) {}
                  }
-                 var config_dir = WM_NAME == "sway" ? "sway" : "i3";
-                 var config_path = Path.build_filename(Environment.get_home_dir(), ".config", config_dir, "config");
-                 var mode_file_path = "/tmp/regolith_onboarding_mode";
-                 try {
-                     var config_file = File.new_for_path(config_path);
-                     uint8[] contents_bytes;
-                     string etag;
-                     config_file.load_contents(null, out contents_bytes, out etag);
-                     string contents = (string) contents_bytes;
-                     var lines = contents.split("\n");
-                     var new_lines = new Gee.ArrayList<string>();
-                     foreach (var line in lines) {
-                         if (!line.strip().has_prefix("include " + mode_file_path)) {
-                             new_lines.add(line);
-                         }
-                     }
-                     var new_content = string.joinv("\n", new_lines.to_array());
-                     string etag_out;
-                     config_file.replace_contents(new_content.data, null, false, FileCreateFlags.NONE, out etag_out);
-                     File.new_for_path(mode_file_path).delete();
-                 } catch (Error e) {
-                     // ignore
-                 }
+             }
+             if (deleted) {
+                 try { Process.spawn_command_line_sync(cmd + " reload"); } catch (Error e) {}
              }
          }
      }
