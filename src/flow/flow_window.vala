@@ -21,18 +21,15 @@ namespace regolith_onboarding {
 
         public delegate void workflowList();
 
-        // variables for holding json data to be displayed
         private string heading = "";
         private string command = " ";
         private string description = " ";
         private string image = "";
         private string execCommand = "";
 
-        // window positions
         private int curr_x = 0;
         private int curr_y = 0;
 
-        // Json iterator
         private uint current_key_sequence = 0;
         private bool isPlayed = false;
         private Gtk.Button play_button;
@@ -44,20 +41,15 @@ namespace regolith_onboarding {
         private Gtk.Image checkTicked;
         private string mode = "";
 
-        // WM mode fields.
-        // The mode block (like "Resize Mode") is written into the active sway config
-        // via the user's config.d directory, which is included by:
-        //   include $HOME/.config/regolith3/sway/config.d/*
-        // Keypresses are detected via sway IPC binding-event subscription (no FIFO).
+        // Sway/i3 mode block written to config.d for keybinding interception.
+        // Keypresses are detected via IPC binding-event subscription (no seat grab needed).
         private const string WM_MODE_NAME = "Onboarding";
         private bool   use_wm_mode  = false;
-        private string mode_file_path = "";   // path of the config.d file we created
-        // swaymsg -t subscribe -m process
+        private string mode_file_path = "";
         private Pid            ipc_pid      = 0;
         private GLib.IOChannel ipc_channel  = null;
         private uint           ipc_watch_id = 0;
 
-        // UI components
         private Gtk.Box midBox;
         private Gtk.Box instructionAndPlayHolder;
         private Label headingLabel;
@@ -97,8 +89,7 @@ namespace regolith_onboarding {
                 midBox = new Box(Gtk.Orientation.HORIZONTAL, 20);
                 midBox.get_style_context().add_class("contentHolder");
 
-                string image_path_from_json = image;
-                demo = new Gtk.Image.from_resource(APP_PATH + "/" + image_path_from_json);
+                demo = new Gtk.Image.from_resource(APP_PATH + "/" + image);
                 demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
                 demo_box.add(demo);
                 midBox.add(instructionAndPlayHolder);
@@ -117,8 +108,7 @@ namespace regolith_onboarding {
                 buttonHolder.set_halign(Gtk.Align.CENTER);
                 instructionAndPlayHolder.add(buttonHolder);
 
-                // ── Fallback: GTK key-press handler used when WM-mode setup fails ──
-                // Guarded by !use_wm_mode so it is inactive when the IPC path is live.
+                // Fallback GTK key handler — only active when WM mode setup fails (X11/unknown WM).
                 key_press_event.connect((key) => {
                     if (use_wm_mode) return false;
                     if (mode != "TILEUP") return false;
@@ -150,42 +140,20 @@ namespace regolith_onboarding {
                                 if (IS_SESSION_WAYLAND) regolith_onboarding.seat.ungrab();
                                 workflowList();
                                 this.destroy();
+                                return false;
                             }
                             obj = key_binding_info.get_element(current_key_sequence).get_object();
                             try {
-                                process_workflow_sequence(obj);
-                                this.margin = 20;
-                                play_button.margin_end = 5;
-                                cancel_button.margin = 0;
-                                midBox.set_spacing(20);
-                                midBox.margin = 3;
-                                instructionAndPlayHolder.remove(headingLabel);
-                                instructionAndPlayHolder.remove(commandLabel);
-                                instructionAndPlayHolder.remove(checkedCommand);
-                                headingLabel = new Label(heading);
-                                headingLabel.get_style_context().add_class("heading");
-                                commandLabel = new Label("PRESS: " + configmanager.format_spec_display(command));
-                                descriptionLabel = new Label(description);
-                                createInstructionBox();
-                                image_path_from_json = image;
-                                demo = new Gtk.Image.from_resource(APP_PATH + "/" + image_path_from_json);
-                                demo_box.add(demo);
-                                play_button.get_style_context().add_class("playButton");
-                                play_button.set_label("PLAY");
-                                isPlayed = false;
-                                instructionAndPlayHolder.reorder_child(buttonHolder, 3);
-                                this.show_all();
+                                reset_ui_for_next_step(obj, buttonHolder);
                             } catch (Error e) {
-                                stderr.printf("Error in fallback step advance: %s\n", e.message);
+                                stderr.printf("Error advancing step: %s\n", e.message);
                             }
                             return false;
                         });
                     }
-                    stdout.flush();
                     return false;
                 });
 
-                // ── PLAY button ──
                 play_button.clicked.connect(() => {
                     if (!isPlayed) {
                         var window = (Gtk.Window) this.get_toplevel();
@@ -212,24 +180,19 @@ namespace regolith_onboarding {
                         if (use_wm_mode) {
                             // Mode already set up — re-enter it for the next step.
                             var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-                            stdout.printf("[WM MODE] Re-entering mode '%s'\n", WM_MODE_NAME);
                             try {
                                 Process.spawn_command_line_sync(wm_cmd + " mode '" + WM_MODE_NAME + "'");
                             } catch (Error e) {
-                                stderr.printf("[WM MODE] Failed to re-enter mode: %s\n", e.message);
+                                stderr.printf("Failed to re-enter WM mode: %s\n", e.message);
                             }
                         } else if (setup_wm_mode(key_binding_info)) {
-                            // First PLAY press: mode file written, swaymsg subscribed.
                             use_wm_mode = true;
 
-                            // ── IPC binding-event watcher (replaces key_press_event) ──
                             ipc_watch_id = ipc_channel.add_watch(
                                 GLib.IOCondition.IN | GLib.IOCondition.HUP,
                                 (src, cond) => {
-                                    if ((cond & GLib.IOCondition.HUP) != 0) {
-                                        stdout.printf("[WM MODE] IPC channel closed (HUP)\n");
+                                    if ((cond & GLib.IOCondition.HUP) != 0)
                                         return false;
-                                    }
                                     try {
                                         string line;
                                         size_t length, term_pos;
@@ -239,68 +202,23 @@ namespace regolith_onboarding {
                                         line = line.strip();
                                         if (line.length == 0) return true;
 
-                                        stdout.printf("[WM MODE] IPC raw line: %s\n", line);
-                                        stdout.flush();
-
                                         // Skip subscription acknowledgement: [{"success":true}]
-                                        if (line.has_prefix("[")) {
-                                            stdout.printf("[WM MODE] Skipping subscription ack\n");
-                                            return true;
-                                        }
+                                        if (line.has_prefix("[")) return true;
 
-                                        // Only act while actively capturing a step
-                                        if (mode != "TILEUP") {
-                                            stdout.printf("[WM MODE] Ignoring event (mode=%s, not TILEUP)\n", mode);
-                                            return true;
-                                        }
+                                        if (mode != "TILEUP") return true;
 
-                                        // Parse the binding event JSON
                                         var parser = new Json.Parser();
                                         parser.load_from_data(line);
                                         var root_obj = parser.get_root().get_object();
-                                        var change = root_obj.get_string_member("change");
-                                        stdout.printf("[WM MODE] Event change type: %s\n", change);
-                                        if (change != "run") return true;
+                                        if (root_obj.get_string_member("change") != "run") return true;
 
                                         var bnd = root_obj.get_object_member("binding");
-
-                                        // symbol can be null for bindcode bindings — skip those
                                         var sym_node = bnd.get_member("symbol");
-                                        if (sym_node == null || sym_node.is_null()) {
-                                            stdout.printf("[WM MODE] Skipping event: no symbol (bindcode binding)\n");
-                                            return true;
-                                        }
+                                        if (sym_node == null || sym_node.is_null()) return true;
                                         var symbol = sym_node.get_string();
                                         var mask_arr = bnd.get_array_member("event_state_mask");
 
-                                        // Build a human-readable modifier string for logging
-                                        var sb = new StringBuilder();
-                                        for (uint mi = 0; mi < mask_arr.get_length(); mi++) {
-                                            if (mi > 0) sb.append("+");
-                                            sb.append(mask_arr.get_element(mi).get_string());
-                                        }
-                                        string mods_str = sb.str.length > 0 ? sb.str : "(none)";
-
-                                        // Combine modifiers + symbol into one readable string
-                                        string pressed = (mask_arr.get_length() > 0)
-                                            ? mods_str + "+" + symbol
-                                            : symbol;
-
-                                        stdout.printf("[WM MODE] ── Key Event Received ──────────────────\n");
-                                        stdout.printf("[WM MODE]   PRESSED      : %s\n", pressed);
-                                        stdout.printf("[WM MODE]   symbol       : %s\n", symbol);
-                                        stdout.printf("[WM MODE]   modifiers    : %s\n", mods_str);
-
-                                        // What we expect for the current step
-                                        var cfg = new configManager();
-                                        var expected = cfg.format_spec_for_mode(command);
-                                        stdout.printf("[WM MODE]   raw command  : %s\n", command);
-                                        stdout.printf("[WM MODE]   expected key : %s\n", expected.length > 0 ? expected : "(opaque id — skip)");
-                                        stdout.printf("[WM MODE]   exec command : %s\n", execCommand);
-
-                                        // Escape → cancel the workflow
                                         if (symbol == "Escape") {
-                                            stdout.printf("[WM MODE] Escape pressed — cancelling workflow\n");
                                             teardown_wm_mode();
                                             var win = (Gtk.Window) this.get_toplevel();
                                             new HandleScreenMode(win, "WINDOW", curr_x, curr_y);
@@ -310,87 +228,67 @@ namespace regolith_onboarding {
                                             return false;
                                         }
 
-                                        if (expected == "") {
-                                            stdout.printf("[WM MODE]   → Opaque key_id, cannot match — skipping\n");
-                                            return true;
-                                        }
+                                        var cfg = new configManager();
+                                        var expected = cfg.format_spec_for_mode(command);
+                                        if (expected == "") return true;
 
-                                        bool matched = ipc_event_matches(expected, symbol, mask_arr);
-                                        stdout.printf("[WM MODE]   → Match: %s\n", matched ? "YES ✓" : "NO ✗");
-                                        stdout.printf("[WM MODE] ────────────────────────────────────────\n");
-                                        stdout.flush();
+                                        if (!ipc_event_matches(expected, symbol, mask_arr)) return true;
 
-                                        if (matched) {
-                                            // Set mode immediately so the IPC guard at the top
-                                            // of this handler blocks re-matches while the
-                                            // 2s tick-display timeout is pending.
-                                            mode = "WINDOW";
+                                        // Block re-matches while the tick-display timeout is pending.
+                                        mode = "WINDOW";
+                                        var wm_cmd_l = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+                                        current_key_sequence++;
+                                        try { Process.spawn_command_line_sync(wm_cmd_l + " mode default"); } catch {}
 
-                                            var wm_cmd_l = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-                                            current_key_sequence++;
-
-                                            // Exit mode so the simulated keypress goes to the WM
-                                            try { Process.spawn_command_line_sync(wm_cmd_l + " mode default"); } catch {}
-                                            stdout.printf("[WM MODE] Executing: %s\n", execCommand);
+                                        if (!execute_via_sway_binding(expected))
                                             Posix.system(execCommand);
 
-                                            handleTick();
-                                            this.show_all();
+                                        handleTick();
+                                        this.show_all();
 
-                                            GLib.Timeout.add_seconds(2, () => {
-                                                // Guard: widget may have been reparented or destroyed
-                                                var toplevel = this.get_toplevel();
-                                                if (!(toplevel is Gtk.Window)) return false;
-                                                var win = (Gtk.Window) toplevel;
-                                                new HandleScreenMode(win, "WINDOW", curr_x, curr_y);
+                                        GLib.Timeout.add_seconds(2, () => {
+                                            var toplevel = this.get_toplevel();
+                                            if (!(toplevel is Gtk.Window)) return false;
+                                            var win = (Gtk.Window) toplevel;
+                                            new HandleScreenMode(win, "WINDOW", curr_x, curr_y);
 
-                                                if (current_key_sequence >= key_binding_info.get_length()) {
-                                                    stdout.printf("[WM MODE] Workflow complete — tearing down\n");
-                                                    teardown_wm_mode();
-                                                    workflowList();
-                                                    this.destroy();
-                                                    return false;
-                                                }
-
-                                                obj = key_binding_info.get_element(current_key_sequence).get_object();
-                                                try {
-                                                    process_workflow_sequence(obj);
-                                                    this.margin = 20;
-                                                    play_button.margin_end = 5;
-                                                    cancel_button.margin = 0;
-                                                    midBox.set_spacing(20);
-                                                    midBox.margin = 3;
-                                                    instructionAndPlayHolder.remove(headingLabel);
-                                                    instructionAndPlayHolder.remove(commandLabel);
-                                                    instructionAndPlayHolder.remove(checkedCommand);
-                                                    headingLabel = new Label(heading);
-                                                    headingLabel.get_style_context().add_class("heading");
-                                                    commandLabel = new Label("PRESS: " + cfg.format_spec_display(command));
-                                                    descriptionLabel = new Label(description);
-                                                    createInstructionBox();
-                                                    image_path_from_json = image;
-                                                    demo = new Gtk.Image.from_resource(APP_PATH + "/" + image_path_from_json);
-                                                    demo_box.add(demo);
-                                                    play_button.get_style_context().add_class("playButton");
-                                                    play_button.set_label("PLAY");
-                                                    isPlayed = false;
-                                                    instructionAndPlayHolder.reorder_child(buttonHolder, 3);
-                                                    execCommandString();
-                                                    this.show_all();
-                                                } catch (Error e) {
-                                                    stderr.printf("Error advancing step: %s\n", e.message);
-                                                }
+                                            if (current_key_sequence >= key_binding_info.get_length()) {
+                                                teardown_wm_mode();
+                                                workflowList();
+                                                this.destroy();
                                                 return false;
-                                            });
-                                        }
+                                            }
+
+                                            obj = key_binding_info.get_element(current_key_sequence).get_object();
+                                            try {
+                                                reset_ui_for_next_step(obj, buttonHolder);
+                                                execCommandString();
+                                            } catch (Error e) {
+                                                stderr.printf("Error advancing step: %s\n", e.message);
+                                            }
+                                            return false;
+                                        });
+
                                     } catch (Error e) {
-                                        stderr.printf("[WM MODE] IPC event error: %s\n", e.message);
+                                        stderr.printf("IPC event error: %s\n", e.message);
                                     }
                                     return true;
                                 });
+
+                            // Deferred mode entry: lets sway finish post-reload cleanup before
+                            // we send the mode command, avoiding a race that resets mode to "default".
+                            GLib.Timeout.add(300, () => {
+                                try {
+                                    var wm_cmd_enter = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+                                    Process.spawn_command_line_sync(wm_cmd_enter + " mode '" + WM_MODE_NAME + "'");
+                                } catch (Error e) {
+                                    stderr.printf("Failed to enter WM mode: %s\n", e.message);
+                                }
+                                return false;
+                            });
+
                         } else {
-                            // WM mode unavailable: fall back to seat.grab (X11/unknown WM).
-                            stderr.printf("[WM MODE] setup_wm_mode() failed — falling back to seat.grab / X11 input capture\n");
+                            stderr.printf("setup_wm_mode() failed — falling back to seat.grab\n");
                             use_wm_mode = false;
                             if (IS_SESSION_WAYLAND) {
                                 var gdkwin = this.get_window();
@@ -407,7 +305,6 @@ namespace regolith_onboarding {
                     }
                 });
 
-                // ── CANCEL button ──
                 cancel_button.clicked.connect(() => {
                     if (use_wm_mode) {
                         teardown_wm_mode();
@@ -425,110 +322,84 @@ namespace regolith_onboarding {
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // WM Mode setup
-        // ─────────────────────────────────────────────────────────────────────
+        // Resets all UI labels/images after a step completes and loads the next one.
+        private void reset_ui_for_next_step(Json.Object next_obj, Gtk.Box buttonHolder) throws Error {
+            var cfg = new configManager();
+            process_workflow_sequence(next_obj);
+            this.margin = 20;
+            play_button.margin_end = 5;
+            cancel_button.margin = 0;
+            midBox.set_spacing(20);
+            midBox.margin = 3;
+            instructionAndPlayHolder.remove(headingLabel);
+            instructionAndPlayHolder.remove(commandLabel);
+            instructionAndPlayHolder.remove(checkedCommand);
+            headingLabel = new Label(heading);
+            headingLabel.get_style_context().add_class("heading");
+            commandLabel = new Label("PRESS: " + cfg.format_spec_display(command));
+            descriptionLabel = new Label(description);
+            createInstructionBox();
+            demo = new Gtk.Image.from_resource(APP_PATH + "/" + image);
+            demo_box.add(demo);
+            play_button.get_style_context().add_class("playButton");
+            play_button.set_label("PLAY");
+            isPlayed = false;
+            instructionAndPlayHolder.reorder_child(buttonHolder, 3);
+            this.show_all();
+        }
 
-        // Writes a mode block to the user's sway config.d directory (which is
-        // auto-included by the active Regolith sway config via
-        //   include $HOME/.config/regolith3/sway/config.d/*
-        // This is the same mechanism used by resize mode, session mode, etc.).
-        // Then reloads the WM, starts an IPC subscription for binding events,
-        // and enters the mode so the bar shows "Onboarding".
+        // Writes a mode block to the user's sway/i3 config.d directory (auto-included by
+        // the active Regolith config), reloads the WM, and subscribes to IPC binding events.
         // Returns true on success; caller falls back to seat.grab on false.
         private bool setup_wm_mode(Json.Array key_binding_info) {
-            if (WM_NAME != "sway" && WM_NAME != "i3") {
-                stderr.printf("[WM MODE] Unsupported WM '%s' — falling back to seat.grab\n", WM_NAME);
-                return false;
-            }
+            if (WM_NAME != "sway" && WM_NAME != "i3") return false;
 
             var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
             var cfg = new configManager();
 
-            // ── 1. Find the config.d directory ──
             var config_d = find_or_create_config_d();
-            if (config_d == null) {
-                stderr.printf("[WM MODE] setup_wm_mode: config.d directory unavailable — cannot write mode file\n");
-                return false;
-            }
+            if (config_d == null) return false;
             mode_file_path = Path.build_filename(config_d, "regolith_onboarding_mode");
 
-            // ── 2. Build and log the mode block we are about to write ──
             var sb = new StringBuilder();
             sb.append("mode \"" + WM_MODE_NAME + "\" {\n");
-            int binding_count = 0;
             for (int i = 0; i < (int)key_binding_info.get_length(); i++) {
                 try {
                     var element = key_binding_info.get_element(i);
-                    if (element == null || element.get_node_type() != Json.NodeType.OBJECT) {
-                        stderr.printf("[WM MODE]   entry %d: expected JSON object, got %s — skipping\n",
-                                      i, element != null ? element.type_name() : "null");
-                        continue;
-                    }
-                    var obj = element.get_object();
-                    if (!obj.has_member("key_id")) {
-                        stderr.printf("[WM MODE]   entry %d: missing 'key_id' field — skipping\n", i);
-                        continue;
-                    }
-                    var key_id = obj.get_string_member("key_id");
-                    var wm_key = cfg.format_spec_for_mode(key_id);
-                    if (wm_key == "") {
-                        stdout.printf("[WM MODE]   skipping opaque key_id: %s\n", key_id);
-                        continue;
-                    }
+                    if (element == null || element.get_node_type() != Json.NodeType.OBJECT) continue;
+                    var kobj = element.get_object();
+                    if (!kobj.has_member("key_id")) continue;
+                    var wm_key = cfg.format_spec_for_mode(kobj.get_string_member("key_id"));
+                    if (wm_key == "") continue;
                     sb.append("    bindsym " + wm_key + " nop\n");
-                    binding_count++;
                 } catch (Error e) {
-                    stderr.printf("[WM MODE]   entry %d: error reading key binding info: %s — skipping\n", i, e.message);
+                    stderr.printf("Error reading key binding: %s\n", e.message);
                 }
-            }
-            if (binding_count == 0) {
-                stderr.printf("[WM MODE]   WARNING: no valid keybindings produced — mode block will only contain Escape\n");
             }
             sb.append("    bindsym Escape nop\n");
             sb.append("}\n");
-            string mode_block = sb.str;
 
-            stdout.printf("\n[WM MODE] ════════════════════════════════════════\n");
-            stdout.printf("[WM MODE] Writing mode block to ACTIVE sway config\n");
-            stdout.printf("[WM MODE] Config include path : include %s/*\n", config_d);
-            stdout.printf("[WM MODE] Mode file           : %s\n", mode_file_path);
-            stdout.printf("[WM MODE] %d keybinding(s) + Escape defined\n", binding_count);
-            stdout.printf("[WM MODE] ── Mode block content ──────────────────\n");
-            stdout.printf("%s", mode_block);
-            stdout.printf("[WM MODE] ─────────────────────────────────────────\n");
-            stdout.flush();
-
-            // ── 3. Write the mode file ──
             try {
                 var f = File.new_for_path(mode_file_path);
                 var w = new DataOutputStream(f.replace(null, false, FileCreateFlags.NONE));
-                w.put_string(mode_block);
+                w.put_string(sb.str);
                 w.close();
-                stdout.printf("[WM MODE] File written successfully\n");
             } catch (Error e) {
-                stderr.printf("[WM MODE] Failed to write mode file: %s\n", e.message);
+                stderr.printf("Failed to write mode file: %s\n", e.message);
                 return false;
             }
 
-            // ── 4. Reload WM so the mode definition is picked up ──
-            stdout.printf("[WM MODE] Reloading %s to register the mode...\n", wm_cmd);
             try {
                 Process.spawn_command_line_sync(wm_cmd + " reload");
-                stdout.printf("[WM MODE] Reload OK\n");
             } catch (Error e) {
-                stderr.printf("[WM MODE] Reload failed: %s\n", e.message);
+                stderr.printf("WM reload failed: %s\n", e.message);
                 cleanup_mode_file();
                 return false;
             }
 
-            // Small delay so sway finishes processing the reload before we
-            // enter the mode and subscribe — avoids a race where the mode
-            // definition isn't registered yet.
-            GLib.Thread.usleep (200 * 1000);  // 200 ms
+            // Small delay so sway finishes processing the reload before we subscribe.
+            GLib.Thread.usleep(200 * 1000);
 
-            // ── 5. Subscribe to IPC binding events ──
-            stdout.printf("[WM MODE] Subscribing to sway IPC binding events...\n");
             try {
                 int stdout_fd;
                 string[] argv = {wm_cmd, "-t", "subscribe", "-m", "[\"binding\"]"};
@@ -537,44 +408,21 @@ namespace regolith_onboarding {
                     SpawnFlags.SEARCH_PATH | SpawnFlags.DO_NOT_REAP_CHILD,
                     null, out ipc_pid, null, out stdout_fd, null);
                 ipc_channel = new GLib.IOChannel.unix_new(stdout_fd);
-                stdout.printf("[WM MODE] IPC subscriber running (pid %d)\n", (int)ipc_pid);
             } catch (Error e) {
-                stderr.printf("[WM MODE] IPC subscribe failed: %s\n", e.message);
+                stderr.printf("IPC subscribe failed: %s\n", e.message);
                 cleanup_mode_file();
                 return false;
             }
 
-            // ── 6. Enter the mode (bar will now show "Onboarding") ──
-            stdout.printf("[WM MODE] Entering mode '%s'...\n", WM_MODE_NAME);
-            try {
-                Process.spawn_command_line_sync(wm_cmd + " mode '" + WM_MODE_NAME + "'");
-                stdout.printf("[WM MODE] Mode '%s' active — bar should now show the mode name\n", WM_MODE_NAME);
-            } catch (Error e) {
-                stderr.printf("[WM MODE] Failed to enter mode: %s\n", e.message);
-                teardown_wm_mode();
-                return false;
-            }
-
-            stdout.printf("[WM MODE] Setup complete\n");
-            stdout.printf("[WM MODE] ════════════════════════════════════════\n\n");
-            stdout.flush();
             return true;
         }
 
-        // Exits the mode, stops the IPC subscription, and removes the mode file.
         private void teardown_wm_mode() {
             var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-            stdout.printf("[WM MODE] Tearing down mode '%s'...\n", WM_MODE_NAME);
             try { Process.spawn_command_line_sync(wm_cmd + " mode default"); } catch {}
 
-            if (ipc_watch_id != 0) {
-                GLib.Source.remove(ipc_watch_id);
-                ipc_watch_id = 0;
-            }
-            if (ipc_channel != null) {
-                try { ipc_channel.shutdown(false); } catch {}
-                ipc_channel = null;
-            }
+            if (ipc_watch_id != 0) { GLib.Source.remove(ipc_watch_id); ipc_watch_id = 0; }
+            if (ipc_channel != null) { try { ipc_channel.shutdown(false); } catch {} ipc_channel = null; }
             if (ipc_pid != 0) {
                 Posix.kill((Posix.pid_t)ipc_pid, Posix.Signal.TERM);
                 ChildWatch.add(ipc_pid, (pid, status) => { Process.close_pid(pid); });
@@ -583,16 +431,13 @@ namespace regolith_onboarding {
 
             cleanup_mode_file();
             use_wm_mode = false;
-            stdout.printf("[WM MODE] Teardown complete\n");
         }
 
         private void cleanup_mode_file() {
             if (mode_file_path == "") return;
             var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-            stdout.printf("[WM MODE] Deleting mode file: %s\n", mode_file_path);
             try { File.new_for_path(mode_file_path).delete(); } catch {}
             mode_file_path = "";
-            stdout.printf("[WM MODE] Reloading %s to remove the mode definition...\n", wm_cmd);
             try { Process.spawn_command_line_sync(wm_cmd + " reload"); } catch {}
         }
 
@@ -609,58 +454,35 @@ namespace regolith_onboarding {
                 Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d"),
             };
             foreach (var dir in candidates) {
-                if (FileUtils.test(dir, FileTest.IS_DIR)) {
-                    stdout.printf("[WM MODE] Using existing config.d: %s\n", dir);
-                    return dir;
-                }
+                if (FileUtils.test(dir, FileTest.IS_DIR)) return dir;
             }
             try {
                 File.new_for_path(candidates[0]).make_directory_with_parents();
-                stdout.printf("[WM MODE] Created config.d: %s\n", candidates[0]);
                 return candidates[0];
             } catch (Error e) {
-                stderr.printf("[WM MODE] Cannot find or create config.d: %s\n", e.message);
+                stderr.printf("Cannot find or create config.d: %s\n", e.message);
                 return null;
             }
         }
 
-        // Returns true if the sway IPC binding event (symbol + modifier mask) matches
-        // the expected key string from format_spec_for_mode, e.g. "Mod4+Return".
+        // Returns true when the sway IPC binding event matches the expected key spec (e.g. "Mod4+Return").
         private bool ipc_event_matches(string expected, string symbol, Json.Array mask_arr) {
             var parts = expected.split("+");
-            // Last part is the key symbol; preceding parts are modifiers
-            var expected_sym = parts[parts.length - 1];
-            if (symbol != expected_sym) {
-                stdout.printf("[WM MODE]   symbol mismatch: got '%s', want '%s'\n", symbol, expected_sym);
-                return false;
-            }
+            if (symbol != parts[parts.length - 1]) return false;
 
             int expected_mod_count = parts.length - 1;
-            int actual_mod_count   = (int)mask_arr.get_length();
-            if (expected_mod_count != actual_mod_count) {
-                stdout.printf("[WM MODE]   modifier count mismatch: got %d, want %d\n",
-                              actual_mod_count, expected_mod_count);
-                return false;
-            }
+            if (expected_mod_count != (int)mask_arr.get_length()) return false;
 
-            // Case-insensitive modifier comparison ("Mod4" == "mod4" etc.)
-            for (int i = 0; i < actual_mod_count; i++) {
+            for (int i = 0; i < expected_mod_count; i++) {
                 var actual_mod = mask_arr.get_element(i).get_string().down();
                 bool found = false;
                 for (int j = 0; j < expected_mod_count; j++) {
                     if (parts[j].down() == actual_mod) { found = true; break; }
                 }
-                if (!found) {
-                    stdout.printf("[WM MODE]   modifier mismatch: '%s' not in expected set\n", actual_mod);
-                    return false;
-                }
+                if (!found) return false;
             }
             return true;
         }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Existing helpers (unchanged)
-        // ─────────────────────────────────────────────────────────────────────
 
         public void process_workflow_sequence(Json.Object obj) throws Error {
             foreach (unowned string name in obj.get_members()) {
@@ -706,37 +528,204 @@ namespace regolith_onboarding {
             checkTicked.opacity = 1.0;
         }
 
+        // Looks up the sway command bound to key_spec by reading config.d files directly,
+        // then dispatches it via swaymsg. More reliable than key injection on Wayland.
+        // Returns true if a command was found and dispatched.
+        private bool execute_via_sway_binding(string key_spec) {
+            if (WM_NAME != "sway" || key_spec.length == 0) return false;
+
+            string home = Environment.get_home_dir();
+            var var_list = new GLib.Array<string>();
+
+            // Collect variable definitions from the main config
+            string cfg_json = "";
+            try { Process.spawn_command_line_sync("swaymsg -t get_config", out cfg_json, null, null); } catch {}
+            if (cfg_json.length > 0) {
+                string main_cfg = "";
+                try {
+                    var p = new Json.Parser();
+                    p.load_from_data(cfg_json);
+                    main_cfg = p.get_root().get_object().get_string_member("config");
+                } catch { main_cfg = cfg_json; }
+                foreach (var line in main_cfg.split("\n"))
+                    parse_var_line(line.strip(), var_list);
+            }
+
+            string[] search_dirs = {
+                "/usr/share/regolith/common/config.d",
+                "/usr/share/regolith/sway/config.d",
+                "/etc/regolith3/sway/config.d",
+                Path.build_filename(home, ".config", "regolith3", "common-wm", "config.d"),
+                Path.build_filename(home, ".config", "regolith3", "sway", "config.d"),
+                Path.build_filename(home, ".config", "regolith2", "sway", "config.d"),
+                Path.build_filename(home, ".config", "sway", "config.d"),
+            };
+
+            var all_content = new StringBuilder();
+            foreach (var dir in search_dirs) {
+                if (!FileUtils.test(dir, FileTest.IS_DIR)) continue;
+                try {
+                    var d = Dir.open(dir, 0);
+                    string? fn;
+                    while ((fn = d.read_name()) != null) {
+                        string contents;
+                        try {
+                            FileUtils.get_contents(Path.build_filename(dir, fn), out contents);
+                            all_content.append("\n");
+                            all_content.append(contents);
+                        } catch {}
+                    }
+                } catch {}
+            }
+
+            string[] incl_lines = all_content.str.split("\n");
+            foreach (var line in incl_lines)
+                parse_var_line(line.strip(), var_list);
+
+            // Scan top-level bindsym lines (depth 0) for a match
+            int depth = 0;
+            foreach (var line in incl_lines) {
+                var s = line.strip();
+                if (s.has_suffix("{")) { depth++; continue; }
+                if (s == "}") { if (depth > 0) depth--; continue; }
+                if (depth != 0 || !s.has_prefix("bindsym ")) continue;
+
+                string resolved = s;
+                for (uint i = 0; i + 1 < var_list.length; i += 2)
+                    resolved = resolved.replace(var_list.index(i), var_list.index(i + 1));
+
+                string rest = resolved.substring("bindsym ".length).strip();
+                while (rest.has_prefix("--")) {
+                    int sp = rest.index_of(" ");
+                    if (sp < 0) { rest = ""; break; }
+                    rest = rest.substring(sp).strip();
+                }
+                if (rest.length == 0) continue;
+                int sp = rest.index_of(" ");
+                if (sp < 0) continue;
+                string bkey = rest.substring(0, sp).strip();
+                string bcmd = rest.substring(sp).strip();
+
+                if (!keys_match(bkey, key_spec)) continue;
+                if (bcmd == "nop" || bcmd.length == 0) return true;
+
+                try {
+                    string[] argv = {"swaymsg", bcmd};
+                    Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, null, null, null);
+                    return true;
+                } catch (Error e) {
+                    stderr.printf("swaymsg dispatch: %s\n", e.message);
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private void parse_var_line(string s, GLib.Array<string> out_list) {
+            if (s.has_prefix("set ") && !s.has_prefix("set_from_resource ")) {
+                var parts = s.split(" ", 3);
+                if (parts.length >= 3 && parts[1].has_prefix("$")) {
+                    out_list.append_val(parts[1]);
+                    out_list.append_val(parts[2].strip());
+                }
+            } else if (s.has_prefix("set_from_resource ")) {
+                var parts = s.split(" ");
+                if (parts.length >= 3 && parts[1].has_prefix("$")) {
+                    string? xval = xrdb_query(parts[2]);
+                    string def  = (parts.length >= 4) ? parts[3].strip() : "";
+                    string val  = (xval != null && xval.length > 0) ? xval : def;
+                    if (val.length > 0) {
+                        out_list.append_val(parts[1]);
+                        out_list.append_val(val);
+                    }
+                }
+            }
+        }
+
+        private string? xrdb_query(string resource_name) {
+            string out_str = "";
+            try {
+                int exit_status;
+                Process.spawn_command_line_sync("xrdb -query", out out_str, null, out exit_status);
+                if (exit_status != 0) return null;
+            } catch { return null; }
+            foreach (var ln in out_str.split("\n")) {
+                if (!ln.has_prefix(resource_name)) continue;
+                int colon = ln.index_of(":");
+                if (colon < 0) continue;
+                return ln.substring(colon + 1).strip();
+            }
+            return null;
+        }
+
+        // Modifier order and case are ignored: "Mod4+Shift+Return" == "shift+mod4+Return"
+        private bool keys_match(string a, string b) {
+            return sort_key_spec(a.down()) == sort_key_spec(b.down());
+        }
+
+        private string sort_key_spec(string key_spec) {
+            var parts = key_spec.split("+");
+            if (parts.length <= 1) return key_spec;
+            string symbol = parts[parts.length - 1];
+            string[] mods = {};
+            for (int i = 0; i < parts.length - 1; i++) mods += parts[i];
+            for (int i = 1; i < mods.length; i++) {
+                string key = mods[i];
+                int j = i - 1;
+                while (j >= 0 && mods[j] > key) { mods[j + 1] = mods[j]; j--; }
+                mods[j + 1] = key;
+            }
+            return string.joinv("+", mods) + "+" + symbol;
+        }
+
+        // ydotool uses Linux input-event key names (KEY_ENTER) rather than X11 keysym names (Return).
+        private string to_ydotool_key(string xkey) {
+            switch (xkey) {
+                case "Return":    return "KEY_ENTER";
+                case "Up":        return "KEY_UP";
+                case "Down":      return "KEY_DOWN";
+                case "Left":      return "KEY_LEFT";
+                case "Right":     return "KEY_RIGHT";
+                case "Caps_Lock": return "KEY_CAPSLOCK";
+                case "Shift_L":   return "KEY_LEFTSHIFT";
+                case "Alt_L":     return "KEY_LEFTALT";
+                case "Control_L": return "KEY_LEFTCTRL";
+                case "Super_L":   return "KEY_LEFTMETA";
+                default:          return xkey;
+            }
+        }
+
         public void execCommandString() {
             var configmanager = new configManager();
+            bool use_ydotool = false;
             if (IS_SESSION_WAYLAND) {
-                // Prefer ydotool (native Wayland); fall back to xdotool via XWayland.
-                // Note: xdotool cannot trigger sway compositor bindings on Wayland,
-                // but it avoids a hard "not found" error when ydotool is absent.
-                string? ydotool_path = GLib.Environment.find_program_in_path ("ydotool");
-                if (ydotool_path != null) {
-                    execCommand = "ydotool key ";
-                } else {
-                    stdout.printf ("[WM MODE] ydotool not found — using xdotool (Wayland fallback)\n");
-                    execCommand = "xdotool sleep 0.5 key --clearmodifiers ";
-                }
+                string? ydotool_path = GLib.Environment.find_program_in_path("ydotool");
+                use_ydotool = (ydotool_path != null);
+                execCommand = use_ydotool
+                    ? "ydotool key "
+                    : "xdotool sleep 0.5 key --clearmodifiers ";
             } else {
                 execCommand = "xdotool sleep 0.5 key --clearmodifiers ";
             }
+
             string[] splitCommands = configmanager.format_spec(command).split(" ");
-            for (int i = 0; i < splitCommands.length - 1; i++)
-                execCommand += keypressHandler.remontoireSymToKey[splitCommands[i]] + "+";
+            for (int i = 0; i < splitCommands.length - 1; i++) {
+                var k = keypressHandler.remontoireSymToKey[splitCommands[i]];
+                execCommand += (use_ydotool ? to_ydotool_key(k) : k) + "+";
+            }
             var last = splitCommands[splitCommands.length - 1];
-            execCommand += (keypressHandler.remontoireSymToKey.get(last) != (string)null)
+            var raw = (keypressHandler.remontoireSymToKey.get(last) != (string)null)
                 ? keypressHandler.remontoireSymToKey[last]
                 : last;
-            stdout.printf ("[WM MODE] execCommand: %s\n", execCommand);
+            execCommand += use_ydotool ? to_ydotool_key(raw) : raw;
         }
 
         private Gdk.Seat? grab_inputs(Gdk.Window gdkwin) {
             var display = gdkwin.get_display();
             if (display == null) { stderr.printf("Failed to get Display\n"); return null; }
             var seat = display.get_default_seat();
-            if (seat == null) { stdout.printf("Failed to get Seat\n"); return null; }
+            if (seat == null) { stderr.printf("Failed to get Seat\n"); return null; }
 
             int attempt = 0;
             Gdk.GrabStatus? grabStatus = null;
