@@ -62,7 +62,6 @@ namespace regolith_onboarding{
             if (close < 0) break;  // malformed — no closing '>'
 
             string tok = remaining.slice (1, close);
-            stdout.printf ("[FSFM] close=%d tok_len=%d\n", close, tok.length);
 
             if      (tok == "Shift")  mods.append ("Shift+");
             else if (tok == "Alt")    mods.append ("Mod1+");
@@ -89,7 +88,6 @@ namespace regolith_onboarding{
         else if (key == "←")     key = "Left";
         else if (key == "→")     key = "Right";
 
-        stdout.printf ("[FSFM] result='%s'\n", mods.str + key);
         return mods.str + key;
     }
   }

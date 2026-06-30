@@ -528,155 +528,55 @@ namespace regolith_onboarding {
             checkTicked.opacity = 1.0;
         }
 
-        // Looks up the sway command bound to key_spec by reading config.d files directly,
-        // then dispatches it via swaymsg. More reliable than key injection on Wayland.
-        // Returns true if a command was found and dispatched.
+        // Queries swaymsg for current resolved bindings and dispatches the matching one directly.
+        // Returns true if a command was found and dispatched (or is nop).
         private bool execute_via_sway_binding(string key_spec) {
             if (WM_NAME != "sway" || key_spec.length == 0) return false;
 
-            string home = Environment.get_home_dir();
-            var var_list = new GLib.Array<string>();
-
-            // Collect variable definitions from the main config
-            string cfg_json = "";
-            try { Process.spawn_command_line_sync("swaymsg -t get_config", out cfg_json, null, null); } catch {}
-            if (cfg_json.length > 0) {
-                string main_cfg = "";
-                try {
-                    var p = new Json.Parser();
-                    p.load_from_data(cfg_json);
-                    main_cfg = p.get_root().get_object().get_string_member("config");
-                } catch { main_cfg = cfg_json; }
-                foreach (var line in main_cfg.split("\n"))
-                    parse_var_line(line.strip(), var_list);
+            string bindings_json = "";
+            try {
+                Process.spawn_command_line_sync("swaymsg -t get_bindings", out bindings_json, null, null);
+            } catch (Error e) {
+                stderr.printf("get_bindings failed: %s\n", e.message);
+                return false;
             }
+            if (bindings_json.length == 0) return false;
 
-            string[] search_dirs = {
-                "/usr/share/regolith/common/config.d",
-                "/usr/share/regolith/sway/config.d",
-                "/etc/regolith3/sway/config.d",
-                Path.build_filename(home, ".config", "regolith3", "common-wm", "config.d"),
-                Path.build_filename(home, ".config", "regolith3", "sway", "config.d"),
-                Path.build_filename(home, ".config", "regolith2", "sway", "config.d"),
-                Path.build_filename(home, ".config", "sway", "config.d"),
-            };
+            var parts = key_spec.split("+");
+            string expected_sym = parts[parts.length - 1];
 
-            var all_content = new StringBuilder();
-            foreach (var dir in search_dirs) {
-                if (!FileUtils.test(dir, FileTest.IS_DIR)) continue;
-                try {
-                    var d = Dir.open(dir, 0);
-                    string? fn;
-                    while ((fn = d.read_name()) != null) {
-                        string contents;
-                        try {
-                            FileUtils.get_contents(Path.build_filename(dir, fn), out contents);
-                            all_content.append("\n");
-                            all_content.append(contents);
-                        } catch {}
+            try {
+                var parser = new Json.Parser();
+                parser.load_from_data(bindings_json);
+                var bindings = parser.get_root().get_array();
+
+                for (int i = 0; i < (int)bindings.get_length(); i++) {
+                    var b = bindings.get_element(i).get_object();
+
+                    var sym_node = b.get_member("symbol");
+                    if (sym_node == null || sym_node.is_null()) continue;
+                    if (sym_node.get_string() != expected_sym) continue;
+
+                    var mask_arr = b.get_array_member("event_state_mask");
+                    if (!ipc_event_matches(key_spec, expected_sym, mask_arr)) continue;
+
+                    var cmd = b.get_string_member("command");
+                    if (cmd == "nop" || cmd.length == 0) return true;
+
+                    try {
+                        string[] argv = {"swaymsg", cmd};
+                        Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, null, null, null);
+                        return true;
+                    } catch (Error e) {
+                        stderr.printf("swaymsg dispatch: %s\n", e.message);
+                        return false;
                     }
-                } catch {}
-            }
-
-            string[] incl_lines = all_content.str.split("\n");
-            foreach (var line in incl_lines)
-                parse_var_line(line.strip(), var_list);
-
-            // Scan top-level bindsym lines (depth 0) for a match
-            int depth = 0;
-            foreach (var line in incl_lines) {
-                var s = line.strip();
-                if (s.has_suffix("{")) { depth++; continue; }
-                if (s == "}") { if (depth > 0) depth--; continue; }
-                if (depth != 0 || !s.has_prefix("bindsym ")) continue;
-
-                string resolved = s;
-                for (uint i = 0; i + 1 < var_list.length; i += 2)
-                    resolved = resolved.replace(var_list.index(i), var_list.index(i + 1));
-
-                string rest = resolved.substring("bindsym ".length).strip();
-                while (rest.has_prefix("--")) {
-                    int sp = rest.index_of(" ");
-                    if (sp < 0) { rest = ""; break; }
-                    rest = rest.substring(sp).strip();
                 }
-                if (rest.length == 0) continue;
-                int sp = rest.index_of(" ");
-                if (sp < 0) continue;
-                string bkey = rest.substring(0, sp).strip();
-                string bcmd = rest.substring(sp).strip();
-
-                if (!keys_match(bkey, key_spec)) continue;
-                if (bcmd == "nop" || bcmd.length == 0) return true;
-
-                try {
-                    string[] argv = {"swaymsg", bcmd};
-                    Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, null, null, null);
-                    return true;
-                } catch (Error e) {
-                    stderr.printf("swaymsg dispatch: %s\n", e.message);
-                    return false;
-                }
+            } catch (Error e) {
+                stderr.printf("get_bindings parse error: %s\n", e.message);
             }
 
             return false;
-        }
-
-        private void parse_var_line(string s, GLib.Array<string> out_list) {
-            if (s.has_prefix("set ") && !s.has_prefix("set_from_resource ")) {
-                var parts = s.split(" ", 3);
-                if (parts.length >= 3 && parts[1].has_prefix("$")) {
-                    out_list.append_val(parts[1]);
-                    out_list.append_val(parts[2].strip());
-                }
-            } else if (s.has_prefix("set_from_resource ")) {
-                var parts = s.split(" ");
-                if (parts.length >= 3 && parts[1].has_prefix("$")) {
-                    string? xval = xrdb_query(parts[2]);
-                    string def  = (parts.length >= 4) ? parts[3].strip() : "";
-                    string val  = (xval != null && xval.length > 0) ? xval : def;
-                    if (val.length > 0) {
-                        out_list.append_val(parts[1]);
-                        out_list.append_val(val);
-                    }
-                }
-            }
-        }
-
-        private string? xrdb_query(string resource_name) {
-            string out_str = "";
-            try {
-                int exit_status;
-                Process.spawn_command_line_sync("xrdb -query", out out_str, null, out exit_status);
-                if (exit_status != 0) return null;
-            } catch { return null; }
-            foreach (var ln in out_str.split("\n")) {
-                if (!ln.has_prefix(resource_name)) continue;
-                int colon = ln.index_of(":");
-                if (colon < 0) continue;
-                return ln.substring(colon + 1).strip();
-            }
-            return null;
-        }
-
-        // Modifier order and case are ignored: "Mod4+Shift+Return" == "shift+mod4+Return"
-        private bool keys_match(string a, string b) {
-            return sort_key_spec(a.down()) == sort_key_spec(b.down());
-        }
-
-        private string sort_key_spec(string key_spec) {
-            var parts = key_spec.split("+");
-            if (parts.length <= 1) return key_spec;
-            string symbol = parts[parts.length - 1];
-            string[] mods = {};
-            for (int i = 0; i < parts.length - 1; i++) mods += parts[i];
-            for (int i = 1; i < mods.length; i++) {
-                string key = mods[i];
-                int j = i - 1;
-                while (j >= 0 && mods[j] > key) { mods[j + 1] = mods[j]; j--; }
-                mods[j + 1] = key;
-            }
-            return string.joinv("+", mods) + "+" + symbol;
         }
 
         // ydotool uses Linux input-event key names (KEY_ENTER) rather than X11 keysym names (Return).
