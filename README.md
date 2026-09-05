@@ -27,6 +27,12 @@ Build dependencies: `valac`, `meson`, `gtk+-3.0`, `libhandy-1`, `json-glib-1.0`,
 On Debian and Ubuntu, `libwebkit2gtk-4.1-dev` comes from **universe**. There is
 no `4.0` package on Ubuntu 24.04 and later; it must be `4.1`.
 
+Validate a set of workflows without launching the UI:
+
+```bash
+./build/linux-onboarding --check-workflows
+```
+
 ## For distro maintainers
 
 Everything the user sees is replaceable. Point the build at your own branding

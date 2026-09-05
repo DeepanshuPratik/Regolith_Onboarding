@@ -192,6 +192,32 @@ still loads what this build understands. Older key names (`workspaces`,
 `workflow_name`, `workflow_description`, `key_bindings_sequence`, and
 `function` for a step's description) are still accepted.
 
+### Checking your workflows
+
+```
+./build/linux-onboarding --check-workflows
+```
+
+Resolves every step without opening a window and prints what each `key_id`
+becomes — the bindsym the WM binding mode will install, and the synthesized
+keypress used as a fallback:
+
+```
+Launching Applications  (bundled:regolith/01-launching.json)
+    <> Enter             bindsym Mod4+Return         synth: ydotool key KEY_LEFTMETA+KEY_ENTER
+    <><Shift> ?          bindsym Mod4+Shift+question synth: ...+KEY_LEFTSHIFT+KEY_SLASH
+```
+
+It exits non-zero if anything is wrong, so it can gate your packaging. Worth
+running whenever you edit a workflow: a bad `key_id` fails quietly at runtime —
+the window manager rejects the whole mode block, or the step simply never
+matches — and neither is obvious without reading logs mid-workflow.
+
+Note that `key_id` uses remontoire names, not X11 keysym names; the app
+translates between them (`?` becomes `question`, `Space` becomes `space`). If
+you write a key the translation does not cover, `--check-workflows` is where
+you will find out.
+
 ### Choosing steps
 
 Two things worth keeping in mind:
