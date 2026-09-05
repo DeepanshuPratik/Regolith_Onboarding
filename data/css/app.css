@@ -36,3 +36,23 @@
     font-weight: bold;
     font-size: 1.1em;
 }
+/* The "install more workflows" tile, sized to sit in the catalogue grid. */
+.add-tile {
+    border: 1px dashed alpha(currentColor, 0.3);
+    border-radius: 12px;
+}
+
+.add-tile-plus {
+    font-size: 3em;
+    opacity: 0.5;
+}
+
+/* Commands the user is expected to read before running. */
+.command-block {
+    font-family: monospace;
+    font-size: 0.9em;
+    background-color: alpha(currentColor, 0.07);
+    border: 1px solid alpha(currentColor, 0.15);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
