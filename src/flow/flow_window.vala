@@ -44,6 +44,7 @@ namespace linux_onboarding {
         private bool isPlayed = false;
         private string mode = "";
 
+        private Workflow workflow;
         private Json.Array? steps;
         private CaptureBackend capture;
         private KeySynthesizer synth = new KeySynthesizer ();
@@ -63,31 +64,27 @@ namespace linux_onboarding {
         private Label commandLabel;
         private Label descriptionLabel;
 
-        public WorkFlowPage(Json.Array? key_binding_info, owned workflowList workflowList) {
+        public WorkFlowPage(Workflow workflow, owned workflowList workflowList) {
             Object(orientation: Gtk.Orientation.VERTICAL, spacing: 10);
             this.margin = 20;
             this.set_valign(Gtk.Align.CENTER);
             this.set_halign(Gtk.Align.CENTER);
             this.get_style_context().add_class("practice-page");
 
-            this.steps = key_binding_info;
+            this.workflow = workflow;
+            this.steps = workflow.steps;
             this.return_to_list = (owned) workflowList;
 
             var css_provider = new Gtk.CssProvider();
             css_provider.load_from_resource(APP_PATH + "/css/flow.css");
             Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
 
-            if (steps == null) return;
+            if (steps == null || steps.get_length () == 0) return;
 
             buttonHolder = new Box(Gtk.Orientation.HORIZONTAL, 2);
             var configmanager = new configManager();
 
-            Json.Object obj = steps.get_element(current_key_sequence).get_object();
-            try {
-                process_workflow_sequence(obj);
-            } catch (Error e) {
-                stderr.printf("Error in process_workflow_sequence: %s\n", e.message);
-            }
+            process_workflow_sequence(steps.get_element(current_key_sequence).get_object());
 
             headingLabel = new Label(heading);
             commandLabel = new Label("PRESS: " + configmanager.format_spec_display(command));
@@ -99,7 +96,7 @@ namespace linux_onboarding {
             midBox = new Box(Gtk.Orientation.HORIZONTAL, 20);
             midBox.get_style_context().add_class("contentHolder");
 
-            demo = new Gtk.Image.from_resource(APP_PATH + "/" + image);
+            demo = AssetLoader.image(workflow.base_dir, image);
             demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
             demo_box.add(demo);
             midBox.add(instructionAndPlayHolder);
@@ -191,11 +188,7 @@ namespace linux_onboarding {
                     return false;
                 }
 
-                try {
-                    reset_ui_for_next_step (steps.get_element(current_key_sequence).get_object());
-                } catch (Error e) {
-                    stderr.printf("Error advancing step: %s\n", e.message);
-                }
+                reset_ui_for_next_step (steps.get_element(current_key_sequence).get_object());
                 return false;
             });
         }
@@ -225,7 +218,7 @@ namespace linux_onboarding {
         }
 
         // Resets all UI labels/images after a step completes and loads the next one.
-        private void reset_ui_for_next_step(Json.Object next_obj) throws Error {
+        private void reset_ui_for_next_step(Json.Object next_obj) {
             var cfg = new configManager();
             process_workflow_sequence(next_obj);
             this.margin = 20;
@@ -241,7 +234,7 @@ namespace linux_onboarding {
             commandLabel = new Label("PRESS: " + cfg.format_spec_display(command));
             descriptionLabel = new Label(description);
             createInstructionBox();
-            demo = new Gtk.Image.from_resource(APP_PATH + "/" + image);
+            demo = AssetLoader.image(workflow.base_dir, image);
             demo_box.add(demo);
             play_button.get_style_context().add_class("playButton");
             play_button.set_label("PLAY");
@@ -250,33 +243,36 @@ namespace linux_onboarding {
             this.show_all();
         }
 
-        public void process_workflow_sequence(Json.Object obj) throws Error {
+        /**
+         * Reads one step. Tolerant by design: these files come from distro
+         * maintainers and the marketplace, so an unrecognised field is far more
+         * likely to mean "newer schema" than "broken", and must not cost the user
+         * the whole step. "function" is the pre-1 name for "description".
+         */
+        public void process_workflow_sequence(Json.Object obj) {
+            command = ""; heading = ""; description = ""; image = "";
+
             foreach (unowned string name in obj.get_members()) {
                 switch (name) {
-                    case "key_id":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for key_id");
-                        command = obj.get_string_member(name);
-                        break;
-                    case "function":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for function");
-                        description = obj.get_string_member(name);
-                        break;
-                    case "heading":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for heading");
-                        heading = obj.get_string_member(name);
-                        break;
-                    case "image":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for image");
-                        image = obj.get_string_member(name);
-                        break;
+                    case "key_id":      command     = step_string(obj, name); break;
+                    case "heading":     heading     = step_string(obj, name); break;
+                    case "description":
+                    case "function":    description = step_string(obj, name); break;
+                    case "image":       image       = step_string(obj, name); break;
                     default:
-                        throw new MyError.INVALID_FORMAT("Unexpected element '%s'", name);
+                        warning("%s: ignoring unknown step field \"%s\"", workflow.source, name);
+                        break;
                 }
             }
+        }
+
+        private string step_string(Json.Object obj, string name) {
+            var node = obj.get_member(name);
+            if (node == null || node.get_node_type() != Json.NodeType.VALUE) {
+                warning("%s: step field \"%s\" is not a string", workflow.source, name);
+                return "";
+            }
+            return obj.get_string_member(name) ?? "";
         }
 
         public void createInstructionBox() {

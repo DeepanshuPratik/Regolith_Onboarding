@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "desktop": "regolith",
+  "workflows": [
+    {
+      "name": "Launching Applications",
+      "description": "Open the apps you use most without reaching for the mouse.",
+      "image": "images/Navigation.jpeg",
+      "steps": [
+        {
+          "key_id": "<> Enter",
+          "heading": "Launch a Terminal",
+          "description": "Opens your terminal. This is the shortcut you will use more than any other.",
+          "image": "images/terminalSplit.gif"
+        },
+        {
+          "key_id": "<><Shift> Enter",
+          "heading": "Launch a Browser",
+          "description": "Opens your default browser, tiled beside the terminal.",
+          "image": "images/terminalSplit.gif"
+        },
+        {
+          "key_id": "<> Space",
+          "heading": "Application Launcher",
+          "description": "Search and start any installed application by name.",
+          "image": "images/ilia.jpeg"
+        },
+        {
+          "key_id": "<><Shift> ?",
+          "heading": "Keybinding Viewer",
+          "description": "Shows every shortcut available. Your reference when you forget one.",
+          "image": "images/ilia.jpeg"
+        }
+      ]
+    }
+  ]
+}

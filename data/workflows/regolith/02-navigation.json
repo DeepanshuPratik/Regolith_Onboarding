@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "desktop": "regolith",
+  "workflows": [
+    {
+      "name": "Moving Around",
+      "description": "Switch between workspaces and move focus between windows.",
+      "image": "images/Navigation.jpeg",
+      "steps": [
+        {
+          "key_id": "<> 2",
+          "heading": "Go to Workspace 2",
+          "description": "Workspaces are numbered. Jump straight to any of them.",
+          "image": "images/workspaces.jpeg"
+        },
+        {
+          "key_id": "<> 1",
+          "heading": "Back to Workspace 1",
+          "description": "The same shortcut with a different number takes you back.",
+          "image": "images/workspaces.jpeg"
+        },
+        {
+          "key_id": "<> Tab",
+          "heading": "Next Workspace",
+          "description": "Cycle forward without naming a specific workspace.",
+          "image": "images/workspaces.jpeg"
+        },
+        {
+          "key_id": "<> ←",
+          "heading": "Focus the Window to the Left",
+          "description": "Move focus by direction. The arrow keys and h j k l both work.",
+          "image": "images/Navigation.jpeg"
+        }
+      ]
+    }
+  ]
+}

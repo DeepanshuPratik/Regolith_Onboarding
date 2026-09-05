@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "desktop": "regolith",
+  "workflows": [
+    {
+      "name": "Arranging Windows",
+      "description": "Control how new windows are placed and how existing ones behave.",
+      "image": "images/floating.jpeg",
+      "steps": [
+        {
+          "key_id": "<> v",
+          "heading": "Split Vertically",
+          "description": "The next window you open will be placed below this one.",
+          "image": "images/terminalSplit.gif"
+        },
+        {
+          "key_id": "<> g",
+          "heading": "Split Horizontally",
+          "description": "The next window you open will be placed beside this one.",
+          "image": "images/terminalSplit.gif"
+        },
+        {
+          "key_id": "<> f",
+          "heading": "Toggle Fullscreen",
+          "description": "Expand the focused window to fill the screen, and back again.",
+          "image": "images/resize.jpeg"
+        },
+        {
+          "key_id": "<><Shift> f",
+          "heading": "Toggle Floating",
+          "description": "Lift a window out of the tiling layout so it floats freely.",
+          "image": "images/floating.jpeg"
+        }
+      ]
+    }
+  ]
+}

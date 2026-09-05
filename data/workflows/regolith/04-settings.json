@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "desktop": "regolith",
+  "workflows": [
+    {
+      "name": "Settings at Your Fingertips",
+      "description": "Reach the settings you change most often directly from the keyboard.",
+      "image": "images/ilia.jpeg",
+      "steps": [
+        {
+          "key_id": "<> c",
+          "heading": "Settings",
+          "description": "Opens the Regolith control centre.",
+          "image": "images/ilia.jpeg"
+        },
+        {
+          "key_id": "<> d",
+          "heading": "Display Settings",
+          "description": "Arrange monitors and change resolution.",
+          "image": "images/ilia.jpeg"
+        },
+        {
+          "key_id": "<> w",
+          "heading": "Wi-Fi Settings",
+          "description": "Pick a network without hunting through menus.",
+          "image": "images/ilia.jpeg"
+        },
+        {
+          "key_id": "<> n",
+          "heading": "Notification Viewer",
+          "description": "Review notifications you may have missed.",
+          "image": "images/ilia.jpeg"
+        }
+      ]
+    }
+  ]
+}

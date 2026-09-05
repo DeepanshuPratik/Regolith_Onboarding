@@ -17,22 +17,25 @@ using Gtk;
 using Gee;
 
 namespace linux_onboarding {
-    
-    public class WorkFlows : Box {
-      public delegate void workflowElement(Json.Array workflow_sequence);
 
-      public WorkFlows(Array<WorkspaceDataHolder> workflowList, owned workflowElement workflow_element){
+    public class WorkFlows : Box {
+      public delegate void workflowElement(Workflow workflow);
+
+      private const int TILE_WIDTH = 300;
+      private const int TILE_HEIGHT = 150;
+
+      public WorkFlows(Gee.List<Workflow> workflowList, owned workflowElement workflow_element){
         Object(orientation: Gtk.Orientation.VERTICAL, spacing: 20);
         this.set_margin_start(20);
         this.set_margin_bottom(20);
         this.set_margin_top(20);
         this.set_margin_end(20);
-        
+
         bool can_practice = CaptureBackends.supported ();
 
         var headerText = new Label(can_practice ? "Select a Workflow to Practice"
                                                 : "Keyboard Shortcuts");
-        headerText.get_style_context().add_class("title-1"); // Use a standard title style
+        headerText.get_style_context().add_class("title-1");
         this.add(headerText);
 
         if (!can_practice) {
@@ -43,43 +46,51 @@ namespace linux_onboarding {
           notice.max_width_chars = 60;
           this.add(notice);
         }
-        
+
         var grid = new Gtk.Grid();
         grid.set_column_spacing(20);
         grid.set_row_spacing(20);
 
         var scrolledWindow = new Gtk.ScrolledWindow(null, null);
         scrolledWindow.add(grid);
-        scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC); // Hide horizontal scrollbar
+        scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
         scrolledWindow.set_vexpand(true);
-
         this.add(scrolledWindow);
 
-        
-        int column = (workflowList.length > 4) ? 2 : 1;
-        
+        if (workflowList.size == 0) {
+          var empty = new Label("No workflows are installed for this desktop yet.");
+          empty.get_style_context().add_class("notice");
+          empty.wrap = true;
+          empty.justify = Gtk.Justification.CENTER;
+          grid.attach(empty, 0, 0, 1, 1);
+          return;
+        }
+
+        int columns = (workflowList.size > 4) ? 2 : 1;
+
         int i = 0;
-        foreach(unowned WorkspaceDataHolder item in workflowList){
-           var label = new Label(item.get_workflow_name()); 
-           string image_path = item.get_workflow_image(); // returns "images/Navigation.jpeg" etc.
-           
-           var image = new Gtk.Image.from_resource(APP_PATH + "/" + image_path);
-           Gdk.Pixbuf pixbuf = image.get_pixbuf();
-           var scaled_img = new Gtk.Image.from_pixbuf(pixbuf.scale_simple(300, 150, Gdk.InterpType.BILINEAR));
-           
+        foreach (var item in workflowList) {
+           var label = new Label(item.name);
+           label.get_style_context().add_class("heading");
+
+           // Images resolve against wherever the workflow came from, so a
+           // user-installed workflow can ship its own artwork.
+           var thumbnail = AssetLoader.image(item.base_dir, item.image, TILE_WIDTH, TILE_HEIGHT);
+
            var button = new Button();
-           button.get_style_context().add_class("workflow-button"); // Use CSS for styling
+           button.get_style_context().add_class("workflow-button");
+           button.set_tooltip_text(item.description);
 
            var gridButton = new Grid();
            gridButton.set_row_spacing(10);
-           gridButton.attach(scaled_img, 0, 0, 1, 1);
+           gridButton.attach(thumbnail, 0, 0, 1, 1);
            gridButton.attach(label, 0, 1, 1, 1);
            button.add(gridButton);
-           
+
            button.clicked.connect((btn) => {
-             workflow_element(item.get_workflow_sequence());
-           }); 
-           grid.attach(button, i % column, i / column, 1, 1);
+             workflow_element(item);
+           });
+           grid.attach(button, i % columns, i / columns, 1, 1);
            i++;
         }
     }

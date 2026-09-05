@@ -10,6 +10,7 @@ subdir('src/components')
 subdir('src/flow')
 subdir('src/intro')
 subdir('src/platform')
+subdir('src/workflows')
 
 project_resources = gnome.compile_resources(
   'project-resources',
