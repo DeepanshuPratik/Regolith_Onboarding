@@ -37,6 +37,10 @@ namespace linux_onboarding {
         // Resolve session facts once; everything else reads them from here.
         stdout.printf ("linux-onboarding: %s\n", Desktop.get_default ().describe ());
 
+        foreach (var arg in args) {
+            if (arg == "--check-workflows") return WorkflowCheck.run ();
+        }
+
         var app = new Application ();
         return app.run (args);
     }
