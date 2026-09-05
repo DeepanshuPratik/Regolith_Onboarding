@@ -72,7 +72,7 @@ using Gee;
              Object(application: app, type: Gtk.WindowType.POPUP);
              window_position = WindowPosition.CENTER;
  
-             if (IS_SESSION_WAYLAND) {
+             if (Desktop.get_default ().is_wayland) {
                  set_size_request (800,450);
              } else {
                  set_default_size (800,450);
@@ -144,7 +144,7 @@ using Gee;
              });
  
              // Handle platform-specific input grabbing
-             if (IS_SESSION_WAYLAND) {
+             if (Desktop.get_default ().is_wayland) {
                  GtkLayerShell.init_for_window (this);
                  GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
                  GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
@@ -345,15 +345,15 @@ using Gee;
          }
 
          private void clean_config() {
-             if (WM_NAME != "sway" && WM_NAME != "i3") return;
+             if (!Desktop.get_default ().wm.is_tiling ()) return;
 
-             var cmd = WM_NAME == "sway" ? "swaymsg" : "i3-msg";
+             var cmd = Desktop.get_default ().wm == WindowManager.SWAY ? "swaymsg" : "i3-msg";
              try { Process.spawn_command_line_sync(cmd + " mode default"); } catch (Error e) {}
 
              // Delete the mode block file from config.d if it was left behind,
              // then reload so the mode is fully removed.
              string[] candidates;
-             if (WM_NAME == "sway") {
+             if (Desktop.get_default ().wm == WindowManager.SWAY) {
                  candidates = {
                      Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d", "linux_onboarding_mode"),
                      Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d", "linux_onboarding_mode"),

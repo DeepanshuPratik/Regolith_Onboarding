@@ -16,10 +16,6 @@
 using Gtk;
 using GtkLayerShell;
 
-// Globals
-bool IS_SESSION_WAYLAND;
-string WM_NAME;
-
 namespace linux_onboarding {
 
     public class Application : Gtk.Application {
@@ -38,20 +34,9 @@ namespace linux_onboarding {
      */
     public static int main (string[] args) {
 
-        // Get session type (wayland or x11) and set the flag
-        string session_type = Environment.get_variable ("XDG_SESSION_TYPE");
-        string gdk_backend = Environment.get_variable ("GDK_BACKEND");
-        IS_SESSION_WAYLAND = session_type == "wayland" && gdk_backend != "x11";
+        // Resolve session facts once; everything else reads them from here.
+        stdout.printf ("linux-onboarding: %s\n", Desktop.get_default ().describe ());
 
-        // Set window manager
-        if (Environment.get_variable ("SWAYSOCK") != null) {
-            WM_NAME = "sway";
-        } else if (Environment.get_variable ("I3SOCK") != null) {
-            WM_NAME = "i3";
-        } else {
-            WM_NAME = "Unknown";
-        }
-        
         var app = new Application ();
         return app.run (args);
     }

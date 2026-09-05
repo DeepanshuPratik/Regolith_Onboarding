@@ -137,7 +137,7 @@ namespace linux_onboarding {
                             new HandleScreenMode(window, "WINDOW", curr_x, curr_y);
                             mode = "WINDOW";
                             if (current_key_sequence >= key_binding_info.get_length()) {
-                                if (IS_SESSION_WAYLAND) linux_onboarding.seat.ungrab();
+                                if (Desktop.get_default ().is_wayland) linux_onboarding.seat.ungrab();
                                 workflowList();
                                 this.destroy();
                                 return false;
@@ -179,7 +179,7 @@ namespace linux_onboarding {
 
                         if (use_wm_mode) {
                             // Mode already set up — re-enter it for the next step.
-                            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+                            var wm_cmd = (Desktop.get_default ().wm == WindowManager.SWAY) ? "swaymsg" : "i3-msg";
                             try {
                                 Process.spawn_command_line_sync(wm_cmd + " mode '" + WM_MODE_NAME + "'");
                             } catch (Error e) {
@@ -236,7 +236,7 @@ namespace linux_onboarding {
 
                                         // Block re-matches while the tick-display timeout is pending.
                                         mode = "WINDOW";
-                                        var wm_cmd_l = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+                                        var wm_cmd_l = (Desktop.get_default ().wm == WindowManager.SWAY) ? "swaymsg" : "i3-msg";
                                         current_key_sequence++;
                                         try { Process.spawn_command_line_sync(wm_cmd_l + " mode default"); } catch {}
 
@@ -279,7 +279,7 @@ namespace linux_onboarding {
                             // we send the mode command, avoiding a race that resets mode to "default".
                             GLib.Timeout.add(300, () => {
                                 try {
-                                    var wm_cmd_enter = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+                                    var wm_cmd_enter = (Desktop.get_default ().wm == WindowManager.SWAY) ? "swaymsg" : "i3-msg";
                                     Process.spawn_command_line_sync(wm_cmd_enter + " mode '" + WM_MODE_NAME + "'");
                                 } catch (Error e) {
                                     stderr.printf("Failed to enter WM mode: %s\n", e.message);
@@ -290,7 +290,7 @@ namespace linux_onboarding {
                         } else {
                             stderr.printf("setup_wm_mode() failed — falling back to seat.grab\n");
                             use_wm_mode = false;
-                            if (IS_SESSION_WAYLAND) {
+                            if (Desktop.get_default ().is_wayland) {
                                 var gdkwin = this.get_window();
                                 if (gdkwin != null) {
                                     var grabbed = grab_inputs(gdkwin);
@@ -308,7 +308,7 @@ namespace linux_onboarding {
                 cancel_button.clicked.connect(() => {
                     if (use_wm_mode) {
                         teardown_wm_mode();
-                    } else if (IS_SESSION_WAYLAND) {
+                    } else if (Desktop.get_default ().is_wayland) {
                         linux_onboarding.seat.ungrab();
                     }
                     var window = (Gtk.Window) this.get_toplevel();
@@ -352,9 +352,9 @@ namespace linux_onboarding {
         // the active Regolith config), reloads the WM, and subscribes to IPC binding events.
         // Returns true on success; caller falls back to seat.grab on false.
         private bool setup_wm_mode(Json.Array key_binding_info) {
-            if (WM_NAME != "sway" && WM_NAME != "i3") return false;
+            if (!Desktop.get_default ().wm.is_tiling ()) return false;
 
-            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+            var wm_cmd = (Desktop.get_default ().wm == WindowManager.SWAY) ? "swaymsg" : "i3-msg";
             var cfg = new configManager();
 
             var config_d = find_or_create_config_d();
@@ -418,7 +418,7 @@ namespace linux_onboarding {
         }
 
         private void teardown_wm_mode() {
-            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+            var wm_cmd = (Desktop.get_default ().wm == WindowManager.SWAY) ? "swaymsg" : "i3-msg";
             try { Process.spawn_command_line_sync(wm_cmd + " mode default"); } catch {}
 
             if (ipc_watch_id != 0) { GLib.Source.remove(ipc_watch_id); ipc_watch_id = 0; }
@@ -435,7 +435,7 @@ namespace linux_onboarding {
 
         private void cleanup_mode_file() {
             if (mode_file_path == "") return;
-            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
+            var wm_cmd = (Desktop.get_default ().wm == WindowManager.SWAY) ? "swaymsg" : "i3-msg";
             try { File.new_for_path(mode_file_path).delete(); } catch {}
             mode_file_path = "";
             try { Process.spawn_command_line_sync(wm_cmd + " reload"); } catch {}
@@ -444,7 +444,7 @@ namespace linux_onboarding {
         // Returns the first existing config.d directory (Regolith-first order),
         // or creates the regolith3 one if none are found yet.
         private string? find_or_create_config_d() {
-            string[] candidates = (WM_NAME == "sway") ? new string[]{
+            string[] candidates = (Desktop.get_default ().wm == WindowManager.SWAY) ? new string[]{
                 Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d"),
                 Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d"),
                 Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d"),
@@ -532,7 +532,7 @@ namespace linux_onboarding {
         // Reads main Regolith config files for variable definitions ($mod etc.) and config.d for bindsyms.
         // Returns true if a command was found and dispatched (or is nop).
         private bool execute_via_sway_binding(string key_spec) {
-            if (WM_NAME != "sway" || key_spec.length == 0) return false;
+            if (Desktop.get_default ().wm != WindowManager.SWAY || key_spec.length == 0) return false;
 
             string home = Environment.get_home_dir();
             var var_list = new GLib.Array<string>();
@@ -700,7 +700,7 @@ namespace linux_onboarding {
         public void execCommandString() {
             var configmanager = new configManager();
             bool use_ydotool = false;
-            if (IS_SESSION_WAYLAND) {
+            if (Desktop.get_default ().is_wayland) {
                 string? ydotool_path = GLib.Environment.find_program_in_path("ydotool");
                 use_ydotool = (ydotool_path != null);
                 execCommand = use_ydotool

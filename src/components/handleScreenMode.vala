@@ -26,7 +26,7 @@ namespace linux_onboarding{
       this.mode = mode;
       switch (mode) {
         case "WINDOW": {
-          if (IS_SESSION_WAYLAND) {
+          if (Desktop.get_default ().is_wayland) {
             GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP,false);
             window.set_size_request (800, 450);
             window.resize (1, 1);
@@ -42,7 +42,7 @@ namespace linux_onboarding{
           break;
         }
         case "TILEUP":{
-          if (IS_SESSION_WAYLAND) {
+          if (Desktop.get_default ().is_wayland) {
             GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.TOP,true);
             window.set_size_request (200, 150);
             window.resize (1, 1);
