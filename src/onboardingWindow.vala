@@ -59,6 +59,9 @@ namespace linux_onboarding {
             } catch (Error e) {
                 error ("Cannot load CSS stylesheet: %s", e.message);
             }
+            // Distro theme layers over the base sheet, so it must load after it.
+            Branding.get_default ().apply_theme (this.get_screen ());
+
             this.get_style_context().add_class("carousel");
 
             container = new Box(Gtk.Orientation.VERTICAL, 30);

@@ -1,0 +1,4 @@
+option('branding_dir',
+       type: 'string',
+       value: 'data/branding/regolith',
+       description: 'Directory holding this distro\'s branding.conf, theme.css, logo and slides/. Compiled into the binary.')

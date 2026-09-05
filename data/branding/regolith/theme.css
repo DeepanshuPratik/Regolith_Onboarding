@@ -1,0 +1,54 @@
+/*
+ * Regolith theme.
+ *
+ * Loaded after the application's base stylesheet, so anything set here wins.
+ * A distro replaces this file wholesale; the class names below are the app's
+ * styling contract and are the ones worth overriding.
+ */
+
+.main-container,
+.practice-page {
+    background-color: #232733;
+    border: 1px solid alpha(#8aa2c8, 0.18);
+}
+
+.title-main,
+.title-1 {
+    color: #d8e0ee;
+}
+
+.heading {
+    color: #6ab0f3;
+}
+
+.text-secondary {
+    color: #aab6c8;
+}
+
+.notice {
+    color: #d0b070;
+}
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: #2f6fb5;
+    color: #f2f6fb;
+    border: 1px solid #2a5f9c;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: #3a82cf;
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: alpha(#8aa2c8, 0.14);
+    color: #d8e0ee;
+    border: 1px solid alpha(#8aa2c8, 0.25);
+}
+
+.workflow-button:hover {
+    background-color: alpha(#6ab0f3, 0.12);
+}

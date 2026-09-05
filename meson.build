@@ -5,6 +5,7 @@ gnome = import('gnome')
 
 project_sources = []
 subdir('src')
+subdir('src/branding')
 subdir('src/capture')
 subdir('src/components')
 subdir('src/flow')
@@ -16,6 +17,27 @@ project_resources = gnome.compile_resources(
   'project-resources',
   'data/app.gresource.xml',
   source_dir: 'data'
+)
+
+# A distro's branding is compiled in, selected by -Dbranding_dir. Meson has no
+# glob, so the resource manifest is generated at configure time from whatever
+# that directory contains.
+branding_dir = get_option('branding_dir')
+if not branding_dir.startswith('/')
+  branding_dir = meson.project_source_root() / branding_dir
+endif
+message('branding_dir: ' + branding_dir)
+
+branding_xml = configure_file(
+  output: 'branding.gresource.xml',
+  command: [find_program('python3'), meson.project_source_root() / 'data/gen-branding-gresource.py', branding_dir],
+  capture: true,
+)
+
+branding_resources = gnome.compile_resources(
+  'branding-resources',
+  branding_xml,
+  source_dir: branding_dir,
 )
 
 add_project_arguments(['--pkg', 'GtkLayerShell-0.1'], language: 'vala')
@@ -43,8 +65,9 @@ app_deps += dependency('json-glib-1.0')
 
 executable(
   'linux-onboarding',
-  project_sources, 
+  project_sources,
   project_resources,
+  branding_resources,
   dependencies: app_deps,
   install: true
 )

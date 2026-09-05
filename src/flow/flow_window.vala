@@ -96,7 +96,7 @@ namespace linux_onboarding {
             midBox = new Box(Gtk.Orientation.HORIZONTAL, 20);
             midBox.get_style_context().add_class("contentHolder");
 
-            demo = AssetLoader.image(workflow.base_dir, image);
+            demo = workflow.load_image(image);
             demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
             demo_box.add(demo);
             midBox.add(instructionAndPlayHolder);
@@ -234,7 +234,7 @@ namespace linux_onboarding {
             commandLabel = new Label("PRESS: " + cfg.format_spec_display(command));
             descriptionLabel = new Label(description);
             createInstructionBox();
-            demo = AssetLoader.image(workflow.base_dir, image);
+            demo = workflow.load_image(image);
             demo_box.add(demo);
             play_button.get_style_context().add_class("playButton");
             play_button.set_label("PLAY");

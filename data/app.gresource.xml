@@ -5,16 +5,5 @@
     <file>css/flow.css</file>
     <file>css/introPage.css</file>
     <file>images/checktick.gif</file>
-    <file>images/ilia.jpeg</file>
-    <file>images/Navigation.jpeg</file>
-    <file>images/regolith-onboarding_logo.png</file>
-    <file>images/terminalSplit.gif</file>
-    <file>images/floating.jpeg</file>
-    <file>images/resize.jpeg</file>
-    <file>images/workspaces.jpeg</file>
-    <file>workflows/regolith/01-launching.json</file>
-    <file>workflows/regolith/02-navigation.json</file>
-    <file>workflows/regolith/03-windows.json</file>
-    <file>workflows/regolith/04-settings.json</file>
   </gresource>
 </gresources>

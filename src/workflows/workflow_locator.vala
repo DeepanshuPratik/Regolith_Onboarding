@@ -31,7 +31,7 @@ namespace linux_onboarding {
      * Four layers are consulted, lowest priority first, and the results are
      * unioned so a user-installed workflow appears next to the built-in ones:
      *
-     *     resource:///org/linux/Onboarding/workflows/   compiled into the build
+     *     resource:///org/linux/Onboarding/branding/workflows/   from the branding bundle
      *     $XDG_DATA_DIRS/linux-onboarding/workflows/    distro packages
      *     $XDG_CONFIG_DIRS/linux-onboarding/workflows/  sysadmin (/etc/xdg)
      *     $XDG_CONFIG_HOME/linux-onboarding/workflows/  the user, and marketplace installs
@@ -70,7 +70,7 @@ namespace linux_onboarding {
 
         private void load_bundled (Gee.ArrayList<Workflow> into) {
             var id = chosen_bundled_id ();
-            var dir = "%s/%s/%s/".printf (APP_PATH, WORKFLOWS, id);
+            var dir = "%s/%s/%s/".printf (Branding.RESOURCE_ROOT, WORKFLOWS, id);
 
             string[] children;
             try {
@@ -83,8 +83,11 @@ namespace linux_onboarding {
                 if (!child.has_suffix (".json")) continue;
                 try {
                     var bytes = GLib.resources_lookup_data (dir + child, ResourceLookupFlags.NONE);
-                    into.add_all (WorkflowParser.from_data (
-                        (string) bytes.get_data (), null, "bundled:" + id + "/" + child));
+                    var parsed = WorkflowParser.from_data (
+                        (string) bytes.get_data (), null, "bundled:" + id + "/" + child);
+                    // Images sit beside the JSON, same as for filesystem workflows.
+                    foreach (var w in parsed) w.resource_base = dir.substring (0, dir.length - 1);
+                    into.add_all (parsed);
                 } catch (Error e) {
                     warning ("Cannot read bundled workflow '%s': %s", child, e.message);
                 }
@@ -94,7 +97,7 @@ namespace linux_onboarding {
         // Which bundled desktop directory to use — first candidate that exists.
         private string chosen_bundled_id () {
             foreach (var id in desktop.candidates) {
-                var probe = "%s/%s/%s/".printf (APP_PATH, WORKFLOWS, id);
+                var probe = "%s/%s/%s/".printf (Branding.RESOURCE_ROOT, WORKFLOWS, id);
                 try {
                     var children = GLib.resources_enumerate_children (probe, ResourceLookupFlags.NONE);
                     if (children.length > 0) return id;

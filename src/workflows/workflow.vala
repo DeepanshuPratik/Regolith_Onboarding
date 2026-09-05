@@ -26,10 +26,14 @@ namespace linux_onboarding {
         public Json.Array steps   { get; set; }
 
         /**
-         * Directory the workflow was read from, which its images resolve against.
-         * null means it came from the compiled-in GResource bundle.
+         * Directory the workflow file was read from. Its images resolve against
+         * this, so a workflow always carries its own artwork. null means the
+         * workflow was compiled in, and resource_base applies instead.
          */
         public string? base_dir { get; set; default = null; }
+
+        /** GResource directory used when base_dir is null. */
+        public string resource_base { get; set; default = APP_PATH; }
 
         /** Where this came from, for log messages. */
         public string source { get; set; default = "<unknown>"; }
@@ -39,6 +43,11 @@ namespace linux_onboarding {
         }
 
         public bool is_bundled { get { return base_dir == null; } }
+
+        /** Loads one of this workflow's images, from wherever the workflow lives. */
+        public Gtk.Image load_image (string relative, int width = -1, int height = -1) {
+            return AssetLoader.image (base_dir, resource_base, relative, width, height);
+        }
     }
 
     /**
@@ -48,18 +57,19 @@ namespace linux_onboarding {
      */
     public class AssetLoader : GLib.Object {
 
-        public static Gdk.Pixbuf? pixbuf (string? base_dir, string relative,
+        public static Gdk.Pixbuf? pixbuf (string? base_dir, string resource_base,
+                                          string relative,
                                           int width = -1, int height = -1) {
             if (relative.length == 0) return null;
 
             Gdk.Pixbuf? pb = null;
             try {
                 pb = (base_dir == null)
-                    ? new Gdk.Pixbuf.from_resource (APP_PATH + "/" + relative)
+                    ? new Gdk.Pixbuf.from_resource (resource_base + "/" + relative)
                     : new Gdk.Pixbuf.from_file (Path.build_filename (base_dir, relative));
             } catch (Error e) {
                 warning ("Cannot load image '%s' (%s): %s",
-                         relative, base_dir ?? "bundled", e.message);
+                         relative, base_dir ?? resource_base, e.message);
                 return null;
             }
 
@@ -69,9 +79,10 @@ namespace linux_onboarding {
         }
 
         /** Never null, so a missing image degrades to a blank slot rather than a crash. */
-        public static Gtk.Image image (string? base_dir, string relative,
+        public static Gtk.Image image (string? base_dir, string resource_base,
+                                       string relative,
                                        int width = -1, int height = -1) {
-            var pb = pixbuf (base_dir, relative, width, height);
+            var pb = pixbuf (base_dir, resource_base, relative, width, height);
             return (pb == null) ? new Gtk.Image () : new Gtk.Image.from_pixbuf (pb);
         }
     }

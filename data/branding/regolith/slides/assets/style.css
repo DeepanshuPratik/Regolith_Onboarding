@@ -1,0 +1,87 @@
+/* Shared styling for the Regolith featured slides.
+   Slides are loaded through the app:// scheme, so relative paths like this
+   one resolve against the bundled slides/ directory. */
+
+:root {
+  --bg: #232733;
+  --fg: #d8e0ee;
+  --muted: #aab6c8;
+  --accent: #6ab0f3;
+  --key-bg: #2c3243;
+  --key-border: #414a60;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, "Cantarell", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  height: 100%;
+  padding: 28px 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.lede {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 54ch;
+}
+
+ul { margin: 0; padding: 0; list-style: none; }
+
+li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  border-top: 1px solid rgba(138, 162, 200, 0.14);
+}
+
+li:first-child { border-top: none; }
+
+kbd {
+  flex: 0 0 auto;
+  min-width: 108px;
+  text-align: center;
+  background: var(--key-bg);
+  border: 1px solid var(--key-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.what { color: var(--fg); }
+.why  { color: var(--muted); }
+
+.footnote {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+a { color: var(--accent); }
