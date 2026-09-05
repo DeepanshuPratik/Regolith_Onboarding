@@ -9,6 +9,7 @@ subdir('src/components')
 subdir('src/flow')
 subdir('src/intro')
 subdir('src/parser')
+subdir('src/spike')  # PHASE 0 SPIKE
 
 project_resources = gnome.compile_resources(
   'project-resources',
@@ -33,6 +34,7 @@ regolith_onboarding_deps += dependency('gtk+-3.0')
 regolith_onboarding_deps += dependency('pango')
 regolith_onboarding_deps += dependency('x11')
 regolith_onboarding_deps += dependency('libhandy-1')
+regolith_onboarding_deps += dependency('webkit2gtk-4.1')  # PHASE 0 SPIKE
 
 regolith_onboarding_deps += layer_shell_dep
 regolith_onboarding_deps += dependency('gee-0.8')

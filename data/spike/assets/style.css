@@ -1,0 +1,11 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 12px;
+  color: #e6e6e6;
+  background: #232733;
+}
+h1 { font-size: 18px; color: #6ab0f3; margin: 0 0 8px; }
+.tag { font-size: 12px; opacity: .85; margin: 6px 0; }
+img { width: 48px; height: 48px; }
+a { color: #7fd88f; }
+.scheme { font-family: monospace; font-size: 11px; opacity: .6; }

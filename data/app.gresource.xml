@@ -21,6 +21,9 @@
     <file>images/terminalSplit.gif</file>
     <file>images/tick.gif</file>
     <file>images/workspaces.jpeg</file>
+    <file>spike/spike.html</file>
+    <file>spike/assets/style.css</file>
+    <file>spike/assets/test.png</file>
     <file>workflows/sampleWorkFlows.json</file>
     <file>workflows/sampleWorkFlows2.json</file>
   </gresource>

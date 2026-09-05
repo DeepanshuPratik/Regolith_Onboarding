@@ -49,7 +49,9 @@ using Gee;
      public const int KEY_CODE_VOLUME_DOWN = 269025041;
      public const int KEY_CODE_VOLUME_MUTE = 269025042;
      
-     bool allow_scroll_wheel = false;
+     // PHASE 0 SPIKE: temporarily true so the spike page can be scrolled past to reach
+     // the intro and workflow pages. Revert to false when the spike is removed.
+     bool allow_scroll_wheel = true;
      // Controls access to keyboard and mouse
      protected Gdk.Seat seat;
  
@@ -114,9 +116,17 @@ using Gee;
                  carousel.scroll_to_full(worflowsListPage, 800);
              });
              
+             // PHASE 0 SPIKE — WebKit page shown first so it is visible on launch.
+             // Remove this block (and src/spike/, data/spike/) once findings are recorded.
+             var spike_dir = Environment.get_variable("SPIKE_DIR")
+                             ?? Path.build_filename(Environment.get_current_dir(), "data", "spike");
+             stdout.printf("[SPIKE] file:// base dir: %s\n", spike_dir);
+             var spikePage = new SpikePage(spike_dir);
+             carousel.insert(spikePage, 0);
+
              // Populate the carousel
-             carousel.insert(introPage, 0);
-             carousel.insert(worflowsListPage, 1);
+             carousel.insert(introPage, 1);
+             carousel.insert(worflowsListPage, 2);
              carousel.set_spacing(100);
              
              // Disable navigation to prevent accidental jumps during practice
