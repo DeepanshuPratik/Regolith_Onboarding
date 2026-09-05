@@ -42,6 +42,9 @@ namespace linux_onboarding {
         private WorkFlowPage workflowPage;
         private Gee.List<Workflow> workflows;
 
+        // Carousel contents in order: welcome, featured slides, workflow list.
+        private Gee.ArrayList<Gtk.Widget> pages = new Gee.ArrayList<Gtk.Widget> ();
+
         public CarouselSetup (Gtk.Application app) {
             Object(application: app, type: Gtk.WindowType.POPUP);
             window_position = WindowPosition.CENTER;
@@ -84,12 +87,28 @@ namespace linux_onboarding {
               this.show_all();
             });
 
+            // Welcome page first, then the distro's featured slides, then the
+            // workflow catalogue. "Get Started" moves one page along, so it lands
+            // on the first slide when there are any and on the catalogue when not.
             var introPage = new IntroPage(()=>{
-                carousel.scroll_to_full(worflowsListPage, 800);
+                scroll_to_page (1);
             });
+            pages.add (introPage);
 
-            carousel.insert(introPage, 0);
-            carousel.insert(worflowsListPage, 1);
+            var slides = Branding.get_default ().slides;
+            for (int i = 0; i < slides.length; i++) {
+                int slide_index = i;
+                pages.add (new SlidePage (
+                    slides[i],
+                    slide_index == slides.length - 1,
+                    () => { scroll_to_page (slide_index); },
+                    () => { scroll_to_page (slide_index + 2); }));
+            }
+
+            pages.add (worflowsListPage);
+
+            for (int i = 0; i < pages.size; i++)
+                carousel.insert (pages[i], i);
             carousel.set_spacing(100);
 
             carousel.set_allow_scroll_wheel(ALLOW_CAROUSEL_GESTURES);
@@ -122,6 +141,11 @@ namespace linux_onboarding {
                    }
                });
             }
+        }
+
+        private void scroll_to_page (int index) {
+            if (index < 0 || index >= pages.size) return;
+            carousel.scroll_to_full (pages[index], 400);
         }
 
         public void create_practice_page(Workflow workflow){
