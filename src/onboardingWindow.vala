@@ -49,9 +49,7 @@ using Gee;
      public const int KEY_CODE_VOLUME_DOWN = 269025041;
      public const int KEY_CODE_VOLUME_MUTE = 269025042;
      
-     // PHASE 0 SPIKE: temporarily true so the spike page can be scrolled past to reach
-     // the intro and workflow pages. Revert to false when the spike is removed.
-     bool allow_scroll_wheel = true;
+     bool allow_scroll_wheel = false;
      // Controls access to keyboard and mouse
      protected Gdk.Seat seat;
  
@@ -116,17 +114,9 @@ using Gee;
                  carousel.scroll_to_full(worflowsListPage, 800);
              });
              
-             // PHASE 0 SPIKE — WebKit page shown first so it is visible on launch.
-             // Remove this block (and src/spike/, data/spike/) once findings are recorded.
-             var spike_dir = Environment.get_variable("SPIKE_DIR")
-                             ?? Path.build_filename(Environment.get_current_dir(), "data", "spike");
-             stdout.printf("[SPIKE] file:// base dir: %s\n", spike_dir);
-             var spikePage = new SpikePage(spike_dir);
-             carousel.insert(spikePage, 0);
-
              // Populate the carousel
-             carousel.insert(introPage, 1);
-             carousel.insert(worflowsListPage, 2);
+             carousel.insert(introPage, 0);
+             carousel.insert(worflowsListPage, 1);
              carousel.set_spacing(100);
              
              // Disable navigation to prevent accidental jumps during practice
@@ -344,37 +334,10 @@ using Gee;
              }
          }
 
+         // Escape can quit while a workflow is mid-flight, so make sure no binding
+         // mode is left installed in the WM's config.d.
          private void clean_config() {
-             if (!Desktop.get_default ().wm.is_tiling ()) return;
-
-             var cmd = Desktop.get_default ().wm == WindowManager.SWAY ? "swaymsg" : "i3-msg";
-             try { Process.spawn_command_line_sync(cmd + " mode default"); } catch (Error e) {}
-
-             // Delete the mode block file from config.d if it was left behind,
-             // then reload so the mode is fully removed.
-             string[] candidates;
-             if (Desktop.get_default ().wm == WindowManager.SWAY) {
-                 candidates = {
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d", "linux_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d", "linux_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d", "linux_onboarding_mode"),
-                 };
-             } else {
-                 candidates = {
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "i3", "config.d", "linux_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "i3", "config.d", "linux_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d", "linux_onboarding_mode"),
-                 };
-             }
-             bool deleted = false;
-             foreach (var path in candidates) {
-                 if (FileUtils.test(path, FileTest.EXISTS)) {
-                     try { File.new_for_path(path).delete(); deleted = true; } catch (Error e) {}
-                 }
-             }
-             if (deleted) {
-                 try { Process.spawn_command_line_sync(cmd + " reload"); } catch (Error e) {}
-             }
+             WmModeBackend.cleanup_stale_state ();
          }
      }
  }

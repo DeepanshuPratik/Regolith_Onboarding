@@ -5,11 +5,11 @@ gnome = import('gnome')
 
 project_sources = []
 subdir('src')
+subdir('src/capture')
 subdir('src/components')
 subdir('src/flow')
 subdir('src/intro')
 subdir('src/platform')
-subdir('src/spike')  # PHASE 0 SPIKE
 
 project_resources = gnome.compile_resources(
   'project-resources',
@@ -34,7 +34,7 @@ app_deps += dependency('gtk+-3.0')
 app_deps += dependency('pango')
 app_deps += dependency('x11')
 app_deps += dependency('libhandy-1')
-app_deps += dependency('webkit2gtk-4.1')  # PHASE 0 SPIKE
+app_deps += dependency('webkit2gtk-4.1')
 
 app_deps += layer_shell_dep
 app_deps += dependency('gee-0.8')
