@@ -8,7 +8,6 @@ subdir('src')
 subdir('src/components')
 subdir('src/flow')
 subdir('src/intro')
-subdir('src/parser')
 subdir('src/spike')  # PHASE 0 SPIKE
 
 project_resources = gnome.compile_resources(
