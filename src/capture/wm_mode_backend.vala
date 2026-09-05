@@ -340,6 +340,7 @@ namespace linux_onboarding {
 
             // $mod and friends live in the main config, not in config.d.
             string[] main_configs = {
+                "/etc/regolith/sway/config",
                 "/usr/share/regolith/sway/config",
                 "/usr/share/regolith/common/sway/config",
                 Path.build_filename (home, ".config", "regolith3", "sway", "config"),
@@ -408,9 +409,7 @@ namespace linux_onboarding {
                 if (s == "}") { if (depth > 0) depth--; continue; }
                 if (depth != 0 || !s.has_prefix ("bindsym ")) continue;
 
-                string resolved = s;
-                for (uint i = 0; i + 1 < vars.length; i += 2)
-                    resolved = resolved.replace (vars.index (i), vars.index (i + 1));
+                string resolved = resolve_vars (s, vars);
 
                 string rest = resolved.substring ("bindsym ".length).strip ();
                 while (rest.has_prefix ("--")) {          // --no-warn, --locked, ...
@@ -442,23 +441,78 @@ namespace linux_onboarding {
             return false;
         }
 
-        // Collects `set` and `set_from_resource` definitions. For the latter we take
-        // the default value, since xrdb is not reliable on Wayland.
-        private void parse_var_line (string s, GLib.Array<string> into) {
-            if (s.has_prefix ("set ") && !s.has_prefix ("set_from_resource ")) {
-                var parts = s.split (" ", 3);
-                if (parts.length >= 3 && parts[1].has_prefix ("$")) {
-                    into.append_val (parts[1]);
-                    into.append_val (parts[2].strip ());
-                }
-            } else if (s.has_prefix ("set_from_resource ")) {
-                // set_from_resource $name resource_name default
-                var parts = s.split (" ");
+        /**
+         * Collects `set` and `set_from_resource` definitions.
+         *
+         * For set_from_resource we take the shipped default rather than querying
+         * xrdb, which is not reliable on Wayland. Note these lines are column-aligned
+         * in the Regolith configs ("set_from_resource $mod  wm.mod Mod4"), so the
+         * fields must be split on runs of whitespace — splitting on a single space
+         * yields an empty token and shifts the default value out of position.
+         */
+        private void parse_var_line (string raw, GLib.Array<string> into) {
+            var s = raw.replace ("\t", " ");
+
+            if (s.has_prefix ("set_from_resource ")) {
+                // set_from_resource $name resource_key default_value
+                var parts = tokenize (s);
                 if (parts.length >= 4 && parts[1].has_prefix ("$")) {
                     into.append_val (parts[1]);
-                    into.append_val (parts[3].strip ());
+                    into.append_val (unquote (parts[3]));
+                }
+            } else if (s.has_prefix ("set ")) {
+                // set $name value   — the value may itself contain spaces
+                var parts = tokenize (s);
+                if (parts.length >= 3 && parts[1].has_prefix ("$")) {
+                    int after_name = s.index_of (parts[1]) + parts[1].length;
+                    into.append_val (parts[1]);
+                    into.append_val (unquote (s.substring (after_name).strip ()));
                 }
             }
+        }
+
+        private static string[] tokenize (string s) {
+            string[] parts = {};
+            foreach (var t in s.split (" ")) {
+                var trimmed = t.strip ();
+                if (trimmed.length > 0) parts += trimmed;
+            }
+            return parts;
+        }
+
+        private static string unquote (string s) {
+            if (s.length >= 2 && s.has_prefix ("\"") && s.has_suffix ("\""))
+                return s.substring (1, s.length - 2);
+            return s;
+        }
+
+        /**
+         * Substitutes $variables into a config line, longest name first.
+         *
+         * Order matters: Regolith defines both $ws1 and $ws10, and replacing the
+         * shorter name first would rewrite "$ws10" into the value of $ws1 followed
+         * by a stray "0".
+         */
+        private string resolve_vars (string line, GLib.Array<string> vars) {
+            int count = (int) vars.length / 2;
+            if (count == 0) return line;
+
+            int[] order = new int[count];
+            for (int i = 0; i < count; i++) order[i] = i;
+            for (int i = 1; i < count; i++) {
+                int key = order[i];
+                int j = i - 1;
+                while (j >= 0 && vars.index (order[j] * 2).length < vars.index (key * 2).length) {
+                    order[j + 1] = order[j];
+                    j--;
+                }
+                order[j + 1] = key;
+            }
+
+            string result = line;
+            foreach (var idx in order)
+                result = result.replace (vars.index (idx * 2), vars.index (idx * 2 + 1));
+            return result;
         }
 
         // Modifier order and case are irrelevant: "Mod4+Shift+Return" == "shift+mod4+Return"
