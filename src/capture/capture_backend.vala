@@ -100,6 +100,21 @@ namespace linux_onboarding {
             return new UnsupportedBackend ();
         }
 
+        /**
+         * Whether practice is possible at all here, answerable without building a
+         * backend — the UI needs this before any workflow is opened, and
+         * SeatGrabBackend's constructor has the side effect of hooking key events.
+         */
+        public static bool supported () {
+            var desktop = Desktop.get_default ();
+            return desktop.wm.is_tiling () || !desktop.is_wayland;
+        }
+
+        /** Why practice is unavailable, phrased for the user. */
+        public static string unsupported_reason () {
+            return new UnsupportedBackend ().unavailable_reason ();
+        }
+
         /** Used when the preferred backend's start() fails part-way. */
         public static CaptureBackend fallback (Gtk.Widget owner) {
             return new SeatGrabBackend (owner);

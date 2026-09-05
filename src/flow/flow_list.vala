@@ -28,9 +28,21 @@ namespace linux_onboarding {
         this.set_margin_top(20);
         this.set_margin_end(20);
         
-        var headerText = new Label("Select a Workflow to Practice"); 
+        bool can_practice = CaptureBackends.supported ();
+
+        var headerText = new Label(can_practice ? "Select a Workflow to Practice"
+                                                : "Keyboard Shortcuts");
         headerText.get_style_context().add_class("title-1"); // Use a standard title style
         this.add(headerText);
+
+        if (!can_practice) {
+          var notice = new Label(CaptureBackends.unsupported_reason ());
+          notice.get_style_context().add_class("notice");
+          notice.wrap = true;
+          notice.justify = Gtk.Justification.CENTER;
+          notice.max_width_chars = 60;
+          this.add(notice);
+        }
         
         var grid = new Gtk.Grid();
         grid.set_column_spacing(20);

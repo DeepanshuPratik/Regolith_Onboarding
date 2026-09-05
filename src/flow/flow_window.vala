@@ -106,13 +106,17 @@ namespace linux_onboarding {
             midBox.add(demo_box);
             this.add(midBox);
 
+            bool can_practice = CaptureBackends.supported ();
+
             cancel_button = new Gtk.Button();
             cancel_button.get_style_context().add_class("cancelButton");
-            cancel_button.set_label("CANCEL");
+            // With no way to capture the keypress the page is a reference card, so
+            // the only sensible control is a way back.
+            cancel_button.set_label(can_practice ? "CANCEL" : "BACK");
             play_button = new Button();
             play_button.get_style_context().add_class("playButton");
             play_button.set_label("PLAY");
-            buttonHolder.add(play_button);
+            if (can_practice) buttonHolder.add(play_button);
             buttonHolder.add(cancel_button);
             buttonHolder.expand = false;
             buttonHolder.set_halign(Gtk.Align.CENTER);

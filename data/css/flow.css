@@ -68,3 +68,10 @@
     padding: 10px 20px;
     border-radius: 8px;
 }
+
+/* Explains why interactive practice is unavailable on this desktop. */
+.notice {
+    font-size: 0.95em;
+    opacity: 0.75;
+    padding: 8px 12px;
+}
