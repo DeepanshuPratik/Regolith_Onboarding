@@ -242,7 +242,9 @@ namespace linux_onboarding {
         // True when a sway binding event matches a spec such as "Mod4+Return".
         private bool event_matches (string expected, string symbol, Json.Array mask) {
             var parts = expected.split ("+");
-            if (symbol != parts[parts.length - 1]) return false;
+            // The WM reports the canonical keysym name, which differs in case
+            // from what a config file may have been written with.
+            if (symbol.down () != parts[parts.length - 1].down ()) return false;
 
             int expected_mods = parts.length - 1;
             if (expected_mods != (int) mask.get_length ()) return false;

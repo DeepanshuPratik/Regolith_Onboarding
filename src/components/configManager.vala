@@ -80,15 +80,46 @@ namespace linux_onboarding{
 
         if (remaining.length == 0) return "";
 
-        // Normalise key name to sway conventions.
-        string key = remaining;
-        if      (key == "Enter") key = "Return";
-        else if (key == "↑")     key = "Up";
-        else if (key == "↓")     key = "Down";
-        else if (key == "←")     key = "Left";
-        else if (key == "→")     key = "Right";
+        return mods.str + to_keysym (remaining);
+    }
 
-        return mods.str + key;
+    /**
+     * Maps a remontoire key name to the X11 keysym name a window manager will
+     * accept in a bindsym.
+     *
+     * These are not interchangeable: sway rejects "bindsym Mod4+Shift+? nop"
+     * outright with "Unknown key or button", which invalidates the whole config
+     * file, and it silently canonicalises "Space" to "space" so a literal
+     * comparison against the binding event would never match.
+     */
+    public string to_keysym (string key) {
+        switch (key) {
+            case "Enter":     return "Return";
+            case "↑":       return "Up";
+            case "↓":       return "Down";
+            case "←":       return "Left";
+            case "→":       return "Right";
+            case "Space":
+            case "space":     return "space";
+            case "?":         return "question";
+            case "!":         return "exclam";
+            case "+":         return "plus";
+            case "-":         return "minus";
+            case "=":         return "equal";
+            case ".":         return "period";
+            case ",":         return "comma";
+            case "/":         return "slash";
+            case "\\":        return "backslash";
+            case ";":         return "semicolon";
+            case "'":         return "apostrophe";
+            case "`":         return "grave";
+            case "[":         return "bracketleft";
+            case "]":         return "bracketright";
+            case "Backspace": return "BackSpace";
+            case "Prtscr":
+            case "PrtScr":    return "Print";
+            default:          return key;
+        }
     }
   }
 }
