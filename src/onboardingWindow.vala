@@ -18,7 +18,7 @@
  using Gtk;
 using Gee;
 
- namespace regolith_onboarding {
+ namespace linux_onboarding {
      
      // key press variables
      public const int KEY_CODE_ESCAPE = 65307;
@@ -81,7 +81,7 @@ using Gee;
              // Adding css file from GResource
              var css_provider = new Gtk.CssProvider();
              try {
-                 css_provider.load_from_resource(APP_PATH + "/css/Regolith_Onboarding.css");
+                 css_provider.load_from_resource(APP_PATH + "/css/app.css");
                  Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
              } catch (Error e) {
                  error ("Cannot load CSS stylesheet: %s", e.message);
@@ -195,7 +195,7 @@ using Gee;
             
             // --- PART 2: Load custom user workflows from their config directory ---
             var user_config_dir = Environment.get_user_config_dir();
-            var user_workflows_path = Path.build_filename(user_config_dir, "regolith-onboarding", "workflows");
+            var user_workflows_path = Path.build_filename(user_config_dir, "linux-onboarding", "workflows");
 
             if (FileUtils.test(user_workflows_path, FileTest.IS_DIR)) {
                 stdout.printf("\n--- Found user workflows directory: %s ---\n", user_workflows_path);
@@ -244,7 +244,7 @@ using Gee;
          }
          
          public void set_seat(Gdk.Seat seat) {
-             regolith_onboarding.seat = seat;
+             linux_onboarding.seat = seat;
          }
          
          public void process (Json.Node node) throws Error {
@@ -355,15 +355,15 @@ using Gee;
              string[] candidates;
              if (WM_NAME == "sway") {
                  candidates = {
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d", "regolith_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d", "linux_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d", "linux_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d", "linux_onboarding_mode"),
                  };
              } else {
                  candidates = {
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "i3", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "i3", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d", "regolith_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "i3", "config.d", "linux_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "i3", "config.d", "linux_onboarding_mode"),
+                     Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d", "linux_onboarding_mode"),
                  };
              }
              bool deleted = false;

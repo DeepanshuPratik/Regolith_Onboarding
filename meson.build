@@ -1,4 +1,4 @@
-project('regolith_onboarding', 'vala', version: '1.12.1')
+project('linux-onboarding', 'vala', version: '1.12.1')
 
 # 2. Import Modules
 gnome = import('gnome')  
@@ -20,29 +20,29 @@ add_project_arguments(['--pkg', 'GtkLayerShell-0.1'], language: 'vala')
 add_project_arguments(['--pkg', 'posix'], language: 'vala')
 
 layer_shell_dep = meson.get_compiler('c').find_library('gtk-layer-shell', required: true)
-regolith_onboarding_deps = [dependency('gio-unix-2.0')]
-regolith_onboarding_deps += dependency('json-glib-1.0')
-regolith_onboarding_deps += dependency('atk')
-regolith_onboarding_deps += dependency('cairo-gobject')
-regolith_onboarding_deps += dependency('gdk-3.0')
-regolith_onboarding_deps += dependency('gdk-pixbuf-2.0')
-regolith_onboarding_deps += dependency('gio-2.0')
-regolith_onboarding_deps += dependency('glib-2.0')
-regolith_onboarding_deps += dependency('gobject-2.0')
-regolith_onboarding_deps += dependency('gtk+-3.0')
-regolith_onboarding_deps += dependency('pango')
-regolith_onboarding_deps += dependency('x11')
-regolith_onboarding_deps += dependency('libhandy-1')
-regolith_onboarding_deps += dependency('webkit2gtk-4.1')  # PHASE 0 SPIKE
+app_deps = [dependency('gio-unix-2.0')]
+app_deps += dependency('json-glib-1.0')
+app_deps += dependency('atk')
+app_deps += dependency('cairo-gobject')
+app_deps += dependency('gdk-3.0')
+app_deps += dependency('gdk-pixbuf-2.0')
+app_deps += dependency('gio-2.0')
+app_deps += dependency('glib-2.0')
+app_deps += dependency('gobject-2.0')
+app_deps += dependency('gtk+-3.0')
+app_deps += dependency('pango')
+app_deps += dependency('x11')
+app_deps += dependency('libhandy-1')
+app_deps += dependency('webkit2gtk-4.1')  # PHASE 0 SPIKE
 
-regolith_onboarding_deps += layer_shell_dep
-regolith_onboarding_deps += dependency('gee-0.8')
-regolith_onboarding_deps += dependency('json-glib-1.0')
+app_deps += layer_shell_dep
+app_deps += dependency('gee-0.8')
+app_deps += dependency('json-glib-1.0')
 
 executable(
-  'regolith_onboarding',
+  'linux-onboarding',
   project_sources, 
   project_resources,
-  dependencies: regolith_onboarding_deps,
+  dependencies: app_deps,
   install: true
 )

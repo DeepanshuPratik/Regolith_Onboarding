@@ -15,7 +15,7 @@
  ****************************************************************************************/
 using Gtk;
 
-namespace regolith_onboarding {
+namespace linux_onboarding {
     
     public class IntroPage : Box {
         public const int KEY_CODE_ESCAPE = 65307;

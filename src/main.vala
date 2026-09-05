@@ -20,7 +20,7 @@ using GtkLayerShell;
 bool IS_SESSION_WAYLAND;
 string WM_NAME;
 
-namespace regolith_onboarding {
+namespace linux_onboarding {
 
     public class Application : Gtk.Application {
         public Application () {
@@ -29,7 +29,7 @@ namespace regolith_onboarding {
         }
 
         protected override void activate () {
-            var window = new regolith_onboarding.CarouselSetup (this);
+            var window = new linux_onboarding.CarouselSetup (this);
             window.show_all ();
         }
     }

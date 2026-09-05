@@ -16,7 +16,7 @@
 using Gtk;
 using Gee;
 
-namespace regolith_onboarding {
+namespace linux_onboarding {
     
     public class WorkFlows : Box {
       public delegate void workflowElement(Json.Array workflow_sequence);

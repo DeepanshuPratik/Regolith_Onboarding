@@ -10,7 +10,7 @@
  ****************************************************************************************/
 using Gtk;
 
-namespace regolith_onboarding {
+namespace linux_onboarding {
 
     public class SpikePage : Box {
 

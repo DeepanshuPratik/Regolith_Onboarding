@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/com/github/DeepanshuPratik/Regolith_Onboarding">
-    <file>css/Regolith_Onboarding.css</file>
+  <gresource prefix="/org/linux/Onboarding">
+    <file>css/app.css</file>
     <file>css/flow.css</file>
     <file>css/introPage.css</file>
     <file>images/checktick.gif</file>

@@ -16,7 +16,7 @@
 using Gtk;
 using Gee;
 
-namespace regolith_onboarding{
+namespace linux_onboarding{
   public class KeybindingsHandler {
     public HashTable<string,uint> nonModifiers; 
     public HashTable<string,int> modifierMasks;

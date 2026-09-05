@@ -16,7 +16,7 @@
 using Gtk;
 using GtkLayerShell;
 
-namespace regolith_onboarding{
+namespace linux_onboarding{
 
   public class HandleScreenMode {
     private Gdk.Rectangle workarea;

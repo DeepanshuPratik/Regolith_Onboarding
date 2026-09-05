@@ -15,7 +15,7 @@
  ****************************************************************************************/
 using Gtk;
 
-namespace regolith_onboarding {
+namespace linux_onboarding {
 
     public class WorkFlowPage : Box {
 
@@ -126,18 +126,18 @@ namespace regolith_onboarding {
                     if (matched) {
                         COMMAND_MASK = 0;
                         current_key_sequence++;
-                        regolith_onboarding.seat.ungrab();
+                        linux_onboarding.seat.ungrab();
                         Posix.system(execCommand);
                         handleTick();
                         Gdk.Window gdkwin = this.get_window();
-                        regolith_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
+                        linux_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
                         this.show_all();
                         GLib.Timeout.add_seconds(2, () => {
                             var window = (Gtk.Window) this.get_toplevel();
                             new HandleScreenMode(window, "WINDOW", curr_x, curr_y);
                             mode = "WINDOW";
                             if (current_key_sequence >= key_binding_info.get_length()) {
-                                if (IS_SESSION_WAYLAND) regolith_onboarding.seat.ungrab();
+                                if (IS_SESSION_WAYLAND) linux_onboarding.seat.ungrab();
                                 workflowList();
                                 this.destroy();
                                 return false;
@@ -295,7 +295,7 @@ namespace regolith_onboarding {
                                 if (gdkwin != null) {
                                     var grabbed = grab_inputs(gdkwin);
                                     if (grabbed != null)
-                                        regolith_onboarding.seat = grabbed;
+                                        linux_onboarding.seat = grabbed;
                                     else
                                         stderr.printf("Failed to grab input devices.\n");
                                 }
@@ -309,7 +309,7 @@ namespace regolith_onboarding {
                     if (use_wm_mode) {
                         teardown_wm_mode();
                     } else if (IS_SESSION_WAYLAND) {
-                        regolith_onboarding.seat.ungrab();
+                        linux_onboarding.seat.ungrab();
                     }
                     var window = (Gtk.Window) this.get_toplevel();
                     if (curr_x == 0 && curr_y == 0)
@@ -359,7 +359,7 @@ namespace regolith_onboarding {
 
             var config_d = find_or_create_config_d();
             if (config_d == null) return false;
-            mode_file_path = Path.build_filename(config_d, "regolith_onboarding_mode");
+            mode_file_path = Path.build_filename(config_d, "linux_onboarding_mode");
 
             var sb = new StringBuilder();
             sb.append("mode \"" + WM_MODE_NAME + "\" {\n");
