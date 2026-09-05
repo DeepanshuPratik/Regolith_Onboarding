@@ -144,15 +144,11 @@ namespace linux_onboarding {
         /** Applies the distro theme over the app's base stylesheet. */
         public void apply_theme (Gdk.Screen screen) {
             if (theme_resource == "") return;
-            try {
-                var provider = new Gtk.CssProvider ();
-                provider.load_from_resource (theme_resource);
-                // APPLICATION+1 so it beats the app's own USER-priority sheets.
-                Gtk.StyleContext.add_provider_for_screen (
-                    screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1);
-            } catch (Error e) {
-                warning ("Cannot load branding theme: %s", e.message);
-            }
+            var provider = new Gtk.CssProvider ();
+            provider.load_from_resource (theme_resource);
+            // USER+1 so the distro sheet beats the app's own USER-priority ones.
+            Gtk.StyleContext.add_provider_for_screen (
+                screen, provider, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1);
         }
     }
 }

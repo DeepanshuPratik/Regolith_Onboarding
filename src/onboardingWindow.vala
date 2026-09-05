@@ -55,13 +55,11 @@ namespace linux_onboarding {
                 set_default_size (800,450);
             }
 
+            // load_from_resource() does not throw in GTK3; a missing resource is a
+            // build error, not something to handle at runtime.
             var css_provider = new Gtk.CssProvider();
-            try {
-                css_provider.load_from_resource(APP_PATH + "/css/app.css");
-                Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-            } catch (Error e) {
-                error ("Cannot load CSS stylesheet: %s", e.message);
-            }
+            css_provider.load_from_resource(APP_PATH + "/css/app.css");
+            Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
             // Distro theme layers over the base sheet, so it must load after it.
             Branding.get_default ().apply_theme (this.get_screen ());
 

@@ -37,12 +37,8 @@ namespace linux_onboarding {
             this.get_style_context().add_class("intro-page");
 
             var css_provider = new Gtk.CssProvider();
-            try {
-                css_provider.load_from_resource(APP_PATH + "/css/introPage.css");
-                Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-            } catch (Error e) {
-                warning ("Cannot load intro stylesheet: %s", e.message);
-            }
+            css_provider.load_from_resource(APP_PATH + "/css/introPage.css");
+            Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
 
             var branding = Branding.get_default ();
 
