@@ -18,6 +18,10 @@ using Gee;
 
 namespace linux_onboarding{
   public class KeybindingsHandler {
+
+    // The FontAwesome Linux glyph Regolith uses to mean the Super key.
+    public const string SUPER_GLYPH = "";
+
     public HashTable<string,uint> nonModifiers; 
     public HashTable<string,int> modifierMasks;
     public HashTable<string,string> remontoireSymToKey;
@@ -34,13 +38,19 @@ namespace linux_onboarding{
       nonModifiers.insert ("Tab",KEY_CODE_TAB);
       nonModifiers.insert ("Escape", KEY_CODE_ESCAPE);
       
-      modifierMasks.insert ("", Gdk.ModifierType.SUPER_MASK);
+      // Super appears two ways in workflow files: as the FontAwesome glyph
+      // U+F17A that Regolith's own configs use, and as a plain empty "<>",
+      // which is what an author writing JSON by hand will naturally produce.
+      // Both must resolve, or the modifier is silently dropped.
+      modifierMasks.insert (SUPER_GLYPH, Gdk.ModifierType.SUPER_MASK);
+      modifierMasks.insert ("", Gdk.ModifierType.SUPER_MASK);
       modifierMasks.insert ("Shift",Gdk.ModifierType.SHIFT_MASK);
       modifierMasks.insert ("Alt", Gdk.ModifierType.MOD1_MASK);
       modifierMasks.insert ("Ctrl",Gdk.ModifierType.CONTROL_MASK);
       modifierMasks.insert ("CAPS",Gdk.ModifierType.LOCK_MASK);
 
-      remontoireSymToKey.insert ("", "Super_L");
+      remontoireSymToKey.insert (SUPER_GLYPH, "Super_L");
+      remontoireSymToKey.insert ("", "Super_L");
       remontoireSymToKey.insert ("Shift","Shift_L");
       remontoireSymToKey.insert ("Alt", "Alt_L");
       remontoireSymToKey.insert ("Ctrl","Control_L");
