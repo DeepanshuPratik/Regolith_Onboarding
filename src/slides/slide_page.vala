@@ -32,6 +32,14 @@ namespace linux_onboarding {
         private Navigate go_back;
         private Navigate go_forward;
 
+        /**
+         * WebKit gives each WebView its own web process by default, which for a
+         * short slide deck costs a couple of hundred megabytes per slide. Views
+         * created as "related" to an existing one share that process instead, so
+         * the whole deck runs in a single one.
+         */
+        private static WebKit.WebView? process_leader = null;
+
         public SlidePage (string resource_path, bool is_last,
                           owned Navigate back, owned Navigate forward) {
             Object (orientation: Gtk.Orientation.VERTICAL, spacing: 8);
@@ -50,7 +58,10 @@ namespace linux_onboarding {
         }
 
         private WebKit.WebView build_view () {
-            var view = new WebKit.WebView ();
+            var view = (process_leader == null)
+                ? new WebKit.WebView ()
+                : new WebKit.WebView.with_related_view (process_leader);
+            if (process_leader == null) process_leader = view;
 
             var settings = view.get_settings ();
             settings.enable_javascript = Branding.get_default ().allow_slide_scripts;
