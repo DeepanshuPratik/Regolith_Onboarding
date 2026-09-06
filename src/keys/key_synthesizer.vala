@@ -59,7 +59,11 @@ namespace linux_onboarding {
 
         // An unrecognised token passes through unchanged rather than becoming
         // null, which previously dropped the modifier from the command entirely.
-        private string translate (string token, bool use_ydotool) {
+        //
+        // internal rather than private only so tests/ can reach it: it is pure,
+        // it is where that bug lived, and the alternative is reaching it through
+        // command_for, whose ydotool branch depends on what is installed.
+        internal string translate (string token, bool use_ydotool) {
             var mapped = keys.remontoireSymToKey.get (token);
             // Fall through to the keysym table so punctuation and Space reach
             // ydotool under names it recognises.
@@ -75,8 +79,12 @@ namespace linux_onboarding {
          * resolved, but it has to produce something valid when it does — an
          * unrecognised name makes ydotool fail silently, which looks exactly like
          * the step doing nothing.
+         *
+         * internal rather than private for the same reason as translate: it is a
+         * pure name-to-name mapping, and it is only reachable through
+         * command_for on a machine that actually has ydotool.
          */
-        private string to_ydotool_key (string xkey) {
+        internal string to_ydotool_key (string xkey) {
             switch (xkey) {
                 case "Return":       return "KEY_ENTER";
                 case "Up":           return "KEY_UP";

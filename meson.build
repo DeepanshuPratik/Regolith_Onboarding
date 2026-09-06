@@ -99,3 +99,52 @@ executable(
   dependencies: app_deps,
   install: true
 )
+
+# ---- tests ----------------------------------------------------------------
+#
+# `meson test -C build`. The cases live in tests/; the code they exercise is
+# compiled straight into the test binary rather than linked from a library.
+# The app builds one executable out of `project_sources`, which includes
+# main.vala, so a test binary — which needs its own main () — cannot link that
+# as it stands. Extracting a static library would mean splitting
+# `project_sources` in every src/*/meson.build and re-pointing the executable
+# at it: a change across the whole build for the sake of four files. Naming the
+# files costs one line each and leaves every existing meson.build untouched.
+# Promote this to a library if the covered surface ever outgrows a short list.
+#
+# Declared here, after add_project_arguments(), because meson derives a Vala
+# target's generated C paths from the target's own directory — a target under
+# tests/ cannot compile ../src/*.vala.
+test_sources = []
+subdir('tests')
+
+# Pure, session-free code under test: no display, no compositor, no main loop.
+# Observers, placers and dispatchers are deliberately absent — they need a live
+# session, and a test that needs one is a test nobody runs.
+test_sources += files(
+  'src/keys/key_spec.vala',
+  'src/keys/key_synthesizer.vala',
+  'src/keys/key_tables.vala',
+  # KeySynthesizer.command_for asks Desktop which session it is in.
+  'src/session/desktop.vala'
+)
+
+# gdk-3.0 for the modifier masks in key_tables.vala; gtk+-3.0 because the
+# project-wide `--pkg GtkLayerShell-0.1` pulls in a vapi declared against Gtk.
+test_deps = [
+  dependency('glib-2.0'),
+  dependency('gobject-2.0'),
+  dependency('gdk-3.0'),
+  dependency('gtk+-3.0')
+]
+
+unit_tests = executable(
+  'unit-tests',
+  test_sources,
+  dependencies: test_deps,
+  install: false
+)
+
+# TAP so meson names each failing case instead of reporting one pass/fail for
+# the lot, which is what makes the suite worth adding cases to.
+test('unit', unit_tests, args: ['--tap'], protocol: 'tap')
