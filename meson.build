@@ -126,6 +126,7 @@ test_sources += files(
   'src/keys/key_spec.vala',
   'src/keys/key_synthesizer.vala',
   'src/keys/key_tables.vala',
+  'src/keys/sanitise.vala',
   # KeySynthesizer.command_for asks Desktop which session it is in.
   'src/session/desktop.vala'
 )

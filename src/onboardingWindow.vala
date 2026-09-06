@@ -152,16 +152,11 @@ namespace linux_onboarding {
                 // experience, it is a SIGABRT at show_all(); see
                 // LayerShellSupport for the measurements.
                 //
-                // ==> This branch is deliberately empty, and it is NOT finished. <==
-                //
-                // Holding the keyboard is a real capability that this session now
-                // simply does not have, so practice cannot capture a keypress
-                // here. Filling it is issue #14: a keyboard-only seat grab, which
-                // is what plays the role EXCLUSIVE plays above. Until #14 lands,
-                // an empty branch is the correct behaviour — the window opens,
-                // the deck and the workflow catalogue work, and the registry
-                // hands practice a null observer that explains itself — but do
-                // not read the emptiness as "nothing is needed here".
+                // The window itself does not grab here. The grab is the
+                // observer's, taken in PracticeSession.start() — see
+                // SeatGrabObserver for why KEYBOARD only, and why recovery on
+                // GNOME is the user clicking back in rather than anything we
+                // can do from inside the process.
             } else {
                 this.map.connect (() => {
                    var gdkwin = this.get_window ();

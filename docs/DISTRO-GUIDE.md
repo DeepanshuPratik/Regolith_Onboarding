@@ -52,7 +52,6 @@ my-distro-branding/
 ```ini
 [Branding]
 Name=Regolith
-Theme=theme.css
 
 # Your branding's version. Optional, defaults to 0. See "Version gating" below.
 Version=1.0
@@ -80,7 +79,10 @@ Url=https://github.com/regolith-linux/onboarding-marketplace
 
 `Name` is the only identity string left in this file, and it is here because it
 is needed where no page is rendered: the catalogue, the startup log and
-`--check-workflows`. Your logo and tagline are markup in `welcome.html`.
+`--check-workflows`. Your logo and tagline used to have keys here too; they are
+now markup inside `welcome.html`, because the welcome page renders in the same
+WebKit deck as the slides. The `[Marketplace]` `Url` is what the `+` tile in
+the catalogue hands to the system browser.
 
 ### theme.css
 
@@ -97,7 +99,6 @@ win. The styling contract — the class names worth overriding — is:
 | `.pill-button.suggested-action` | Primary buttons |
 | `.playButton`, `.cancelButton` | Practice controls |
 | `.workflow-button`, `.add-tile` | Catalogue tiles |
-| `.command-block` | The marketplace command box |
 
 Note GTK CSS is not web CSS: there is no `max-width`, no `line-height`, no
 flexbox. Unknown properties log a parse error and are ignored. This applies to
@@ -384,11 +385,14 @@ own is the Super key.
 <> 2                Super+2
 ```
 
-Parsing is deliberately forgiving. An unrecognised field is logged and skipped
-rather than discarding the file, so a workflow written against a newer schema
-still loads what this build understands. Older key names (`workspaces`,
-`workflow_name`, `workflow_description`, `key_bindings_sequence`, and
-`function` for a step's description) are still accepted.
+Parsing is deliberately forgiving for *shipping* workflows — an unrecognised
+field is logged and skipped rather than discarding the file, so a workflow
+written against a newer schema still loads what this build understands. But a
+`key_id`, which can arrive from a marketplace repository, is treated as
+**untrusted input**: the app sanitises it before writing anything to the window
+manager's config, and a `key_id` that contains a newline, a `}`, a `"` or a `#`
+is rejected outright rather than written through. See "Security: the sanitiser"
+below.
 
 ### Checking your workflows
 
@@ -426,32 +430,158 @@ Two things worth keeping in mind:
 - **`Escape` is reserved.** It is how the user backs out of a workflow, so a
   step bound to it cannot be captured.
 
+## Security: the sanitiser
+
+Practice works on sway/i3 by writing a **binding mode** into the user's
+`config.d` — a block that binds every workflow key to `nop` so the app can see a
+press without the WM acting on it. Because those keys come from workflow JSON,
+and a workflow can arrive from a marketplace repository as a hand-placed file,
+a malicious `key_id` could otherwise terminate the `mode "..." {` block and
+inject arbitrary sway config that the WM executes on reload.
+
+Every `key_id` therefore passes through a sanitiser before it can become part of
+the generated config. It rejects, with a reason printed to `--check-workflows`:
+
+- a `key_id` containing a newline (terminates the block),
+- one containing `}` (closes the block early),
+- one containing `"` (breaks the mode-name string),
+- one containing `#` (comments out the rest of the line),
+- anything the key parser cannot turn into a valid bindsym spec — including a
+  malformed `<...>` with no closing bracket, and an unrecognised modifier name,
+  which used to be **silently dropped**, producing a key that simply never
+  matched.
+
+The app never downloads or runs anything; but the *result* of a user following
+the marketplace's install instructions is still a JSON file that ends up in
+sway's `config.d`, so the armouring lives in the app, not in the trust the user
+places in a repository. This is why running `--check-workflows` after adding a
+marketplace workflow matters: it is the offline place to learn which keys were
+rejected and why.
+
 ## Which desktops support practice
 
-| Desktop | Capture | How |
+The app is built around five **capability contracts**; a desktop implements any
+subset of them, and what it cannot do is simply not offered, with an honest
+explanation when the user would expect it. The five are:
+
+| Contract | Answers | Interface is |
 |---|---|---|
-| sway, i3 | Yes | A binding mode is installed in `config.d` and binding events are read over IPC. No input grab, so the rest of the desktop keeps working. |
-| Any X11 session | Yes | Seat grab plus GTK key events. |
-| GNOME, KDE on Wayland | No | The compositor consumes its own shortcuts before any client sees them, and exposes no binding-event stream. |
+| `SessionProbe` | what session are we in | `claims_session()` + facts |
+| `ShortcutObserver` | did the key get pressed | `install/start/arm/stop/uninstall` + `step_matched`/`aborted` |
+| `BindingResolver` | what is this key bound to | `resolve(key_id, out command)` → BOUND/UNBOUND/UNKNOWN |
+| `ActionDispatcher` | make the action happen | `dispatch(key_id, bound_command)` |
+| `WindowPlacer` | keep the card out of the way | `shrink_for_practice()`/`restore()` |
 
-Where practice is unavailable the app says so and presents the workflows as a
-reference card. Branding, slides and the catalogue all still work.
+Observation and dispatch are deliberately separate: a desktop can resolve and
+dispatch a shortcut while being unable to observe a single press, and the
+catalogue still works — it just drops the PLAY button.
 
-Adding a desktop means implementing `CaptureBackend` in `src/capture/` and
-returning it from `CaptureBackends.choose()`. For GNOME the bindings themselves
-are readable from the `org.gnome.desktop.wm.keybindings` and
-`org.gnome.settings-daemon.plugins.media-keys` GSettings schemas; the missing
-half is a way to observe the presses.
+The practical support table:
+
+| Desktop | Practice | How |
+|---|---|---|
+| sway | Yes | Binding mode + IPC, no input grab |
+| i3 | Yes | Binding mode + IPC; no resolver (keys are synthesized) |
+| Any X11 session | Yes | Keyboard-only seat grab + GTK key events |
+| GNOME on Wayland | Yes* | Keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
+| KDE (KWin) on Wayland | Yes* | Same keyboard-only grab mechanism |
+
+\* GNOME and KDE are **code-complete but unauthored**: the platform implements
+observation, resolution and dispatch, but no `workflows/gnome/*.json` or
+`workflows/kde/*.json` ship with the reference branding, so practice has nothing
+to teach until someone authors the workflow set — which needs real hardware and
+a second data point on default bindings. The app works end-to-end on those
+desktops the moment the JSON is supplied.
+
+Where practice is unavailable the app says so plainly and presents the same
+workflows as a reference card. Branding, slides and the catalogue work
+everywhere.
+
+## Adding a desktop
+
+A new desktop is one directory plus two lines — no changes to shared code. That
+is the whole contract, and this section is a walkthrough with a real example.
+
+Say you are adding **Hyprland** and want it to observe and dispatch by its own
+IPC while getting window placement from the generic Wayland placer.
+
+**1. Create `src/platforms/hyprland/`.** Put a `platform.vala` in it. The
+platform declares which session it owns and returns the pieces of the five
+contracts it implements; everything it does not return is left for the next
+platform in the registry's list, or the registry's null implementation.
+
+```vala
+public class HyprlandPlatform : GLib.Object, Platform {
+    public string id () { return "hyprland"; }
+
+    public bool claims_session () {
+        // how you tell this is Hyprland: an env var, a socket, a config path
+        return Environment.get_variable ("HYPRLAND_INSTANCE_SIGNATURE") != null;
+    }
+
+    // Observation via a mode block + IPC, like sway's.
+    public bool can_observe () { return true; }
+    public ShortcutObserver? observer (Gtk.Widget owner) { return new HyprlandObserver (owner); }
+
+    // Dispatch by running the resolved command through hyprctl.
+    public ActionDispatcher? dispatcher (ShortcutObserver observer) { return new HyprlandDispatcher (); }
+}
+```
+
+Every service factory is `Platform`-virtually and defaults to returning `null`,
+so an implementation that offers only a subset — say observation without a
+resolver — simply omits the others.
+
+**2. Register it in `src/platforms/registry.vala` `all()`.** Most-specific
+desktops go **above** the display-server layers and above any desktop that
+names a session it does not actually drive (GNOME, which recognises itself by
+name and so claims Regolith too). Hyprland goes right after sway:
+
+```vala
+private static Platform[] all () {
+    return {
+        new SwayPlatform (),
+        new HyprlandPlatform (),
+        new GnomePlatform (),
+        new X11Platform (),
+        new WaylandPlatform ()
+    };
+}
+```
+
+The order is the whole of the policy: the registry walks the list in order and,
+for each of the five services, takes the first platform that claims the session
+and offers a working implementation.
+
+**3. Add one line to `src/platforms/meson.build`.**
+
+```meson
+subdir('hyprland')
+```
+
+That is it. `src/platforms/hyprland/platform.vala` calls this `linux_onboarding`
+namespace and those service interfaces are compiled into the same build, so a
+new file in the directory needs no other wiring — and a second `.vala` in the
+directory (say a `resolver.vala`) is picked up by adding it to that directory's
+own `meson.build`, alongside the sway/gnome/x11 ones.
+
+The reason this stays compile-time rather than runtime (see
+`docs/adr/0002-compile-time-registry.md`): a rebuild is cheap, a runtime plugin
+contract would mean owning a public GObject ABI across Vala compiler versions,
+and the set of desktops worth supporting changes about once a year. A
+config-declared platform — a no-code `platform.conf` naming shell commands per
+capability — is planned to layer on top without reshaping this, as one more
+`Platform` in the list whose `claims_session()` reads a file.
 
 ## Marketplace repositories
 
-The `+` tile in the catalogue points at the URL from your `branding.conf` and
-shows the user the commands to install from it. **The app never downloads or
-runs anything** — it displays commands and opens the URL in the system browser,
-and the user runs them themselves having read them.
+The `+` tile in the catalogue opens your `branding.conf` `[Marketplace] Url` in
+the user's real browser and quits the app. **The app never downloads, fetches
+or runs anything** — the marketplace is a plain repository the user visits, and
+installing from it is a manual act the user performs, having read the files.
 
-For the displayed `cp` command to be correct, lay the repository out the same
-way as any other workflow source:
+Lay the repository out the same way as any other workflow source, so the
+manual install command is a straight copy:
 
 ```
 your-marketplace-repo/
@@ -459,3 +589,33 @@ your-marketplace-repo/
     ├── regolith/*.json
     └── gnome/*.json
 ```
+
+### Installing a marketplace workflow by hand
+
+The reference branding ships no install mechanism, so this is the command a
+user actually runs to pull a workflow from a marketplace repository:
+
+```bash
+mkdir -p ~/.config/linux-onboarding/workflows/<desktop-id>
+git clone <marketplace-url> /tmp/onboarding-marketplace
+cp /tmp/onboarding-marketplace/workflows/<desktop-id>/*.json \
+    ~/.config/linux-onboarding/workflows/<desktop-id>/
+```
+
+Where `<desktop-id>` is the workflow directory for their desktop (`regolith`,
+`gnome`, `default`, …) — see "Keyed by desktop environment". A file in that
+location shows up in the catalogue next to the built-in workflows on the next
+launch, because workflow discovery reads `$XDG_CONFIG_HOME/...` at runtime.
+
+After copying, run `--check-workflows`. It is the offline place to catch a bad
+`key_id` — one that parses to an unmatchable key, or one the sanitiser rejected
+— before it fails silently at runtime in the middle of a workflow. A single
+rejected `key_id` in one marketplace workflow used to disable the binding mode
+for *every* workflow; the sanitiser now refuses to write it at all (see
+"Security: the sanitiser"), so a failure you care about surfaces in
+`--check-workflows` rather than as a mysteriously missing shortcut.
+
+Finally, do not hand users a script that pipes a marketplace file into sway's
+config directly. The point of the install path above is that the file first sits
+in the workflow directory, where the app's sanitiser gates it before it ever
+reaches the window manager's `config.d`.

@@ -2,5 +2,6 @@
 project_sources += files(
   'key_spec.vala',
   'key_synthesizer.vala',
-  'key_tables.vala'
+  'key_tables.vala',
+  'sanitise.vala'
 )

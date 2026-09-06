@@ -19,12 +19,14 @@ using Gee;
 namespace linux_onboarding {
 
     /**
-     * The workflow catalogue, plus a tile explaining how to install more.
+     * The workflow catalogue.
      *
-     * Both views live in one Gtk.Stack rather than a dialog. A dialog would be a
-     * second toplevel, and this window is a gtk-layer-shell surface — the same
-     * property that makes portal calls fatal here makes extra toplevels a risk
-     * not worth taking for a panel of text.
+     * The `+` tile used to switch to a second Stack page showing copy-paste
+     * install commands. D7 ruled that out: the app ships no install mechanism,
+     * the marketplace's own README documents the manual fetch-and-place
+     * command, and a button that runs cp on a marketplace URL was both more
+     * and less than a download manager should be. The tile now hands the URL
+     * to the system browser and quits, and the rest of the panel is gone.
      */
     public class WorkFlows : Box {
       public delegate void workflowElement(Workflow workflow);
@@ -32,7 +34,6 @@ namespace linux_onboarding {
       private const int TILE_WIDTH = 300;
       private const int TILE_HEIGHT = 150;
 
-      private Gtk.Stack stack;
       private Gtk.Grid grid;
       private Gtk.Label headerText;
       private workflowElement on_selected;
@@ -71,11 +72,7 @@ namespace linux_onboarding {
         scrolledWindow.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
         scrolledWindow.set_vexpand(true);
 
-        stack = new Gtk.Stack();
-        stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE);
-        stack.add_named(scrolledWindow, "list");
-        stack.add_named(build_marketplace_panel(), "marketplace");
-        this.add(stack);
+        this.add(scrolledWindow);
 
         populate(workflowList);
       }
@@ -113,8 +110,14 @@ namespace linux_onboarding {
         grid.show_all();
       }
 
-      // The "install more" affordance. Sized like a workflow tile so it reads as
-      // part of the catalogue rather than a stray control.
+      /**
+       * The "install more" affordance. Sized like a workflow tile so it reads as
+       * part of the catalogue rather than a stray control.
+       *
+       * Opens the marketplace URL in the user's real browser and quits the app.
+       * The user does the install themselves — see the marketplace section of
+       * docs/DISTRO-GUIDE.md. Nothing is downloaded or executed by the app.
+       */
       private Gtk.Button build_add_tile(bool catalogue_is_empty) {
         var plus = new Label("+");
         plus.get_style_context().add_class("add-tile-plus");
@@ -140,119 +143,34 @@ namespace linux_onboarding {
         button.get_style_context().add_class("workflow-button");
         button.get_style_context().add_class("add-tile");
         button.add(tile);
-        button.clicked.connect(() => { stack.set_visible_child_name("marketplace"); });
+        button.clicked.connect(() => { open_marketplace_and_quit (); });
         return button;
       }
 
       /**
-       * Tells the user how to install workflows and does nothing else.
+       * The entire "outbound" action this app takes. Hands the URL to the
+       * system browser, then exits through the same path every other quit
+       * does — release_practice() removes the binding mode, so closing the
+       * window from the browser side cannot strand it in config.d.
        *
-       * Deliberately no downloading and no running of anything: these are
-       * community-authored files, and fetching or executing them on someone's
-       * behalf — from a button they cannot read the contents of first — is not a
-       * decision this app should make for them. The commands are shown so the
-       * user runs them knowingly. The only outbound action here is handing a URL
-       * to the system browser.
+       * Not Gtk.show_uri_on_window(): that exports a window handle via
+       * xdg-foreign for the OpenURI portal, which a gtk-layer-shell surface
+       * cannot do, and the compositor kills us for trying. The slide deck
+       * makes the same call for the same reason — see SlidePage.
        */
-      private Gtk.Widget build_marketplace_panel() {
-        var branding = Branding.get_default ();
-        var install_dir = locator.user_install_dir ();
-
-        var panel = new Box(Gtk.Orientation.VERTICAL, 12);
-        panel.set_valign(Gtk.Align.CENTER);
-
-        var title = new Label(branding.marketplace_name != ""
-            ? branding.marketplace_name
-            : "Add More Workflows");
-        title.get_style_context().add_class("title-1");
-        panel.add(title);
-
-        var blurb = new Label(
-            "Workflows are plain JSON files. Drop them in the folder below and they "
-            + "appear here alongside the built-in ones.");
-        blurb.get_style_context().add_class("text-secondary");
-        blurb.wrap = true;
-        blurb.max_width_chars = 64;
-        blurb.justify = Gtk.Justification.CENTER;
-        panel.add(blurb);
-
-        var command = build_command(branding.marketplace_url, install_dir);
-
-        var command_view = new Label(command);
-        command_view.get_style_context().add_class("command-block");
-        command_view.selectable = true;
-        command_view.wrap = true;
-        command_view.max_width_chars = 68;
-        command_view.xalign = 0;
-        panel.add(command_view);
-
-        var caution = new Label(
-            "This app does not download or run anything for you. Read what you are "
-            + "installing, then run these yourself.");
-        caution.get_style_context().add_class("notice");
-        caution.wrap = true;
-        caution.max_width_chars = 64;
-        caution.justify = Gtk.Justification.CENTER;
-        panel.add(caution);
-
-        var buttons = new Box(Gtk.Orientation.HORIZONTAL, 8);
-        buttons.set_halign(Gtk.Align.CENTER);
-
-        var back = new Button.with_label("Back");
-        back.get_style_context().add_class("cancelButton");
-        back.clicked.connect(() => { stack.set_visible_child_name("list"); });
-        buttons.add(back);
-
-        var copy = new Button.with_label("Copy Commands");
-        copy.get_style_context().add_class("cancelButton");
-        copy.clicked.connect(() => {
-            Gtk.Clipboard.get_default(this.get_display()).set_text(command, -1);
-            copy.set_label("Copied");
-        });
-        buttons.add(copy);
-
-        if (branding.marketplace_url != "") {
-          var open = new Button.with_label("Open in Browser");
-          open.get_style_context().add_class("pill-button");
-          open.get_style_context().add_class("suggested-action");
-          open.clicked.connect(() => {
-              // Not show_uri_on_window(): see SlidePage for why that is fatal here.
-              try {
-                  AppInfo.launch_default_for_uri(branding.marketplace_url, null);
-              } catch (Error e) {
-                  warning("Cannot open marketplace URL: %s", e.message);
-              }
-          });
-          buttons.add(open);
+      private void open_marketplace_and_quit () {
+        var url = Branding.get_default ().marketplace_url;
+        if (url == "") {
+          warning ("marketplace tile clicked, but no marketplace_url is configured");
+          return;
         }
-
-        var rescan = new Button.with_label("Rescan");
-        rescan.get_style_context().add_class("cancelButton");
-        rescan.set_tooltip_text("Pick up files you just copied, without restarting");
-        rescan.clicked.connect(() => {
-            populate(locator.load ());
-            stack.set_visible_child_name("list");
-        });
-        buttons.add(rescan);
-
-        panel.add(buttons);
-        return panel;
-      }
-
-      // The detected desktop is substituted in, so the commands are paste-ready.
-      private string build_command(string url, string install_dir) {
-        var desktop_id = Path.get_basename(install_dir);
-        var sb = new StringBuilder();
-        sb.append("mkdir -p ").append(install_dir).append("\n");
-        if (url != "") {
-            sb.append("git clone ").append(url).append(" /tmp/onboarding-marketplace\n");
-            sb.append("cp /tmp/onboarding-marketplace/workflows/")
-              .append(desktop_id).append("/*.json \\\n    ")
-              .append(install_dir).append("/");
-        } else {
-            sb.append("# then copy any workflow .json files into that folder");
+        try {
+          AppInfo.launch_default_for_uri (url, null);
+        } catch (Error e) {
+          warning ("Cannot open marketplace URL: %s", e.message);
+          return;
         }
-        return sb.str;
+        Gtk.main_quit ();
       }
     }
 }

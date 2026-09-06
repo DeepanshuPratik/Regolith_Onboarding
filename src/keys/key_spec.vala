@@ -62,9 +62,19 @@ namespace linux_onboarding {
         string remaining = raw_keybinding;
 
         // Consume leading modifier tokens of the form <...>.
+        //
+        // A modifier that is unrecognised (an ASCII token other than Shift/Alt/
+        // Ctrl/CAPS) is a parse failure of the input, not a "do nothing" case.
+        // The old behaviour was to silently drop the modifier and continue, so
+        // `<Super> Enter` came out as `Enter` and a third-party workflow bound
+        // it to the wrong keys. Worse, a malformed spec like `<Shift` (no
+        // closing '>') would slip through and emit a literal `<Shift` that sway
+        // rejects, and one rejected line invalidates the whole generated mode
+        // block — every workflow's bindings silently disabled by a single bad
+        // step. So both cases now bail with "".
         while (remaining.has_prefix ("<")) {
             int close = remaining.index_of (">");
-            if (close < 0) break;  // malformed — no closing '>'
+            if (close < 0) return "";  // malformed — no closing '>'
 
             string tok = remaining.slice (1, close);
 
@@ -74,7 +84,7 @@ namespace linux_onboarding {
             else if (tok == "CAPS")   mods.append ("Lock+");
             else if (tok.length == 0 || (uint8) tok[0] > 127)
                                       mods.append ("Mod4+");  // bare <> or Super icon
-            // truly unknown ASCII modifier tokens are silently ignored
+            else return "";            // unrecognised ASCII modifier — reject
 
             remaining = remaining.slice (close + 1, remaining.length);
         }
@@ -85,7 +95,43 @@ namespace linux_onboarding {
 
         if (remaining.length == 0) return "";
 
-        return mods.str + to_keysym (remaining);
+        string keysym = to_keysym (remaining);
+        // to_keysym returns its input unchanged for an unknown key, so a
+        // garbage tail like `\` (backslash inside JSON) or a leading whitespace
+        // is the user's data going straight into the config. Reject anything
+        // that is not a printable keysym shape here rather than writing it
+        // through to a file the WM will execute.
+        if (!is_safe_keysym_shape (keysym)) return "";
+
+        return mods.str + keysym;
+    }
+
+    /**
+     * The shape sway will accept in a `bindsym` line. Whitelisting the set of
+     * characters that can appear in a key name is the second half of the
+     * sanitiser — the first half is the parser not emitting a wrong answer, and
+     * the third is the wrapping code refusing to write a line that contains
+     * `}` or a newline. Together they are what stops a marketplace-supplied
+     * `key_id` from terminating the mode block and injecting arbitrary sway
+     * config into the user's `config.d`.
+     *
+     * Alphanumerics, the same set of punctuation that appears in the table
+     * itself (`+`, `-`), and a handful of names that the rest of the code
+     * passes through verbatim. Spaces and newlines are deliberately not on the
+     * list: a `key_id` containing one of those is a parse error upstream, not
+     * something to write through.
+     */
+    internal static bool is_safe_keysym_shape (string keysym) {
+        if (keysym.length == 0) return false;
+        for (int i = 0; i < keysym.length; i++) {
+            char c = keysym[i];
+            bool ok = (c >= 'a' && c <= 'z')
+                   || (c >= 'A' && c <= 'Z')
+                   || (c >= '0' && c <= '9')
+                   || c == '+' || c == '-' || c == '_';
+            if (!ok) return false;
+        }
+        return true;
     }
 
     /**

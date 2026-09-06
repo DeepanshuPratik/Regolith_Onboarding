@@ -40,9 +40,24 @@ namespace linux_onboarding {
             this.observer = observer;
         }
 
-        public bool available () { return true; }
+        /**
+         * Whether dispatch is actually possible here.
+         *
+         * False when xdotool is not installed. This used to return true
+         * unconditionally, which was the exact dishonesty #16 asked every
+         * dispatcher to avoid: on X11 synthesis is the only route, and with no
+         * tool there is nothing to fall back to, so claiming to work would let
+         * a user watch a step complete while their desktop did nothing.
+         * GnomeDispatcher already checked; X11 now agrees.
+         */
+        public bool available () {
+            return GLib.Environment.find_program_in_path ("xdotool") != null;
+        }
 
-        public string unavailable_reason () { return ""; }
+        public string unavailable_reason () {
+            return available () ? ""
+                : "xdotool is not installed, so shortcuts cannot be performed for you on X11.";
+        }
 
         public bool dispatch (string key_id, string? bound_command) {
             observer.release_grab ();

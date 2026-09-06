@@ -46,7 +46,6 @@ namespace linux_onboarding {
         private string ipc;
         private string wm_id;
 
-        private KeySpec spec = new KeySpec ();
         private string mode_file_path = "";
 
         public SwayModes (string ipc, string wm_id) {
@@ -78,6 +77,22 @@ namespace linux_onboarding {
          * process by the observer, so a wider mode only means seeing events we
          * already ignore, while a mode per workflow would multiply both the config
          * text and the escaping burden for no behavioural gain.
+         *
+         * Each `bindsym` line is built from a workflow `key_id`, which can arrive
+         * from a marketplace repository via a hand-placed file. The mode block is
+         * written to the user's `config.d` and reloaded by sway, so anything that
+         * can terminate the block can inject arbitrary sway config that the WM
+         * then executes. The sanitiser (sanitise_key_id) is what stops that: a
+         * `key_id` containing a newline plus `}` closes the block; one that
+         * contains just a `}` does the same; one with a stray `"` confuses the
+         * surrounding mode-string parsing on the next reload. All of them are
+         * rejected, and the workflow is skipped, before the line is ever written.
+         *
+         * A sanitiser rejecting a key it cannot prove safe is the only honest
+         * answer. Writing a "best-effort" line and crossing our fingers is the
+         * exact class of bug the parser bugs in #18 surfaced: a key reported as
+         * bound to something it is not, or a config line that looks fine and
+         * silently invalidates the whole block.
          */
         public bool install (Gee.List<Workflow> workflows) {
             var config_d = find_or_create_config_d ();
@@ -86,6 +101,7 @@ namespace linux_onboarding {
 
             var block = new StringBuilder ();
             block.append ("mode \"" + MODE_NAME + "\" {\n");
+            int rejected = 0;
             foreach (var workflow in workflows) {
                 var steps = workflow.steps;
                 for (int i = 0; i < (int) steps.get_length (); i++) {
@@ -93,8 +109,16 @@ namespace linux_onboarding {
                     if (element == null || element.get_node_type () != Json.NodeType.OBJECT) continue;
                     var step = element.get_object ();
                     if (!step.has_member ("key_id")) continue;
-                    var key = spec.format_spec_for_mode (step.get_string_member ("key_id"));
-                    if (key == "") continue;
+
+                    string key_id = step.get_string_member ("key_id");
+                    string key;
+                    string? reason = sanitise_key_id_for_mode (key_id, out key);
+                    if (reason != null) {
+                        stderr.printf ("Skipping unsafe workflow key %s in '%s': %s\n",
+                                       key_id, workflow.name, reason);
+                        rejected++;
+                        continue;
+                    }
                     block.append ("    bindsym " + key + " nop\n");
                 }
             }
@@ -122,9 +146,28 @@ namespace linux_onboarding {
             }
 
             // Give the WM a moment to finish the reload before the caller subscribes.
+            // Sway is not synchronous: a `reload` that has returned can still have
+            // the mode block unprocessed when the next event arrives, and a
+            // `mode enter` sent during that window gets reset back to "default".
+            // The cost is paid once at startup, before the window is even shown,
+            // so it is invisible to the user — which is the whole reason the
+            // install-time reload moved here from per-workflow PLAY (#13).
             GLib.Thread.usleep (200 * 1000);
+
+            if (rejected > 0) {
+                // Loud, not silent: a marketplace workflow with a bad key is a
+                // supply-chain problem the user should know about, not a quiet
+                // skip we let them discover when a step never matches.
+                stderr.printf ("Installed mode with %d workflow key(s) rejected. " +
+                               "Run --check-workflows to see the offending steps.\n",
+                               rejected);
+            }
             return true;
         }
+
+        // The bindsym-line sanitiser is in src/keys/sanitise.vala, alongside
+        // the KeySpec parser it composes with. Keeping it there means the
+        // security-critical path is testable without a running sway.
 
         /** Where the block was written, for the log. Empty when nothing is installed. */
         public string installed_at () { return mode_file_path; }

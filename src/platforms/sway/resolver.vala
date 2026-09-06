@@ -39,12 +39,27 @@ namespace linux_onboarding {
             this.is_sway = wm_id == "sway";
         }
 
-        public bool available () { return is_sway; }
+        /**
+         * True for both sway and i3, and this is deliberate.
+         *
+         * A resolver answering unavailable() lets the registry keep walking to
+         * the next platform that claims the session. On a Regolith **sway**
+         * session the walk stops at this platform anyway, because sway is listed
+         * first and SwayResolver is available — so the unavailable branch is
+         * only ever reached on i3. And on i3, falling through to the next
+         * claimant is precisely the bug #27 exists to fix: Regolith advertises
+         * GNOME alongside the WM, so the walk reaches GnomeResolver, which
+         * answers confidently from GSettings schemas that i3 never reads. The
+         * result is not "no answer" but a wrong answer that looks right.
+         *
+         * The honest act on i3 is to be available (so the walk stops here) yet
+         * resolve() UNKNOWN (so the dispatcher synthesizes instead of trusting
+         * a value i3 would not honour). Declining to answer and answering "I
+         * don't know" are different acts, and only the second stops the walk.
+         */
+        public bool available () { return true; }
 
-        public string unavailable_reason () {
-            return available () ? ""
-                : "i3 exposes no queryable binding table; shortcuts will be synthesized instead.";
-        }
+        public string unavailable_reason () { return ""; }
 
         public BindingLookup resolve (string key_id, out string command) {
             command = "";

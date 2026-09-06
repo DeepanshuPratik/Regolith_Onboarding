@@ -55,9 +55,16 @@ are keyed by desktop environment, and how to lay out a marketplace repository.
 
 | Desktop | Interactive practice |
 |---|---|
-| sway, i3 | Yes — via a WM binding mode and IPC, with no input grab |
-| Any X11 session | Yes — via a seat grab |
-| GNOME, KDE on Wayland | Not yet — the compositor consumes its shortcuts before any client sees them |
+| sway | Yes — WM binding mode + IPC, no input grab |
+| i3 | Yes — WM binding mode + IPC; keys synthesized (no resolver) |
+| Any X11 session | Yes — keyboard-only seat grab |
+| GNOME on Wayland | Yes* — keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
+| KDE (KWin) on Wayland | Yes* — same keyboard-only grab mechanism |
+
+\* GNOME and KDE are **code-complete but unauthored**: practice works end-to-end
+the moment a `workflows/gnome`/`workflows/kde` set is supplied, but no such
+workflow ships with the reference branding yet, so practice has nothing to teach
+there until someone authors it.
 
 Where practice is unavailable the app says so plainly and presents the same
 workflows as a reference card. Branding, slides and the catalogue work
@@ -67,37 +74,51 @@ everywhere.
 
 ```
 src/
-├── platform/     desktop and session detection from XDG_CURRENT_DESKTOP
-├── branding/     the compiled-in distro identity
-├── slides/       WebKit-rendered featured slides
-├── workflows/    workflow model, tolerant parser, layered discovery
-├── capture/      how a keypress is noticed, per desktop
-├── flow/         the catalogue and the step-by-step practice page
-└── intro/        the welcome page
+├── platforms/     per-desktop code; each implements a subset of five contracts
+│   ├── sway/      binding mode + IPC observation, resolution, dispatch
+│   ├── x11/       keyboard-only seat grab, X11 dispatch
+│   ├── gnome/     seat-grab observation, GSettings resolution, dispatch
+│   ├── wayland/   generic Wayland window placement
+│   ├── platform.vala     the Platform interface
+│   └── registry.vala     the compile-time ordered platform list
+├── keys/          key parsing, safe keysym shapes, the binding-mode sanitiser
+├── branding/      the compiled-in distro identity
+├── slides/        WebKit-rendered featured slides
+├── workflows/     workflow model, tolerant parser, layered discovery
+├── flow/          the catalogue and the step-by-step practice page
+└── intro/         the welcome page
 ```
 
-`capture/` is the part worth knowing about. Detecting that a shortcut was
-pressed differs enough between desktops that it cannot be one code path, so
-`CaptureBackend` defines the contract — `available` / `start` / `arm` /
-`dispatch` / `stop`, plus `step_matched` and `aborted` signals — and each
-desktop family implements it:
+`platforms/` is the part worth knowing about. Detecting that a shortcut was
+pressed differs enough between desktops that it cannot be one code path, so the
+app is built around five **capability contracts** — `SessionProbe`,
+`ShortcutObserver`, `BindingResolver`, `ActionDispatcher`, `WindowPlacer` — and
+each desktop family implements the subset it can. The registry walks a
+**compile-time ordered list** of platforms and, for each capability, takes the
+first one that claims the session and offers a working implementation:
 
-- **`WmModeBackend`** (sway, i3) writes a binding mode into the WM's `config.d`
-  and subscribes to binding events over IPC. Keys are bound to `nop` inside the
-  mode, so a press is observed without the WM acting on it, and the app then
-  performs the real action itself by resolving what the key is normally bound
-  to. No input grab, so the rest of the desktop stays usable.
-- **`SeatGrabBackend`** grabs the seat and reads GTK key events. Correct on X11.
-- **`UnsupportedBackend`** reports honestly rather than offering a control that
-  would silently do nothing.
+- **sway / i3** write a binding mode into the WM's `config.d` and subscribe to
+  binding events over IPC. Keys are bound to `nop` inside the mode, so a press
+  is observed without the WM acting on it, and the app then performs the real
+  action itself by resolving what the key is normally bound to. No input grab,
+  so the rest of the desktop stays usable.
+- **X11** grabs the seat and reads GTK key events.
+- **GNOME / KDE on Wayland** use the same keyboard-only seat grab, which GTK3
+  turns into the `zwp_keyboard_shortcuts_inhibit_v1` request — the compositor
+  then feeds the app the key presses.
+
+Two decisions worth reading in `docs/adr/`: the keyboard-only grab and why the
+grab can never re-assert itself (`0001`), and the compile-time registry over
+runtime plugins (`0002`).
 
 ## Adding a desktop
 
-Implement `CaptureBackend` in `src/capture/` and return it from
-`CaptureBackends.choose()`. For GNOME the bindings are readable from the
-`org.gnome.desktop.wm.keybindings` and
-`org.gnome.settings-daemon.plugins.media-keys` GSettings schemas; the open
-problem is observing the presses.
+Create one directory under `src/platforms/`, add one line to the registry's
+list in `src/platforms/registry.vala`, and one `subdir()` to
+`src/platforms/meson.build`. No shared code changes. The platform declares which
+session it owns and returns whichever of the five contracts it implements; the
+rest fall through to the next platform. Worked example and the full contract:
+**→ [docs/DISTRO-GUIDE.md](docs/DISTRO-GUIDE.md)**.
 
 ## Screenshots
 

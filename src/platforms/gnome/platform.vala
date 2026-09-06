@@ -21,23 +21,17 @@ namespace linux_onboarding {
      * GNOME, on Mutter.
      *
      * The case the five-service split was designed to be able to express: this
-     * platform resolves and dispatches, and cannot observe. Returning null from
-     * observer() is a real answer rather than an omission — there is no portable
-     * way to be told about a shortcut the compositor owns, the GlobalShortcuts
-     * portal registers new bindings instead of reporting existing ones, and the
-     * only true route is a GNOME Shell extension, which is a separate deliverable
-     * with its own release cycle. The registry supplies its null observer, the
-     * catalogue drops the PLAY button, and branding, slides and the workflow list
-     * carry on working.
+     * platform resolves and dispatches, and observes via a keyboard-only seat
+     * grab. The grab is the only thing that gets Mutter to honour
+     * zwp_keyboard_shortcuts_inhibit_v1, which is the whole point — without
+     * inhibition the compositor eats every shortcut we want to teach.
      *
-     * Two of the five are left for tickets that have not landed:
-     *   - observer() — the seat-grab-plus-inhibitor route spike #11 proved works
-     *     on Mutter, which is #14.
-     *   - placer()  — #17. Mutter implements no layer-shell and permits a client
-     *     no self-positioning, and gtk_layer_init_for_window() is outright fatal
-     *     there, so this must not reach for the Wayland placer. Leaving it null
-     *     means the registry's NullPlacer centres the window and says why, which
-     *     is the honest behaviour until #17 decides on the XWayland route.
+     * Two of the five are still open:
+     *   - placer() — Mutter implements no layer-shell and permits a client no
+     *     self-positioning, and gtk_layer_init_for_window() is outright fatal
+     *     there. Leaving it null means the registry's NullPlacer centres the
+     *     window and says why, which is the honest behaviour until that ticket
+     *     decides on the XWayland route.
      */
     public class GnomePlatform : GLib.Object, Platform {
 
@@ -75,6 +69,27 @@ namespace linux_onboarding {
          */
 
         public BindingResolver? resolver () { return new GnomeResolver (); }
+
+        /**
+         * A seat grab, and the only kind that works: the keyboard-only grab
+         * SeatGrabObserver takes is what triggers zwp_keyboard_shortcuts_inhibit_v1
+         * on Mutter, which the compositor honours with no Super-key carve-out
+         * (spike #11 measured this on the wire). Asking for `| POINTER` instead
+         * silently drops the inhibitor request, so practice on GNOME would
+         * visibly do nothing — a louder failure but the same outcome.
+         *
+         * The grab's recovery story is the user: Mutter refuses to give focus
+         * back via xdg_activation_v1, and the re-grab after focus loss is inert,
+         * so SeatGrabObserver exposes a click-to-continue prompt as the primary
+         * path rather than a fallback. Everything here is in
+         * src/platforms/x11/observer.vala because the X11 dispatcher needs the
+         * exact same observer to release and retake the grab around dispatch.
+         */
+        public ShortcutObserver? observer (Gtk.Widget owner) {
+            return new SeatGrabObserver (owner);
+        }
+
+        public bool can_observe () { return true; }
 
         /**
          * Only pairs with the observer that holds a seat grab, for the same

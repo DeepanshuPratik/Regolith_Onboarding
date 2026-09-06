@@ -66,6 +66,25 @@ namespace linux_onboarding {
         // from the registry rather than probing the environment itself.
         stdout.printf ("linux-onboarding: %s\n", PlatformRegistry.probe ().describe ());
 
+        // SIGTERM / SIGINT handlers.
+        //
+        // The app's normal exit paths (Escape, window-manager close,
+        // Application.shutdown) all run release_practice() and clean up the
+        // binding mode. A process killed by the user or by the system is the
+        // exception: GTK never gets to run its shutdown hook, no destroy
+        // handler fires, and the mode block stays in config.d, permanently
+        // shadowing every key it names.
+        //
+        // The handlers route through the same cleanup_stale_state() the
+        // shutdown path does, so the install + uninstall states are kept
+        // identical: if the mode is on disk it is removed; if it is not, the
+        // call is a no-op. POSIX signal handlers are very restricted about
+        // what they may call, so the handler is restricted to setting a flag
+        // and re-raising the signal asynchronously — which is what lets the
+        // GLib main loop get back to running.
+        Posix.signal (Posix.Signal.TERM, on_termination_signal);
+        Posix.signal (Posix.Signal.INT,  on_termination_signal);
+
         foreach (var arg in args) {
             if (arg == "--check-workflows") return WorkflowCheck.run ();
             if (arg == "--reset-state")     return OnboardingState.reset ();
@@ -73,5 +92,22 @@ namespace linux_onboarding {
 
         var app = new Application ();
         return app.run (args);
+    }
+
+    /**
+     * Safety net for quitting mid-practice. The normal exit paths run
+     * release_practice() through CarouselSetup.quit() and Application.shutdown;
+     * a SIGTERM/SIGINT skips both, so the mode block can be left in config.d.
+     * Routing through the registry's static cleanup covers the whole platform
+     * list (not just sway): a future Wayland observer that writes to disk will
+     * get cleaned up here without this file having to be edited again.
+     */
+    private static void on_termination_signal (int sig) {
+        PlatformRegistry.cleanup_stale_state ();
+        // Re-raise with the default handler so the shell reports the
+        // signal-induced exit, not a clean zero. Passing null to
+        // Posix.signal() restores the C default disposition (SIG_DFL).
+        Posix.signal (sig, (Posix.sighandler_t) null);
+        Posix.raise (sig);
     }
 }

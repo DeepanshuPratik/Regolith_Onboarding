@@ -82,6 +82,15 @@ namespace linux_onboarding {
         public signal void aborted ();
 
         /**
+         * The observer's grab has stopped receiving events and the user has
+         * to bring focus back. Re-emitted from the underlying observer so a
+         * page can show a "click here to continue" prompt without subscribing
+         * to the observer directly — and so a swap of observer is invisible
+         * to the page, which is the whole point of routing through here.
+         */
+        public signal void needs_user_focus ();
+
+        /**
          * Put the observer's half of the bargain into the world outside the
          * process. Once, at startup, before any workflow is opened.
          */
@@ -184,11 +193,15 @@ namespace linux_onboarding {
             if (observer != null) {
                 observer.step_matched.disconnect (on_step_matched);
                 observer.aborted.disconnect (on_aborted);
+                var seat = observer as SeatGrabObserver;
+                if (seat != null) seat.needs_user_focus.disconnect (on_needs_user_focus);
             }
 
             observer = next;
             observer.step_matched.connect (on_step_matched);
             observer.aborted.connect (on_aborted);
+            var next_seat = observer as SeatGrabObserver;
+            if (next_seat != null) next_seat.needs_user_focus.connect (on_needs_user_focus);
             dispatcher = PlatformRegistry.dispatcher (observer);
         }
 
@@ -196,5 +209,17 @@ namespace linux_onboarding {
         private void on_step_matched () { step_matched (); }
 
         private void on_aborted () { aborted (); }
+
+        private void on_needs_user_focus () { needs_user_focus (); }
+
+        /**
+         * Called by the practice page when the user has clicked the
+         * click-to-continue prompt. The click is what brings focus back; the
+         * underlying observer takes it from there.
+         */
+        public void user_returned () {
+            var seat = observer as SeatGrabObserver;
+            if (seat != null) seat.user_returned ();
+        }
     }
 }

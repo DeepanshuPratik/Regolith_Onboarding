@@ -95,6 +95,26 @@ namespace linux_onboarding.Tests {
             check_str ("empty",      spec.format_spec_for_mode (""),           "");
         });
 
+        // The two parser bugs the harness found, both routed to #18: input
+        // that produces a plausible-looking wrong answer instead of an error.
+        //
+        // 1. Malformed: "<Shift" has no closing '>'. The old behaviour was
+        //    to fall through to `return mods.str + to_keysym(remaining)`, which
+        //    produced the literal string "<Shift" and let sway reject the
+        //    whole mode block. The sanitiser cannot help here — the bug
+        //    happens before the sanitiser runs — so the parser has to.
+        // 2. Unknown modifier: "<Super> Enter". The old behaviour was to
+        //    silently drop Super and emit "Return", contradicting the
+        //    function's own doc comment. Fix is to reject rather than guess.
+        Test.add_func ("/key-spec/for-mode/malformed-input-is-rejected", () => {
+            var spec = new KeySpec ();
+            check_str ("unclosed modifier", spec.format_spec_for_mode ("<Shift"),        "");
+            check_str ("unclosed after good modifier",
+                       spec.format_spec_for_mode ("<><Shift"),                            "");
+            check_str ("unrecognised ASCII modifier",
+                       spec.format_spec_for_mode ("<Super> Enter"),                      "");
+        });
+
         // ---- to_keysym: remontoire key name -> X11 keysym name ---------------
 
         Test.add_func ("/key-spec/to-keysym/named-keys", () => {
