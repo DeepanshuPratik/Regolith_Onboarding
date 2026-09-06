@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- The welcome page sits at the top of the branding directory, so its
+     relative paths resolve from there: the logo beside it, and the same
+     stylesheet the slides use so the deck reads as one piece. -->
+<link rel="stylesheet" href="slides/assets/style.css">
+<div class="welcome">
+  <img class="logo" src="logo.png" alt="">
+  <h1>Welcome to Regolith</h1>
+  <p class="lede">
+    A tiling desktop that keeps your hands on the keyboard. This guide covers
+    the shortcuts worth knowing first.
+  </p>
+  <!-- Not a link out: the app intercepts app://action/ and moves the deck on.
+       Plain markup, so it works with scripting disabled. -->
+  <a class="cta" href="app://action/next">Get Started</a>
+</div>

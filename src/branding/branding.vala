@@ -18,7 +18,7 @@ using Gtk;
 namespace linux_onboarding {
 
     /**
-     * The distro's identity: name, tagline, logo, theme and featured slides.
+     * The distro's identity: name, theme, welcome page and featured slides.
      *
      * Unlike workflows, branding is compiled into the binary rather than read
      * from disk. A distro owner points the build at their own branding directory
@@ -27,8 +27,8 @@ namespace linux_onboarding {
      *
      *     meson setup build -Dbranding_dir=/path/to/their-branding
      *
-     * The directory holds branding.conf (this file's schema), a logo, a theme.css
-     * layered over the app's own stylesheet, and slides/*.html.
+     * The directory holds branding.conf (this file's schema), a welcome.html, a
+     * theme.css layered over the app's own stylesheet, and slides/*.html.
      */
     public class Branding : GLib.Object {
 
@@ -36,9 +36,16 @@ namespace linux_onboarding {
 
         private static Branding? instance = null;
 
+        /**
+         * The distro's name. The one identity string that stays out here rather
+         * than moving into the welcome page's markup, because the catalogue and
+         * the startup log need it where no WebView is involved.
+         */
         public string name             { get; private set; default = "Linux"; }
-        public string tagline          { get; private set; default = ""; }
-        public string logo_resource    { get; private set; default = ""; }
+
+        /** Resource path of the welcome page, or "" when none is bundled. */
+        public string welcome_resource { get; private set; default = ""; }
+
         public string theme_resource   { get; private set; default = ""; }
         public bool   allow_slide_scripts { get; private set; default = false; }
         public string marketplace_name { get; private set; default = ""; }
@@ -66,11 +73,17 @@ namespace linux_onboarding {
                 return;
             }
 
-            name    = read (keyfile, "Branding", "Name", name);
-            tagline = read (keyfile, "Branding", "Tagline", tagline);
+            name = read (keyfile, "Branding", "Name", name);
 
-            var logo = read (keyfile, "Branding", "Logo", "");
-            if (logo != "") logo_resource = RESOURCE_ROOT + "/" + logo;
+            // The welcome page is HTML, so the logo and tagline that once had
+            // keys here are markup inside it. An explicit empty value is a
+            // distro choosing to open on its slides instead.
+            var welcome = read (keyfile, "Branding", "Welcome", "welcome.html");
+            if (welcome != "") {
+                var welcome_path = RESOURCE_ROOT + "/" + welcome;
+                if (resource_exists (welcome_path)) welcome_resource = welcome_path;
+                else warning ("branding.conf: Welcome names '%s', which is not bundled", welcome);
+            }
 
             var theme = read (keyfile, "Branding", "Theme", "");
             if (theme != "") theme_resource = RESOURCE_ROOT + "/" + theme;

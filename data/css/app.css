@@ -47,6 +47,21 @@
     opacity: 0.5;
 }
 
+/* Secondary copy: blurbs sitting under a heading. */
+.text-secondary {
+    font-size: 1.1em;
+    opacity: 0.7;
+}
+
+/* Primary call to action. Worn by the deck's Next button and the catalogue's
+   marketplace link, so it lives here rather than with either of them. */
+.pill-button {
+    font-size: 1em;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 99px;
+}
+
 /* Commands the user is expected to read before running. */
 .command-block {
     font-family: monospace;

@@ -3,7 +3,6 @@
   <gresource prefix="/org/linux/Onboarding">
     <file>css/app.css</file>
     <file>css/flow.css</file>
-    <file>css/introPage.css</file>
     <file>images/checktick.gif</file>
   </gresource>
 </gresources>

@@ -86,21 +86,24 @@ namespace linux_onboarding {
             });
 
             // Welcome page first, then the distro's featured slides, then the
-            // workflow catalogue. "Get Started" moves one page along, so it lands
-            // on the first slide when there are any and on the catalogue when not.
-            var introPage = new IntroPage(()=>{
-                scroll_to_page (1);
-            });
-            pages.add (introPage);
+            // workflow catalogue. Welcome and slides are both HTML rendered by
+            // SlidePage, so the whole deck shares one WebKit process.
+            var branding = Branding.get_default ();
 
-            var slides = Branding.get_default ().slides;
+            // The welcome page carries its own "Get Started" in markup, which
+            // moves one page along — the first slide when there are any, and the
+            // catalogue when the distro ships none.
+            if (branding.welcome_resource != "")
+                add_deck_page (new SlidePage.self_navigating (branding.welcome_resource));
+
+            var slides = branding.slides;
             for (int i = 0; i < slides.length; i++) {
-                int slide_index = i;
-                pages.add (new SlidePage (
+                int index = pages.size;
+                add_deck_page (new SlidePage (
                     slides[i],
-                    slide_index == slides.length - 1,
-                    () => { scroll_to_page (slide_index); },
-                    () => { scroll_to_page (slide_index + 2); }));
+                    i == slides.length - 1,
+                    () => { scroll_to_page (index - 1); },
+                    () => { scroll_to_page (index + 1); }));
             }
 
             pages.add (worflowsListPage);
@@ -138,6 +141,35 @@ namespace linux_onboarding {
                        }
                    }
                });
+            }
+        }
+
+        /**
+         * Appends an HTML page and wires its action links up to where it sits.
+         * Positions are resolved at click time and relative to the page that
+         * fired, so the same <a href="app://action/next"> works wherever a
+         * distro puts it in the deck.
+         */
+        private void add_deck_page (SlidePage page) {
+            int index = pages.size;
+            page.action.connect ((name) => { dispatch_action (name, index); });
+            pages.add (page);
+        }
+
+        /**
+         * The vocabulary an HTML page may use. Deliberately only positions in
+         * the deck: markup replaces the buttons it used to sit beside, and can
+         * reach nothing the buttons could not.
+         */
+        private void dispatch_action (string name, int from_index) {
+            switch (name) {
+                case "next":      scroll_to_page (from_index + 1);  break;
+                case "back":      scroll_to_page (from_index - 1);  break;
+                case "catalogue": scroll_to_page (pages.size - 1);  break;
+                default:
+                    warning ("branding page asked for app://action/%s, " +
+                             "which this build does not implement", name);
+                    break;
             }
         }
 

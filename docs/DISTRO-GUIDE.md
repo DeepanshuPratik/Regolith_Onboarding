@@ -31,11 +31,12 @@ rebuild.
 ```
 my-distro-branding/
 ├── branding.conf                     required
+├── welcome.html                      your first page
+├── logo.png                          referenced by welcome.html
 ├── theme.css                         optional
-├── logo.png                          optional
 ├── slides/                           optional
-│   ├── 01-welcome.html
-│   ├── 02-features.html
+│   ├── 01-tiling.html
+│   ├── 02-workspaces.html
 │   └── assets/
 │       ├── style.css
 │       └── screenshot.png
@@ -51,12 +52,14 @@ my-distro-branding/
 ```ini
 [Branding]
 Name=Regolith
-Tagline=A tiling desktop that keeps your hands on the keyboard.
-Logo=logo.png
 Theme=theme.css
 
+# The first page. Optional, defaults to welcome.html; set it empty to open
+# on the slides instead.
+Welcome=welcome.html
+
 # Optional. Omit to show every .html in slides/ in filename order.
-SlideOrder=01-welcome.html;02-tiling.html;03-practice.html;
+SlideOrder=01-tiling.html;02-workspaces.html;03-practice.html;
 
 # Optional, default false.
 AllowSlideScripts=false
@@ -66,6 +69,10 @@ Name=Regolith Workflow Marketplace
 Url=https://github.com/regolith-linux/onboarding-marketplace
 ```
 
+`Name` is the only identity string left in this file, and it is here because it
+is needed where no page is rendered: the catalogue, the startup log and
+`--check-workflows`. Your logo and tagline are markup in `welcome.html`.
+
 ### theme.css
 
 Plain GTK3 CSS, loaded *after* the application's own stylesheet so your rules
@@ -74,9 +81,9 @@ win. The styling contract — the class names worth overriding — is:
 | Class | Applies to |
 |---|---|
 | `.main-container`, `.practice-page` | The window's content panels |
-| `.title-main`, `.title-1` | Page titles |
+| `.title-1` | Page titles |
 | `.heading` | Step headings and tile captions |
-| `.text-secondary` | Taglines and secondary copy |
+| `.text-secondary` | Secondary copy under a heading |
 | `.notice` | Warnings and explanatory notes |
 | `.pill-button.suggested-action` | Primary buttons |
 | `.playButton`, `.cancelButton` | Practice controls |
@@ -84,24 +91,55 @@ win. The styling contract — the class names worth overriding — is:
 | `.command-block` | The marketplace command box |
 
 Note GTK CSS is not web CSS: there is no `max-width`, no `line-height`, no
-flexbox. Unknown properties log a parse error and are ignored.
+flexbox. Unknown properties log a parse error and are ignored. This applies to
+`theme.css` only — the welcome page and slides are real web pages and get real
+CSS, which is why the screens you are most likely to want to design are HTML.
 
-### Slides
+### The HTML deck
 
-Ordinary HTML files rendered by WebKitGTK. Relative references work — a slide
-at `slides/01-welcome.html` can use `<img src="assets/x.png">` — because the
-bundle is served over an internal `app://` scheme.
+The welcome page and the slides after it are ordinary HTML files rendered by
+WebKitGTK, in one deck sharing one web process. Relative references work — a
+slide at `slides/01-tiling.html` can use `<img src="assets/x.png">`, and
+`welcome.html` at the top of your directory can use `<img src="logo.png">` —
+because the bundle is served over an internal `app://` scheme.
 
-Constraints, because slides are content rather than code:
+Constraints, because these are content rather than code:
 
-- **JavaScript is disabled** unless you set `AllowSlideScripts=true`.
+- **JavaScript is disabled** unless you set `AllowSlideScripts=true`. You do
+  not need it to navigate; see the action links below.
 - **Navigation stays inside the bundle.** An `http(s)` link is handed to the
   user's real browser instead of loading in the window.
 - **Everything must be bundled.** There is no network fetch, so remote fonts,
   CDN stylesheets and hotlinked images will not load. Inline them or ship them
   in `assets/`.
-- Slides are sized for roughly 780×380 logical pixels. Design for that and let
+- Pages are sized for roughly 780×380 logical pixels. Design for that and let
   the content breathe rather than filling every pixel.
+
+#### Talking back to the app: `app://action/`
+
+A link to the reserved `action` host is intercepted rather than loaded, and
+moves the deck instead:
+
+```html
+<a href="app://action/next">Get Started</a>
+```
+
+| Link | Does |
+|---|---|
+| `app://action/next` | The page after this one |
+| `app://action/back` | The page before this one |
+| `app://action/catalogue` | Straight to the workflow catalogue |
+
+`next` and `back` are relative to the page the link is on, so the same markup
+works wherever you move a page in the deck. `next` from the welcome page lands
+on your first slide, or on the catalogue if you ship no slides.
+
+This is a plain anchor, so it works with scripting off — that is the point of
+doing it this way. An unknown action name is logged and ignored.
+
+The welcome page is expected to carry its own button, and so is given the full
+height with no Back/Next strip beneath it. Slides get that strip from the app
+and usually need no action links at all.
 
 ## Workflows
 

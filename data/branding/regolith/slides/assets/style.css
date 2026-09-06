@@ -1,6 +1,7 @@
-/* Shared styling for the Regolith featured slides.
-   Slides are loaded through the app:// scheme, so relative paths like this
-   one resolve against the bundled slides/ directory. */
+/* Shared styling for the Regolith HTML deck: the welcome page and the slides
+   after it. Pages are loaded through the app:// scheme, so relative paths like
+   this one resolve against the bundle exactly as they would on a filesystem.
+   The welcome page lives a directory up and reaches this sheet the same way. */
 
 :root {
   --bg: #232733;
@@ -9,6 +10,12 @@
   --accent: #6ab0f3;
   --key-bg: #2c3243;
   --key-border: #414a60;
+  /* Matched to .pill-button.suggested-action in theme.css: the deck's own
+     button and the GTK ones beneath it should not read as two designs. */
+  --cta-bg: #2f6fb5;
+  --cta-bg-hover: #3a82cf;
+  --cta-border: #2a5f9c;
+  --cta-fg: #f2f6fb;
 }
 
 * { box-sizing: border-box; }
@@ -85,3 +92,49 @@ kbd {
 }
 
 a { color: var(--accent); }
+
+/* The welcome page. It has no Back/Next strip under it — it is the first page
+   and it navigates itself — so it gets the full height to centre in. */
+
+.welcome {
+  height: 100%;
+  padding: 28px 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.welcome .logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 20px;
+}
+
+.welcome h1 {
+  margin: 0 0 10px;
+  font-size: 34px;
+  font-weight: 300;
+}
+
+.welcome .lede {
+  margin: 0 0 28px;
+  max-width: 46ch;
+}
+
+/* An anchor is how a page talks back to the app, so the primary one is dressed
+   as the button it replaces rather than left looking like a link. */
+.cta {
+  display: inline-block;
+  padding: 11px 26px;
+  border-radius: 99px;
+  background: var(--cta-bg);
+  border: 1px solid var(--cta-border);
+  color: var(--cta-fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cta:hover { background: var(--cta-bg-hover); }
