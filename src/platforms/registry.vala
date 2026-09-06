@@ -53,10 +53,18 @@ namespace linux_onboarding {
          * platform's own directory, needs to change: a platform that does not
          * claim the session is never asked anything, and one that claims it but
          * offers only some capabilities falls through for the rest.
+         *
+         * GNOME sits below sway rather than above it because it recognises a
+         * session by name and distros announce GNOME alongside the window
+         * manager actually running — Regolith reports
+         * "Regolith-Wayland:GNOME:sway" — so GNOME claims a sway session too.
+         * Below sway, it never takes a capability sway offers, and picks up only
+         * what sway declines.
          */
         private static Platform[] all () {
             return {
                 new SwayPlatform (),
+                new GnomePlatform (),
                 new X11Platform (),
                 new WaylandPlatform ()
             };

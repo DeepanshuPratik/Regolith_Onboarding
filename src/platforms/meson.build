@@ -5,6 +5,7 @@ project_sources += files(
 )
 
 # One line per desktop, alongside the one line in registry.vala's all().
+subdir('gnome')
 subdir('sway')
 subdir('wayland')
 subdir('x11')
