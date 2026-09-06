@@ -74,3 +74,20 @@
     opacity: 0.75;
     padding: 8px 12px;
 }
+
+/* The click-to-continue prompt (#30). Deliberately loud: on GNOME it is the
+   only route back into a step, so it has to read as the thing to act on rather
+   than as a warning the user can scroll past. */
+.focus-prompt {
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-top: 10px;
+    border: 1px solid @theme_selected_bg_color;
+    background-color: alpha(@theme_selected_bg_color, 0.12);
+}
+
+.focus-prompt-text {
+    font-size: 1em;
+    /* Wrapped at a readable measure rather than the width of the page. */
+    max-width: 380px;
+}

@@ -25,7 +25,11 @@ namespace linux_onboarding {
      * getting the window out of the way are three separate services, each chosen
      * for the running desktop by PlatformRegistry.
      *
-     * Observation is handed in rather than built here. The observer's install()
+     * This page also draws the click-to-continue prompt. The observer can only
+ * report that its grab has gone deaf (needs_user_focus); what the user sees
+ * and clicks is presentation, so it belongs here.
+ *
+ * Observation is handed in rather than built here. The observer's install()
      * writes into the window manager and belongs to the whole run, so it is the
      * app that owns a PracticeSession; a page only borrows it for the length of
      * one workflow, between start() and stop().
@@ -55,6 +59,12 @@ namespace linux_onboarding {
 
         private Gtk.Button play_button;
         private Gtk.Button cancel_button;
+        // The click-to-continue prompt: hidden until the observer says its grab
+        // has stopped receiving keys, which on GNOME is the ordinary case rather
+        // than an edge one. Kept out of the instruction box on purpose — that
+        // box is rebuilt and reordered by index between steps.
+        private Gtk.Box focus_prompt;
+        private Gtk.Button resume_button;
         private Gtk.Image demo;
         private Gtk.Box demo_box;
         private Gtk.Box checkedCommand;
@@ -105,6 +115,9 @@ namespace linux_onboarding {
             midBox.add(instructionAndPlayHolder);
             midBox.add(demo_box);
             this.add(midBox);
+
+            focus_prompt = build_focus_prompt ();
+            this.add (focus_prompt);
 
             bool can_practice = PlatformRegistry.can_practice ();
 
@@ -164,19 +177,82 @@ namespace linux_onboarding {
                 // at startup.
                 practice.step_matched.connect (on_step_matched);
                 practice.aborted.connect (on_aborted);
+                practice.needs_user_focus.connect (on_needs_user_focus);
                 capture_started = true;
 
                 if (!practice.start ())
                     stderr.printf ("Nothing here can observe the keypress; this step cannot complete.\n");
             }
 
+            hide_focus_prompt ();
             practice.arm (command);
             this.show_all();
+        }
+
+        /**
+         * The observer's grab has stopped receiving keys and only the user can
+         * fix it: on GNOME the app cannot take focus back at all (#11), so the
+         * recovery path is them clicking into this window. Until they do, the
+         * step they are being asked to perform cannot complete, and without this
+         * prompt it simply appears to stop responding.
+         */
+        private void on_needs_user_focus () {
+            // Nothing is armed before PLAY, and after a match the step is over;
+            // a prompt in either case would be asking the user to rescue a grab
+            // nobody is waiting on.
+            if (!isPlayed) return;
+
+            focus_prompt.no_show_all = false;
+            focus_prompt.show_all ();
+        }
+
+        /**
+         * Their click has already brought focus back — that is what a click on
+         * this button means. Telling the session lets the observer re-arm its
+         * timeout, so a second loss of focus prompts again.
+         */
+        private void on_user_returned () {
+            hide_focus_prompt ();
+            practice.user_returned ();
+        }
+
+        private void hide_focus_prompt () {
+            focus_prompt.hide ();
+            // Back on, or the next show_all() on the page reveals it again.
+            focus_prompt.no_show_all = true;
+        }
+
+        /**
+         * no_show_all because this page calls show_all() after nearly every
+         * change, and the prompt must appear only when the observer asks for it.
+         * That also means show_all() on the box itself is a no-op, so
+         * on_needs_user_focus clears the flag first.
+         */
+        private Gtk.Box build_focus_prompt () {
+            var box = new Box (Gtk.Orientation.VERTICAL, 8);
+            box.get_style_context ().add_class ("focus-prompt");
+            box.set_halign (Gtk.Align.CENTER);
+
+            var explanation = new Label (
+                "Another window has the keyboard, so the shortcut you press cannot reach this step.");
+            explanation.set_line_wrap (true);
+            explanation.set_justify (Gtk.Justification.CENTER);
+            explanation.get_style_context ().add_class ("focus-prompt-text");
+
+            resume_button = new Button.with_label ("CLICK HERE TO CONTINUE");
+            resume_button.get_style_context ().add_class ("playButton");
+            resume_button.clicked.connect (on_user_returned);
+
+            box.add (explanation);
+            box.add (resume_button);
+            box.no_show_all = true;
+            return box;
         }
 
         // The user pressed the right key: perform the real action, confirm it, and
         // move on after a beat so the tick is actually seen.
         private void on_step_matched () {
+            hide_focus_prompt ();
             current_key_sequence++;
             practice.dispatch (command);
             handleTick();
@@ -223,6 +299,7 @@ namespace linux_onboarding {
             if (capture_started) {
                 practice.step_matched.disconnect (on_step_matched);
                 practice.aborted.disconnect (on_aborted);
+                practice.needs_user_focus.disconnect (on_needs_user_focus);
                 practice.stop ();
                 capture_started = false;
             }
