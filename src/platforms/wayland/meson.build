@@ -2,5 +2,6 @@
 project_sources += files(
   'layer_shell.vala',
   'placer.vala',
-  'platform.vala'
+  'platform.vala',
+  'resize_only_placer.vala'
 )

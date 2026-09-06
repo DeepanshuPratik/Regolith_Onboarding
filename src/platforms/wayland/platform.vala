@@ -38,8 +38,25 @@ namespace linux_onboarding {
 
         public bool claims_session () { return Desktop.get_default ().is_wayland; }
 
+        /**
+         * Which placement mechanism, decided by the protocol on the wire rather
+         * than by the desktop sitting on top of it — which is the whole reason
+         * this capability lives at the display-server layer.
+         *
+         * A compositor carrying zwlr_layer_shell_v1 (sway, KWin) lets the window
+         * anchor itself out of the way. One without it — Mutter, and it is the
+         * only one that matters in practice — permits a client no self-positioning
+         * whatsoever, so the card shrinks where it stands instead.
+         *
+         * Both are real placers, so no Wayland session falls through to the
+         * registry's null one. The branch is here rather than in the registry
+         * because it is one platform choosing between two of its own mechanisms,
+         * and the registry's list stays one line per desktop only as long as
+         * choices like this stay inside the platform that owns them.
+         */
         public WindowPlacer? placer (Gtk.Window window) {
-            return new LayerShellPlacer (window);
+            if (LayerShellSupport.available ()) return new LayerShellPlacer (window);
+            return new ResizeOnlyPlacer (window);
         }
     }
 }

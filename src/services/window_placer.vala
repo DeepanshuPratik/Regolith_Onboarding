@@ -51,10 +51,16 @@ namespace linux_onboarding {
         /**
          * Whether this desktop lets a client place its own window.
          *
-         * False on GNOME, and that is a supported configuration rather than a
-         * degraded one: practice still works, the window simply stays where the
-         * compositor put it and the user gets a shortcut card that does not move
-         * rather than one that gets out of the way.
+         * True where the answer is only partial. GNOME permits no positioning
+         * whatsoever but does permit a resize, and a placer that shrinks the card
+         * in place is achieving the outcome that was asked for — get out of the
+         * user's way — by the one means the session has. False is reserved for a
+         * session where nothing at all can be done, which then keeps a window
+         * exactly where the compositor put it.
+         *
+         * Either is a supported configuration rather than a degraded one:
+         * practice itself is unaffected, and the user gets a shortcut card that
+         * moves less rather than a feature that does not work.
          */
         public abstract bool available ();
 

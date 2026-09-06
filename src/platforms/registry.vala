@@ -266,10 +266,18 @@ namespace linux_onboarding {
     }
 
     /**
-     * Placement for a desktop that permits a client none. Mutter is the case
-     * that matters: it implements no layer-shell protocol and allows no
-     * self-positioning at all, so the honest answer is to centre the window and
-     * leave it there rather than to keep asking.
+     * Placement for a session that no platform placed at all.
+     *
+     * Mutter used to be the case that matters here; it no longer is. A Wayland
+     * session now gets layer-shell placement or, where the compositor implements
+     * no layer shell, a resize-only placer that shrinks the card where it
+     * stands — so every desktop this build ships for has a real placer and none
+     * of them reaches this class.
+     *
+     * It stays because the registry's contract is that every capability has an
+     * answer even when nothing in the list supplies one — a config-declared
+     * platform that offers no placer, say — and because a caller that forgets to
+     * check available() should get a centred window rather than a crash.
      */
     private class NullPlacer : GLib.Object, WindowPlacer {
 

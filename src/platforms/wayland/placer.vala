@@ -31,10 +31,44 @@ namespace linux_onboarding {
    * Wayland compositor implementing layer shell gets, and putting it in the sway
    * directory would mean the next compositor to arrive had to either copy it or
    * reach across into a neighbour's directory for it.
+   *
+   * ==> Why sway is not driven through swaymsg instead. <==
+   *
+   * sway's `move` and `resize` commands address containers in its tree, and a
+   * layer-shell surface is not in that tree: it has no app_id, `get_tree` does
+   * not list it, and no criteria can select it. An IPC placer could therefore
+   * only work by giving up the layer surface — and with it the EXCLUSIVE
+   * keyboard mode that is the only reason practice can see a compositor-owned
+   * shortcut on sway at all. Trading observation away for placement is the same
+   * bad bargain that got the XWayland route rejected on GNOME.
+   *
+   * The IPC route was measured all the same (#12), on an ordinary view, and what
+   * it found is recorded here so that nobody has to measure it twice before
+   * arriving at the same conclusion: `move position` is workspace-relative, so
+   * `move absolute position` is the one that takes global coordinates; `resize
+   * set` resizes about the window's CENTRE, so a resize belongs before its move
+   * rather than after it; `for_window` rules fire only at window creation and so
+   * cannot drive a runtime shrink at all; and all three commands chain in a
+   * single swaymsg call with no settling delay.
    */
   public class LayerShellPlacer : GLib.Object, WindowPlacer {
 
+    // The practice card: small enough to leave the desktop usable, large enough
+    // to keep one step legible.
+    private const int CARD_WIDTH = 200;
+    private const int CARD_HEIGHT = 150;
+
     private Gtk.Window window;
+
+    // What to put back, and whether there is anything to put back.
+    //
+    // The size request is the right thing to save because it is the thing this
+    // placer changes — a layer-shell window is sized by its request rather than
+    // by a rectangle it names. Saving it also stops this file and the toplevel's
+    // own default size from drifting apart the day one of the two is edited.
+    private int normal_width = 0;
+    private int normal_height = 0;
+    private bool shrunk = false;
 
     public LayerShellPlacer (Gtk.Window window) {
       this.window = window;
@@ -42,9 +76,9 @@ namespace linux_onboarding {
 
     /**
      * False on a Wayland compositor that implements no layer shell, so the
-     * registry's walk falls past this to a placer that works — in practice the
-     * NullPlacer, which centres the window and says so. Answering true here
-     * would hand back a placer whose every method aborts the process.
+     * registry's walk falls past this to a placer that works — on Mutter, the
+     * ResizeOnlyPlacer next door. Answering true here would hand back a placer
+     * whose every method aborts the process.
      */
     public bool available () { return LayerShellSupport.available (); }
 
@@ -53,25 +87,51 @@ namespace linux_onboarding {
     }
 
     public bool shrink_for_practice () {
-      // Guarded even though the registry only hands out available() placers:
-      // set_anchor on a window that never got init_for_window is the same staged
-      // failure as everything else here — a CRITICAL, a normal return, and then
-      // an abort out of the resize below rather than out of this line.
-      if (!LayerShellSupport.available ()) return false;
+      if (!usable ()) return false;
+      // Idempotent, and not merely for tidiness: a second shrink would otherwise
+      // save the card's own size as the normal one, leaving restore() with
+      // nothing to grow the window back to.
+      if (shrunk) return true;
+
+      window.get_size_request (out normal_width, out normal_height);
+      shrunk = true;
 
       GtkLayerShell.set_anchor (window, GtkLayerShell.Edge.TOP, true);
-      window.set_size_request (200, 150);
+      window.set_size_request (CARD_WIDTH, CARD_HEIGHT);
+      // resize(1, 1) rather than resize(CARD_WIDTH, CARD_HEIGHT): a request below
+      // the widget's minimum is clamped up to it, so asking for the smallest
+      // window imaginable is how the size request above is made to win.
       window.resize (1, 1);
       return true;
     }
 
     public bool restore () {
-      if (!LayerShellSupport.available ()) return false;
+      if (!usable ()) return false;
+      // Nothing was shrunk, so there is nothing to put back. This is the whole of
+      // the contract's "safe without a preceding shrink, and safe to call twice":
+      // restore() is reached from the cancel button, from the observer's aborted
+      // signal and from the step-advance timeout, and any pair of those can fire.
+      if (!shrunk) return true;
+      shrunk = false;
 
       GtkLayerShell.set_anchor (window, GtkLayerShell.Edge.TOP, false);
-      window.set_size_request (800, 450);
+      window.set_size_request (normal_width, normal_height);
       window.resize (1, 1);
       return true;
+    }
+
+    /**
+     * Both that the compositor carries the protocol and that this window was
+     * built on it.
+     *
+     * The second half is not paranoia about the registry handing out a placer
+     * whose available() said false. set_anchor() on a window that never got
+     * init_for_window() fails the way everything else in gtk-layer-shell fails —
+     * a CRITICAL, a normal return, and then an abort out of some later roundtrip
+     * rather than out of the line that caused it. See LayerShellSupport.
+     */
+    private bool usable () {
+      return LayerShellSupport.available () && GtkLayerShell.is_layer_window (window);
     }
   }
 }
