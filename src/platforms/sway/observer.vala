@@ -77,8 +77,11 @@ namespace linux_onboarding {
                     null, out ipc_pid, null, out stdout_fd, null);
                 ipc_channel = new GLib.IOChannel.unix_new (stdout_fd);
             } catch (Error e) {
+                // Reports the failure and leaves the mode alone. What install()
+                // wrote belongs to the run, not to this workflow, and the caller
+                // is the only one that knows whether it is about to retry with
+                // another observer or carry on with this one.
                 stderr.printf ("IPC subscribe failed: %s\n", e.message);
-                uninstall ();
                 return false;
             }
 
@@ -103,8 +106,15 @@ namespace linux_onboarding {
             });
         }
 
+        /**
+         * Ends one workflow, leaving the mode file where install() put it.
+         *
+         * Undoing install() here too would be wrong now that install() is called
+         * once for the whole run: the next workflow would find no mode to enter,
+         * and every PLAY would pay for a config reload.
+         */
         public void stop () {
-            if (!started && !installed) return;
+            if (!started) return;
 
             modes.leave ();
 
@@ -119,7 +129,6 @@ namespace linux_onboarding {
                 ipc_pid = 0;
             }
 
-            uninstall ();
             listening = false;
             started = false;
         }

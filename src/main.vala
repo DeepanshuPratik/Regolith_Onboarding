@@ -28,6 +28,23 @@ namespace linux_onboarding {
             var window = new linux_onboarding.CarouselSetup (this);
             window.show_all ();
         }
+
+        /**
+         * The last thing to run however the app exits, and the only hook that
+         * covers app.quit() — which returns to the main loop without destroying a
+         * single window, so no destroy handler fires.
+         *
+         * Uninstalling twice costs nothing; not uninstalling at all leaves a
+         * binding mode in the user's config shadowing the keys it names until
+         * some later run's cleanup notices.
+         */
+        protected override void shutdown () {
+            foreach (var window in get_windows ()) {
+                var setup = window as linux_onboarding.CarouselSetup;
+                if (setup != null) setup.release_practice ();
+            }
+            base.shutdown ();
+        }
     }
     /**
      * Application entry point

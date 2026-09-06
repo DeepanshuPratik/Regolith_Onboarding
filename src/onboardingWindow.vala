@@ -33,6 +33,10 @@ namespace linux_onboarding {
         private WorkFlowPage workflowPage;
         private Gee.List<Workflow> workflows;
 
+        // Observation, for the whole run rather than for one workflow. Built
+        // last in the constructor and taken down again by release_practice().
+        private PracticeSession practice;
+
         // Carousel contents in order: welcome, featured slides, workflow list.
         private Gee.ArrayList<Gtk.Widget> pages = new Gee.ArrayList<Gtk.Widget> ();
 
@@ -107,11 +111,10 @@ namespace linux_onboarding {
             carousel.set_allow_mouse_drag(ALLOW_CAROUSEL_GESTURES);
             carousel.set_allow_long_swipes(ALLOW_CAROUSEL_GESTURES);
 
+            // Escape is a way out from anywhere in the app, including mid-practice,
+            // so it goes through the same teardown as every other exit.
             key_press_event.connect ((key) => {
-                if (key.keyval == KEY_CODE_ESCAPE) {
-                    clean_config();
-                    quit();
-                }
+                if (key.keyval == KEY_CODE_ESCAPE) quit();
                 return false;
             });
 
@@ -150,11 +153,37 @@ namespace linux_onboarding {
                            set_seat(grabbed_seat);
                        } else {
                            stderr.printf ("Failed to acquire access to input devices, aborting.");
+                           // app.quit() destroys no windows, so nothing else here
+                           // would run; tear down first, then ask to exit.
+                           quit();
                            app.quit();
                        }
                    }
                });
             }
+
+            // Last, so the window is fully configured before an observer starts
+            // reading its key events, and after the Escape handler above so that
+            // handler still runs first.
+            //
+            // This window is the observer's owner because it is the only widget
+            // here whose life is the app's: a grab-based observer hooks the
+            // owner's key events and holds a grab on its Gdk.Window, and a
+            // practice page — which comes and goes with each workflow — would
+            // take both away with it. It is also where GTK delivers key events
+            // before propagating them to whatever currently has focus.
+            practice = new PracticeSession (this, workflows);
+
+            // Writes the binding mode now rather than at PLAY. A config reload
+            // before the window is even mapped is invisible; the same reload in
+            // the middle of a workflow is a flicker over the thing being taught.
+            practice.install ();
+
+            // The window can also be destroyed without going through quit() — a
+            // window-manager close, or the toplevel being torn down at exit. Left
+            // uninstalled, the binding mode shadows the user's keys until some
+            // later run's cleanup_stale_state() notices it.
+            this.destroy.connect (release_practice);
         }
 
         /**
@@ -192,25 +221,41 @@ namespace linux_onboarding {
         }
 
         public void create_practice_page(Workflow workflow){
-          workflowPage = new WorkFlowPage(workflow, ()=>{
+          workflowPage = new WorkFlowPage(workflow, practice, ()=>{
             this.remove(workflowPage);
             this.add(container);
             this.show_all();
           });
         }
 
+        /**
+         * The one way out. Every exit path funnels through here so that nothing
+         * this run installed outside the process outlives it.
+         */
         public void quit() {
+            release_practice ();
+            clean_config ();
             if (seat != null) seat.ungrab ();
             hide ();
             close ();
+        }
+
+        /**
+         * Take the binding mode back out of the window manager and drop any grab
+         * the observer holds. Idempotent, because more than one exit path reaches
+         * it and quit() itself triggers the destroy handler that also calls it.
+         */
+        public void release_practice () {
+            if (practice != null) practice.uninstall ();
         }
 
         public void set_seat(Gdk.Seat seat) {
             linux_onboarding.seat = seat;
         }
 
-        // Escape can quit while a workflow is mid-flight, so make sure no platform
-        // has left anything installed outside the process.
+        // Belt and braces behind release_practice(): that undoes what this run
+        // installed, this sweeps up anything a run that was killed left behind, in
+        // every platform that claims the session rather than only the one we used.
         private void clean_config() {
             PlatformRegistry.cleanup_stale_state ();
         }

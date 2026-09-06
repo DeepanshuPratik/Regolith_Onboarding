@@ -24,6 +24,11 @@ namespace linux_onboarding {
      * was actually pressed, performing the action it is normally bound to, and
      * getting the window out of the way are three separate services, each chosen
      * for the running desktop by PlatformRegistry.
+     *
+     * Observation is handed in rather than built here. The observer's install()
+     * writes into the window manager and belongs to the whole run, so it is the
+     * app that owns a PracticeSession; a page only borrows it for the length of
+     * one workflow, between start() and stop().
      */
     public class WorkFlowPage : Box {
 
@@ -43,8 +48,7 @@ namespace linux_onboarding {
 
         private Workflow workflow;
         private Json.Array? steps;
-        private ShortcutObserver observer;
-        private ActionDispatcher dispatcher;
+        private PracticeSession practice;
         private WindowPlacer? placer = null;
         private bool capture_started = false;
         private workflowList return_to_list;
@@ -62,7 +66,7 @@ namespace linux_onboarding {
         private Label commandLabel;
         private Label descriptionLabel;
 
-        public WorkFlowPage(Workflow workflow, owned workflowList workflowList) {
+        public WorkFlowPage(Workflow workflow, PracticeSession practice, owned workflowList workflowList) {
             Object(orientation: Gtk.Orientation.VERTICAL, spacing: 10);
             this.margin = 20;
             this.set_valign(Gtk.Align.CENTER);
@@ -71,6 +75,7 @@ namespace linux_onboarding {
 
             this.workflow = workflow;
             this.steps = workflow.steps;
+            this.practice = practice;
             this.return_to_list = (owned) workflowList;
 
             var css_provider = new Gtk.CssProvider();
@@ -117,25 +122,8 @@ namespace linux_onboarding {
             buttonHolder.set_halign(Gtk.Align.CENTER);
             instructionAndPlayHolder.add(buttonHolder);
 
-            use_observer (PlatformRegistry.observer (this));
-
             play_button.clicked.connect (on_play);
             cancel_button.clicked.connect (on_cancel);
-        }
-
-        /**
-         * Adopts an observer and the dispatcher that goes with it.
-         *
-         * The two are swapped together on purpose: on a grab-based desktop the
-         * dispatcher has to release the grab its observer is holding, so one left
-         * pointing at a discarded observer would synthesize keys straight back
-         * into our own window.
-         */
-        private void use_observer (ShortcutObserver o) {
-            observer = o;
-            observer.step_matched.connect (on_step_matched);
-            observer.aborted.connect (on_aborted);
-            dispatcher = PlatformRegistry.dispatcher (observer);
         }
 
         // Built on first use rather than in the constructor: both of its methods
@@ -169,24 +157,20 @@ namespace linux_onboarding {
             play_button.set_label("CAPTURING");
 
             if (!capture_started) {
-                // install() moves to startup once something owns an observer for the
-                // whole run; until then it happens here, with this workflow alone.
-                // One workflow's keys in the binding mode is exactly what the old
-                // start(steps) installed, so nothing visible changes.
-                var only_this = new Gee.ArrayList<Workflow> ();
-                only_this.add (workflow);
-
-                if (!observer.install (only_this) || !observer.start ()) {
-                    stderr.printf ("%s failed to start — falling back to seat grab\n",
-                                   observer.get_type ().name ());
-                    use_observer (PlatformRegistry.fallback_observer (this));
-                    observer.install (only_this);
-                    observer.start ();
-                }
+                // Connected here rather than in the constructor, and dropped again
+                // in finish(): the session outlives this page, so a page that goes
+                // away still wired to its signals would be called back after it was
+                // destroyed. The install() these signals depend on already happened,
+                // at startup.
+                practice.step_matched.connect (on_step_matched);
+                practice.aborted.connect (on_aborted);
                 capture_started = true;
+
+                if (!practice.start ())
+                    stderr.printf ("Nothing here can observe the keypress; this step cannot complete.\n");
             }
 
-            observer.arm (command);
+            practice.arm (command);
             this.show_all();
         }
 
@@ -194,9 +178,7 @@ namespace linux_onboarding {
         // move on after a beat so the tick is actually seen.
         private void on_step_matched () {
             current_key_sequence++;
-            // null: let the dispatcher resolve the binding itself if it can. Only it
-            // knows whether it would rather run the real command or replay the keys.
-            dispatcher.dispatch (command, null);
+            practice.dispatch (command);
             handleTick();
             this.show_all();
 
@@ -228,8 +210,22 @@ namespace linux_onboarding {
             window_placer ().restore ();
         }
 
+        /**
+         * Hands the session back. Only start()'s half is undone — what install()
+         * put in the window manager stays there for the next workflow, and comes
+         * out when the app exits.
+         *
+         * Reachable from a signal the session is in the middle of emitting, which
+         * is why the disconnect comes first: on_aborted() lands here, and the page
+         * is destroyed on the next line.
+         */
         private void finish () {
-            observer.stop ();
+            if (capture_started) {
+                practice.step_matched.disconnect (on_step_matched);
+                practice.aborted.disconnect (on_aborted);
+                practice.stop ();
+                capture_started = false;
+            }
             return_to_list ();
             this.destroy();
         }
