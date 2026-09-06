@@ -536,6 +536,24 @@ translates between them (`?` becomes `question`, `Space` becomes `space`). If
 you write a key the translation does not cover, `--check-workflows` is where
 you will find out.
 
+### Images for a step
+
+A step's `image` is optional. It is shown in a fixed **340 × 230** slot, so
+author at **680 × 460** for HiDPI: the app scales your asset to fit, keeps its
+proportions and never upscales it, which means the page is the same shape on
+every step whatever you supply.
+
+PNG, JPEG and GIF are read here (this is GdkPixbuf, not a browser — no SVG, no
+video). **Animated GIFs animate**; they used to be shown as a single frame. Keep
+one close to the slot size rather than shipping a 1600-wide animation to be
+scaled down on every frame, and remember everything here is compiled into the
+binary, so the file size is the user's download.
+
+**→ [docs/ASSET-PROMPTS.md](ASSET-PROMPTS.md)** covers generating this art with
+an image model: the palette to hand it, why no image should contain text, the
+style anchor that keeps a set consistent, ready-made prompts per step type, and
+the ffmpeg recipe for turning generated video into a GIF small enough to ship.
+
 ### Choosing steps
 
 Two things worth keeping in mind:
