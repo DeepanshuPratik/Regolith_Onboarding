@@ -54,6 +54,9 @@ my-distro-branding/
 Name=Regolith
 Theme=theme.css
 
+# Your branding's version. Optional, defaults to 0. See "Version gating" below.
+Version=1.0
+
 # The first page. Optional, defaults to welcome.html; set it empty to open
 # on the slides instead.
 Welcome=welcome.html
@@ -63,6 +66,12 @@ SlideOrder=01-tiling.html;02-workspaces.html;03-practice.html;
 
 # Optional, default false.
 AllowSlideScripts=false
+
+# Optional. The branding version each slide first appeared in.
+[Slides]
+01-tiling.html=1.0
+02-workspaces.html=1.0
+03-practice.html=1.0
 
 [Marketplace]
 Name=Regolith Workflow Marketplace
@@ -132,7 +141,9 @@ moves the deck instead:
 
 `next` and `back` are relative to the page the link is on, so the same markup
 works wherever you move a page in the deck. `next` from the welcome page lands
-on your first slide, or on the catalogue if you ship no slides.
+on your first slide, or on the catalogue if there are no slides to show — which
+happens both when you ship none and on any run where version gating has emptied
+the deck, so write that button to say "Get Started" rather than "Next slide".
 
 This is a plain anchor, so it works with scripting off — that is the point of
 doing it this way. An unknown action name is logged and ignored.
@@ -140,6 +151,78 @@ doing it this way. An unknown action name is logged and ignored.
 The welcome page is expected to carry its own button, and so is given the full
 height with no Back/Next strip beneath it. Slides get that strip from the app
 and usually need no action links at all.
+
+### Version gating: showing new slides to existing users
+
+The tool runs more than once. Showing an existing user the same three slides
+every launch trains them to close the window, and showing them nothing means you
+can never introduce anything. So the deck is filtered against what that user has
+already seen.
+
+Two keys drive it:
+
+| Key | Meaning |
+|---|---|
+| `Version=` in `[Branding]` | The version of **your branding**, not of the application |
+| `<slide>=` in `[Slides]` | The branding version that slide first appeared in |
+
+`Version` is yours to move. Bump it when you add or rewrite a slide; leave it
+alone when the application ships a bugfix release. Those are different events
+with different owners, and tying the deck to the app's version would mean every
+patch release re-showing the deck while a branding-only change showed nothing.
+
+Both values are **dotted-numeric** — `1`, `1.0`, `3.10.2`. Nothing else is
+accepted: no `v` prefix, no `1.0-rc1`, no `3.x`. A malformed value is rejected
+with a warning rather than being ordered anyway, because the alternative is
+`3.x` quietly sorting as `3` and a slide silently never appearing. The
+comparison is numeric per segment, so `3.10` is above `3.9`; a missing segment
+counts as zero, so `3.2` and `3.2.0` are the same version.
+
+What each run shows:
+
+| Situation | Deck |
+|---|---|
+| First run on this machine (no state file) | **Everything.** `Since` is ignored entirely |
+| A user who last saw `1.0`, branding now `1.1` | Only slides whose version is above `1.0` |
+| A user who is up to date | No slides at all — welcome, then the catalogue |
+
+The first row is the important one. A brand-new user has no history to compute a
+delta against, so they get the whole introduction; only upgraders get a delta.
+This also means a slide with **no** `[Slides]` entry is treated as having always
+existed: it is part of a first run, and never part of an upgrade.
+
+The welcome page always shows, and the catalogue is always one click away. Only
+the slides between them are gated.
+
+#### Where the state lives, and when it is written
+
+One file, `~/.config/linux-onboarding/state`, holding the last branding version
+the user was shown:
+
+```ini
+[State]
+LastSeenBrandingVersion=1.0
+```
+
+It is written when the user actually **reaches the last slide the deck owed
+them**, not when the window opens. Recording at startup would mean someone who
+opens the window and closes it on slide two is never shown slide three. When
+there is no delta at all there is nothing to miss, so the version is recorded
+straight away.
+
+Someone who jumps from the welcome page to the catalogue is not recorded, and
+sees the same slides next launch. Showing a slide twice is an annoyance; never
+showing it is a bug.
+
+#### Re-testing your own slides
+
+```
+./build/linux-onboarding --reset-state
+```
+
+Deletes that file, so the next run is a first run and shows everything again.
+This is the flag you will use while writing slides — otherwise your own machine
+is the one machine that has already seen them.
 
 ## The application id, and the desktop file named after it
 

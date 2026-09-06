@@ -54,6 +54,14 @@ namespace linux_onboarding.Tests {
         Test.message ("%s\n    expected: %d\n    actual:   %d", label, expected, actual);
         Test.fail ();
     }
+
+    /** As check_str, for predicates such as validity and ordering. */
+    public void check_bool (string label, bool actual, bool expected) {
+        if (actual == expected) return;
+        Test.message ("%s\n    expected: %s\n    actual:   %s",
+                      label, expected.to_string (), actual.to_string ());
+        Test.fail ();
+    }
 }
 
 public static int main (string[] args) {
@@ -76,6 +84,7 @@ public static int main (string[] args) {
     linux_onboarding.Tests.register_key_spec ();
     linux_onboarding.Tests.register_key_tables ();
     linux_onboarding.Tests.register_key_synthesizer ();
+    linux_onboarding.Tests.register_version ();
 
     return Test.run ();
 }

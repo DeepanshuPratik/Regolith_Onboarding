@@ -34,6 +34,16 @@ namespace linux_onboarding {
 
         public const string RESOURCE_ROOT = APP_PATH + "/branding";
 
+        /**
+         * What a build claims when branding.conf declares no Version, and what a
+         * slide's Since defaults to. Below every version a distro can write, so
+         * an unversioned build gates nothing and an unversioned slide is only
+         * ever part of a first run.
+         */
+        private const string UNVERSIONED = "0";
+
+        private const string SLIDES_GROUP = "Slides";
+
         private static Branding? instance = null;
 
         /**
@@ -42,6 +52,14 @@ namespace linux_onboarding {
          * the startup log need it where no WebView is involved.
          */
         public string name             { get; private set; default = "Linux"; }
+
+        /**
+         * The branding's own version, dotted-numeric. Not the application's: it
+         * moves when this directory's slides change and stays put for a binary
+         * bugfix release, which is the only way a distro can add a slide without
+         * either re-showing the whole deck or showing nothing at all.
+         */
+        public string version          { get; private set; default = UNVERSIONED; }
 
         /** Resource path of the welcome page, or "" when none is bundled. */
         public string welcome_resource { get; private set; default = ""; }
@@ -54,6 +72,12 @@ namespace linux_onboarding {
         /** Slide resource paths, in presentation order. May be empty. */
         public string[] slides { get; private set; }
 
+        /**
+         * The branding version each entry of `slides` first appeared in, same
+         * length and same order. UNVERSIONED for a slide that declares none.
+         */
+        public string[] slide_since { get; private set; }
+
         public static Branding get_default () {
             if (instance == null) instance = new Branding ();
             return instance;
@@ -61,6 +85,7 @@ namespace linux_onboarding {
 
         private Branding () {
             slides = {};
+            slide_since = {};
 
             var keyfile = new KeyFile ();
             try {
@@ -74,6 +99,17 @@ namespace linux_onboarding {
             }
 
             name = read (keyfile, "Branding", "Name", name);
+
+            var declared = read (keyfile, "Branding", "Version", UNVERSIONED);
+            if (Version.is_valid (declared)) {
+                version = declared;
+            } else {
+                // Left at UNVERSIONED rather than guessed at: no Since can then
+                // sit above it, so the deck degrades to first-run-only instead of
+                // showing an arbitrary subset the author never chose.
+                warning ("branding.conf: Version=%s is not dotted-numeric; no slide " +
+                         "in this build will ever count as new", declared);
+            }
 
             // The welcome page is HTML, so the logo and tagline that once had
             // keys here are markup inside it. An explicit empty value is a
@@ -94,9 +130,29 @@ namespace linux_onboarding {
             marketplace_url  = read (keyfile, "Marketplace", "Url", "");
 
             slides = resolve_slides (read (keyfile, "Branding", "SlideOrder", ""));
+            slide_since = resolve_since (keyfile);
 
-            message ("branding: %s, %d slide(s)%s", name, slides.length,
+            message ("branding: %s %s, %d slide(s)%s", name, version, slides.length,
                      allow_slide_scripts ? ", scripts enabled" : "");
+        }
+
+        /**
+         * The slides owed to a user whose last-seen branding version is
+         * `last_seen`, in deck order.
+         *
+         * null means no state file, which means nobody has been shown anything on
+         * this machine — so the answer is every slide with Since ignored (D10). A
+         * genuine first-run user gets the whole introduction; only an upgrader
+         * gets a delta. Treating a first run as "seen version 0" instead would
+         * hide every slide a distro forgot to mark, which is most of them.
+         */
+        public string[] slides_for (string? last_seen) {
+            if (last_seen == null) return slides;
+
+            string[] result = {};
+            for (int i = 0; i < slides.length; i++)
+                if (Version.is_above (slide_since[i], last_seen)) result += slides[i];
+            return result;
         }
 
         private static string read (KeyFile kf, string group, string key, string fallback) {
@@ -142,6 +198,33 @@ namespace linux_onboarding {
             names.sort ((a, b) => strcmp (a, b));
 
             foreach (var n in names) result += dir + n;
+            return result;
+        }
+
+        /**
+         * Since= for every entry of `slides`, read from a [Slides] group keyed by
+         * filename.
+         *
+         * Its own group rather than a second list beside SlideOrder: SlideOrder is
+         * a positional `;`-separated list, and a parallel list of versions
+         * mis-pairs silently the moment someone inserts one slide and forgets the
+         * other — the failure being an existing slide re-shown and a new one
+         * hidden, with nothing to read in a diff. Keying by filename also keeps
+         * the versions meaningful when SlideOrder is omitted entirely and the
+         * directory is enumerated instead, which a parallel list cannot do at all.
+         */
+        private string[] resolve_since (KeyFile kf) {
+            string[] result = {};
+            foreach (var resource in slides) {
+                var slide = Path.get_basename (resource);
+                var declared = read (kf, SLIDES_GROUP, slide, UNVERSIONED);
+                if (!Version.is_valid (declared)) {
+                    warning ("branding.conf: [Slides] %s=%s is not dotted-numeric; " +
+                             "treating the slide as unversioned", slide, declared);
+                    declared = UNVERSIONED;
+                }
+                result += declared;
+            }
             return result;
         }
 

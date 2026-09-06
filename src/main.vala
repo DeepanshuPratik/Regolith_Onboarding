@@ -68,6 +68,7 @@ namespace linux_onboarding {
 
         foreach (var arg in args) {
             if (arg == "--check-workflows") return WorkflowCheck.run ();
+            if (arg == "--reset-state")     return OnboardingState.reset ();
         }
 
         var app = new Application ();

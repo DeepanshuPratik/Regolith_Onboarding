@@ -40,6 +40,13 @@ namespace linux_onboarding {
         // Carousel contents in order: welcome, featured slides, workflow list.
         private Gee.ArrayList<Gtk.Widget> pages = new Gee.ArrayList<Gtk.Widget> ();
 
+        private OnboardingState state;
+
+        // Last page the deck owes this user: the final slide it decided to show,
+        // or the welcome page when the delta is empty. Reaching it is what marks
+        // the branding version seen.
+        private int last_owed_index = -1;
+
         public CarouselSetup (Gtk.Application app) {
             Object(application: app, type: Gtk.WindowType.POPUP);
             window_position = WindowPosition.CENTER;
@@ -91,7 +98,15 @@ namespace linux_onboarding {
             if (branding.welcome_resource != "")
                 add_deck_page (new SlidePage.self_navigating (branding.welcome_resource));
 
-            var slides = branding.slides;
+            // Version gating (D12): only the slides added since the branding
+            // version this user last saw. A machine with no state file has seen
+            // nothing, so it gets all of them. The deck can collapse to nothing
+            // here, and that is the normal case on a run with no upgrade —
+            // welcome still shows, and its "Get Started" lands on the catalogue
+            // because next is resolved from the firing page, not from a fixed
+            // slide count.
+            state = OnboardingState.load ();
+            var slides = branding.slides_for (state.last_seen_version);
             for (int i = 0; i < slides.length; i++) {
                 int index = pages.size;
                 add_deck_page (new SlidePage (
@@ -101,11 +116,14 @@ namespace linux_onboarding {
                     () => { scroll_to_page (index + 1); }));
             }
 
+            last_owed_index = pages.size - 1;
             pages.add (worflowsListPage);
 
             for (int i = 0; i < pages.size; i++)
                 carousel.insert (pages[i], i);
             carousel.set_spacing(100);
+
+            record_version_once_deck_is_seen ();
 
             carousel.set_allow_scroll_wheel(ALLOW_CAROUSEL_GESTURES);
             carousel.set_allow_mouse_drag(ALLOW_CAROUSEL_GESTURES);
@@ -213,6 +231,37 @@ namespace linux_onboarding {
                              "which this build does not implement", name);
                     break;
             }
+        }
+
+        /**
+         * Marks the branding version seen once the user has reached the last page
+         * the deck owed them.
+         *
+         * Not at startup, which is the tempting place for it: a user who opens the
+         * window and closes it on slide two would then never be shown slide three,
+         * and the app would have quietly eaten content it exists to deliver.
+         * Reaching the final owed page is the earliest moment the claim "this user
+         * has seen this version" is actually true.
+         *
+         * A user who jumps straight to the catalogue from the welcome page is
+         * therefore not recorded, and sees the same slides next launch. That is
+         * the right direction to be wrong in: showing a slide twice is a small
+         * annoyance, never showing it is the bug.
+         */
+        private void record_version_once_deck_is_seen () {
+            var branding = Branding.get_default ();
+
+            // The carousel opens on page 0, so nothing beyond it being owed means
+            // there is nothing left for the user to miss — the no-delta case, and
+            // the one where a distro ships no slides at all.
+            if (last_owed_index <= 0) {
+                state.record (branding.version);
+                return;
+            }
+
+            carousel.page_changed.connect ((index) => {
+                if ((int) index >= last_owed_index) state.record (branding.version);
+            });
         }
 
         private void scroll_to_page (int index) {
