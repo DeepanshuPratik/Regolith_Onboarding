@@ -26,6 +26,10 @@ namespace linux_onboarding {
         // Navigation stays off so a stray scroll cannot jump pages mid-practice.
         private const bool ALLOW_CAROUSEL_GESTURES = false;
 
+        // One size for the window, whichever desktop it is on.
+        private const int WINDOW_WIDTH  = 900;
+        private const int WINDOW_HEIGHT = 560;
+
         private Gtk.Box container;
         private Hdy.Carousel carousel;
         private WorkFlowPage workflowPage;
@@ -62,11 +66,7 @@ namespace linux_onboarding {
             Object(application: app, type: Gtk.WindowType.POPUP);
             window_position = WindowPosition.CENTER;
 
-            if (PlatformRegistry.probe ().is_wayland ()) {
-                set_size_request (800,450);
-            } else {
-                set_default_size (800,450);
-            }
+            size_window ();
 
             // load_from_resource() does not throw in GTK3; a missing resource is a
             // build error, not something to handle at runtime.
@@ -84,6 +84,8 @@ namespace linux_onboarding {
             this.get_style_context().add_class("carousel");
 
             container = new Box(Gtk.Orientation.VERTICAL, 30);
+            container.hexpand = true;
+            container.vexpand = true;
             container.get_style_context().add_class("main-container");
             this.add(container);
 
@@ -210,6 +212,32 @@ namespace linux_onboarding {
             // uninstalled, the binding mode shadows the user's keys until some
             // later run's cleanup_stale_state() notices it.
             this.destroy.connect (release_practice);
+        }
+
+        /**
+         * How big this window is, and why it is not one call.
+         *
+         * A layer surface has no size negotiation: the compositor gives it what
+         * it asks for, so sway needs a size *request* or the surface has no size
+         * at all. An ordinary toplevel does negotiate, and there a size request
+         * is a **minimum** — the window still grows to whatever its content
+         * wants. That is what made the app 800x505 on GNOME while asking for
+         * 800x450, with the content centred inside and a band of empty space
+         * down each side.
+         *
+         * So: request on the layer-shell path, default size everywhere else,
+         * where it is a starting size the user can then resize away from.
+         *
+         * Asked of LayerShellSupport rather than of is_wayland(), because
+         * "Wayland" is not the question — GNOME and KDE are Wayland too, and
+         * they are the sessions this gets wrong.
+         */
+        private void size_window () {
+            if (PlatformRegistry.probe ().is_wayland () && LayerShellSupport.available ()) {
+                set_size_request (WINDOW_WIDTH, WINDOW_HEIGHT);
+            } else {
+                set_default_size (WINDOW_WIDTH, WINDOW_HEIGHT);
+            }
         }
 
         /**

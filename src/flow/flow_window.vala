@@ -41,6 +41,25 @@ namespace linux_onboarding {
         // How long the tick stays up before the next step is shown.
         private const uint STEP_ADVANCE_DELAY_SECONDS = 2;
 
+        /**
+         * The demo slot, in pixels, and it is fixed on purpose.
+         *
+         * Assets are whatever size their author made them — the shipped set runs
+         * from 500x346 to 1600x900 — so a slot that took each one's natural size
+         * made every step a different shape and the window resized under the
+         * user as they worked through a workflow. The slot is now constant and
+         * the asset is fitted into it.
+         */
+        private const int DEMO_WIDTH  = 340;
+        private const int DEMO_HEIGHT = 230;
+
+        /**
+         * The measure the step text wraps at. Without it a long description is a
+         * single long line, which widens the page — the same resize by another
+         * route.
+         */
+        private const int TEXT_WIDTH_CHARS = 46;
+
         // Current step, unpacked from JSON.
         private string heading = "";
         private string command = " ";
@@ -64,7 +83,10 @@ namespace linux_onboarding {
         // than an edge one. Kept out of the instruction box on purpose — that
         // box is rebuilt and reordered by index between steps.
         private Gtk.Box focus_prompt;
-        private Gtk.Image demo;
+        // A widget rather than a Gtk.Image: an animated asset is its own widget
+        // that plays, and a still one is an Image. The page only ever adds and
+        // removes it, so it does not care which it has.
+        private Gtk.Widget demo;
         private Gtk.Box demo_box;
         private Gtk.Box checkedCommand;
         private Gtk.Image checkTicked;
@@ -78,8 +100,14 @@ namespace linux_onboarding {
         public WorkFlowPage(Workflow workflow, PracticeSession practice, owned workflowList workflowList) {
             Object(orientation: Gtk.Orientation.VERTICAL, spacing: 10);
             this.margin = 20;
+            // FILL across, centred down the page. Centring horizontally left the
+            // page at its natural width inside a wider window, which is the
+            // band of empty space either side of the content on GNOME — where
+            // the window is a normal toplevel and does not shrink to its
+            // content the way a layer surface does.
             this.set_valign(Gtk.Align.CENTER);
-            this.set_halign(Gtk.Align.CENTER);
+            this.set_halign(Gtk.Align.FILL);
+            this.hexpand = true;
             this.get_style_context().add_class("practice-page");
 
             this.workflow = workflow;
@@ -102,14 +130,19 @@ namespace linux_onboarding {
             commandLabel = new Label("PRESS: " + keyspec.format_spec_display(command));
             headingLabel.get_style_context().add_class("heading");
             descriptionLabel = new Label(description);
+            wrap_step_text ();
             instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
             instructionAndPlayHolder.set_valign(Gtk.Align.CENTER);
             createInstructionBox();
             midBox = new Box(Gtk.Orientation.HORIZONTAL, 20);
             midBox.get_style_context().add_class("contentHolder");
 
-            demo = workflow.load_image(image);
+            demo = workflow.load_demo(image, DEMO_WIDTH, DEMO_HEIGHT);
             demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
+            // The slot keeps its size whether the step has an asset or not, so
+            // a step without one does not reflow the page.
+            demo_box.set_size_request(DEMO_WIDTH, DEMO_HEIGHT);
+            demo_box.set_valign(Gtk.Align.CENTER);
             demo_box.add(demo);
             midBox.add(instructionAndPlayHolder);
             midBox.add(demo_box);
@@ -325,8 +358,9 @@ namespace linux_onboarding {
             headingLabel.get_style_context().add_class("heading");
             commandLabel = new Label("PRESS: " + keyspec.format_spec_display(command));
             descriptionLabel = new Label(description);
+            wrap_step_text ();
             createInstructionBox();
-            demo = workflow.load_image(image);
+            demo = workflow.load_demo(image, DEMO_WIDTH, DEMO_HEIGHT);
             demo_box.add(demo);
             play_button.get_style_context().add_class("playButton");
             play_button.set_label("PLAY");
@@ -365,6 +399,20 @@ namespace linux_onboarding {
                 return "";
             }
             return obj.get_string_member(name) ?? "";
+        }
+
+        /**
+         * Holds the step text to a measure. GTK CSS has no max-width, so this is
+         * the only place it can be said — and without it the page is as wide as
+         * its longest description, which differs per step.
+         */
+        private void wrap_step_text () {
+            Label[] wrapped = { headingLabel, descriptionLabel, commandLabel };
+            foreach (var label in wrapped) {
+                label.set_line_wrap (true);
+                label.max_width_chars = TEXT_WIDTH_CHARS;
+                label.set_justify (Gtk.Justification.CENTER);
+            }
         }
 
         public void createInstructionBox() {

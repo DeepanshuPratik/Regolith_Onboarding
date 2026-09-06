@@ -81,6 +81,7 @@ public static int main (string[] args) {
     // all the damage, which is also what makes check_str's diagnostics useful.
     Test.set_nonfatal_assertions ();
 
+    linux_onboarding.Tests.register_asset_fit ();
     linux_onboarding.Tests.register_key_spec ();
     linux_onboarding.Tests.register_kde_bindings ();
     linux_onboarding.Tests.register_key_tables ();

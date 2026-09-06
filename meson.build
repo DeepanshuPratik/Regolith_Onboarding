@@ -135,6 +135,9 @@ test_sources += files(
   # platform that can be held to account without a Plasma machine.
   'src/platforms/kde/resolver.vala',
   'src/services/binding_resolver.vala',
+  # AssetLoader.fit_size: the demo slot's arithmetic, which is what keeps the
+  # practice page the same size from one step to the next.
+  'src/workflows/workflow.vala',
   # Palette's colour parsing and generated stylesheets. branding.vala comes with
   # it because Palette reads the distro's overrides from it; nothing in the suite
   # constructs a Branding, so no compiled-in resource is needed.
@@ -154,7 +157,9 @@ test_deps = [
   # branding.vala's slide list is a Gee collection.
   dependency('gee-0.8'),
   # palette.vala linearises sRGB channels with Math.pow.
-  meson.get_compiler('c').find_library('m', required: false)
+  meson.get_compiler('c').find_library('m', required: false),
+  # workflow.vala's Workflow holds its steps as a Json.Array.
+  dependency('json-glib-1.0')
 ]
 
 unit_tests = executable(

@@ -48,6 +48,14 @@ namespace linux_onboarding {
         public Gtk.Image load_image (string relative, int width = -1, int height = -1) {
             return AssetLoader.image (base_dir, resource_base, relative, width, height);
         }
+
+        /**
+         * As load_image, for the practice page's demo slot: fitted to a fixed
+         * box so every step is the same shape, and animated if the asset is.
+         */
+        public Gtk.Widget load_demo (string relative, int box_w, int box_h) {
+            return AssetLoader.fitted (base_dir, resource_base, relative, box_w, box_h);
+        }
     }
 
     /**
@@ -84,6 +92,134 @@ namespace linux_onboarding {
                                        int width = -1, int height = -1) {
             var pb = pixbuf (base_dir, resource_base, relative, width, height);
             return (pb == null) ? new Gtk.Image () : new Gtk.Image.from_pixbuf (pb);
+        }
+
+        /**
+         * A demo asset scaled to fit a fixed box, animating if it animates.
+         *
+         * Two things this fixes, both of which the user sees as one symptom —
+         * the window changing size between steps:
+         *
+         *  - Assets are whatever size their author made them. The shipped set
+         *    runs from 500x346 to 1600x900, and loading them at natural size
+         *    made the practice page a different shape on every step, which the
+         *    window then grew or shrank to fit.
+         *  - A GIF loaded as a Pixbuf is one frame. Every animation a distro
+         *    ships was being shown as a still, silently.
+         *
+         * The box is the caller's and is never exceeded; an asset smaller than
+         * the box is left alone rather than upscaled into blur.
+         */
+        public static Gtk.Widget fitted (string? base_dir, string resource_base,
+                                         string relative, int box_w, int box_h) {
+            if (relative.length == 0) return new Gtk.Image ();
+
+            Gdk.PixbufAnimation? anim = null;
+            try {
+                if (base_dir == null) {
+                    var stream = GLib.resources_open_stream (
+                        resource_base + "/" + relative, ResourceLookupFlags.NONE);
+                    anim = new Gdk.PixbufAnimation.from_stream (stream, null);
+                } else {
+                    anim = new Gdk.PixbufAnimation.from_file (
+                        Path.build_filename (base_dir, relative));
+                }
+            } catch (Error e) {
+                warning ("Cannot load image '%s' (%s): %s",
+                         relative, base_dir ?? resource_base, e.message);
+                return new Gtk.Image ();
+            }
+
+            if (anim.is_static_image ()) {
+                var still = anim.get_static_image ();
+                int w, h;
+                fit_size (still.get_width (), still.get_height (), box_w, box_h, out w, out h);
+                return new Gtk.Image.from_pixbuf (still.scale_simple (w, h, Gdk.InterpType.BILINEAR));
+            }
+
+            return new AnimatedImage (anim, box_w, box_h);
+        }
+
+        /**
+         * The size an asset takes inside the box, keeping its proportions.
+         *
+         * Never larger than the box, and never larger than the asset: a
+         * 120x80 icon stretched to fill a 340x230 slot looks worse than a
+         * 120x80 icon, and the slot is a fixed size either way, so nothing
+         * moves whichever way this lands.
+         */
+        internal static void fit_size (int src_w, int src_h, int box_w, int box_h,
+                                       out int w, out int h) {
+            if (src_w <= 0 || src_h <= 0) { w = box_w; h = box_h; return; }
+
+            double scale = double.min ((double) box_w / src_w, (double) box_h / src_h);
+            if (scale > 1.0) scale = 1.0;
+
+            w = (int) Math.round (src_w * scale);
+            h = (int) Math.round (src_h * scale);
+            if (w < 1) w = 1;
+            if (h < 1) h = 1;
+        }
+    }
+
+    /**
+     * A GIF that plays, scaled into the caller's box.
+     *
+     * GdkPixbufAnimation has no scaled form, so each frame is scaled as it is
+     * shown. That is affordable for the size of asset this displays and it is
+     * the only way to have both animation and a layout that does not move.
+     *
+     * The frame timeout is stopped when the widget goes away. A practice page is
+     * destroyed on every step and rebuilt, so a timeout that outlived it would
+     * accumulate one live source per step, each holding a destroyed widget.
+     */
+    private class AnimatedImage : Gtk.Image {
+
+        private Gdk.PixbufAnimation anim;
+        private Gdk.PixbufAnimationIter iter;
+        private int box_w;
+        private int box_h;
+        private uint tick_id = 0;
+
+        public AnimatedImage (Gdk.PixbufAnimation anim, int box_w, int box_h) {
+            this.anim = anim;
+            this.box_w = box_w;
+            this.box_h = box_h;
+            this.iter = anim.get_iter (null);
+
+            show_current_frame ();
+            schedule_next ();
+
+            this.destroy.connect (() => {
+                if (tick_id != 0) GLib.Source.remove (tick_id);
+                tick_id = 0;
+            });
+        }
+
+        private void show_current_frame () {
+            var frame = iter.get_pixbuf ();
+            if (frame == null) return;
+
+            int w, h;
+            AssetLoader.fit_size (frame.get_width (), frame.get_height (),
+                                  box_w, box_h, out w, out h);
+            set_from_pixbuf (frame.scale_simple (w, h, Gdk.InterpType.BILINEAR));
+        }
+
+        private void schedule_next () {
+            var delay = iter.get_delay_time ();
+            // -1 means "this frame is the last"; anything under a floor would
+            // spin the main loop on a malformed file.
+            if (delay < 0) return;
+            if (delay < 20) delay = 20;
+
+            tick_id = Timeout.add ((uint) delay, () => {
+                tick_id = 0;
+                iter.advance (null);
+                show_current_frame ();
+                schedule_next ();
+                return Source.REMOVE;
+            });
         }
     }
 }
