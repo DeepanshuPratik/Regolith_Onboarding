@@ -54,9 +54,8 @@ namespace linux_onboarding {
         private uint   armed_key  = 0;
         private bool   armed_from_table = false;
 
-        // A grab held right now. The X11 path takes one at map time from
-        // onboardingWindow.vala and hands it in; the Wayland path takes and
-        // releases its own from start() / stop().
+        // The grab held right now, taken by start() and dropped by stop() in
+        // every session (#29). Null between workflows.
         private Gdk.Seat? grab_seat = null;
 
         // Re-grab state on Wayland. focus-in tells us focus came back; the
@@ -67,11 +66,6 @@ namespace linux_onboarding {
         private bool            regrab_pending = false;
         private uint            regrab_timeout_id = 0;
         private const uint      REGRAB_TIMEOUT_MS = 120 * 1000;
-
-        // Asked by PracticeSession before it falls back to a null observer.
-        // False on Wayland until a key has arrived through the grab, so we do
-        // not claim observation that has not been proven to work yet.
-        private bool            proven_works = false;
 
         public SeatGrabObserver (Gtk.Widget owner) {
             this.owner = owner;
@@ -93,32 +87,30 @@ namespace linux_onboarding {
         public void uninstall () {}
 
         /**
-         * Take the grab. On X11 the toplevel already holds one, mapped at
-         * construction time by onboardingWindow.vala; we adopt it so the same
-         * release/retake dance the dispatcher performs is the one stop() undoes.
-         * On Wayland we take one here, but a fresh grab when focus is not on
-         * the window sends no key events our way — see start()'s comment.
+         * Take the grab — one keyboard-only grab, taken here, on every desktop.
+         *
+         * This used to have two paths: on X11 it adopted a seat the toplevel had
+         * already grabbed at map time, and only on Wayland did it grab for
+         * itself. The toplevel's grab is gone (#29), so there is one path and one
+         * owner. The X11 side loses nothing by it — an X grab taken at PLAY
+         * receives every key just as one taken at startup did — and the app stops
+         * holding the user's keyboard while they read the slides.
+         *
+         * A grab whose request succeeds is still not a grab that works: on
+         * Wayland the request returns SUCCESS when it is inert, so the only
+         * ground truth is a key arriving. That is what the re-grab timeout is
+         * for, and it is armed here whichever session we are in.
          */
         public bool start () {
             var gdkwin = owner.get_window ();
             if (gdkwin == null) return false;
 
-            if (linux_onboarding.seat != null) {
-                // X11 / XWayland path — the window mapped with the grab already.
-                grab_seat = linux_onboarding.seat;
-                proven_works = true;
-                return true;
-            }
-
-            // Wayland path — take a fresh keyboard-only grab.
             var grabbed = grab_keyboard_only (gdkwin);
             if (grabbed == null) {
                 stderr.printf ("Failed to acquire keyboard for shortcut observation.\n");
                 return false;
             }
             grab_seat = grabbed;
-            // We cannot prove the grab is functional until a key arrives; the
-            // re-grab machinery runs in case the user has to click back in.
             arm_regrab_timeout ();
             return true;
         }
@@ -127,12 +119,8 @@ namespace linux_onboarding {
             cancel_regrab_timeout ();
             regrab_pending = false;
             listening = false;
-            proven_works = false;
-            if (grab_seat != null && linux_onboarding.seat == null) {
-                // The Wayland seat we took in start(); do not ungrab an X11 seat
-                // that belongs to the toplevel.
-                try { grab_seat.ungrab (); } catch {}
-            }
+            // Ours in every session now, so it is ours to drop.
+            if (grab_seat != null) grab_seat.ungrab ();
             grab_seat = null;
         }
 
@@ -191,7 +179,6 @@ namespace linux_onboarding {
 
             if (keys.match (key, armed_mask, armed_key, armed_from_table)) {
                 listening = false;
-                proven_works = true;
                 cancel_regrab_timeout ();
                 step_matched ();
             }

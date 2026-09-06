@@ -27,8 +27,12 @@ namespace linux_onboarding {
      * author's key_ids against the real desktop, and the dispatcher stops having
      * to re-derive what the scan already knew.
      *
-     * sway only. i3 keeps no equivalent queryable config, so an i3 session gets
-     * an unavailable resolver and everything falls through to synthesis.
+     * Scanning is sway only: i3 keeps no equivalent queryable config. It does
+     * not follow that i3 gets an unavailable resolver — see available() below,
+     * which is deliberately true for i3 as well. An i3 session gets an
+     * *available* resolver answering UNKNOWN, so the registry's walk stops here
+     * instead of reaching a resolver for some other desktop, and dispatch falls
+     * through to synthesis.
      */
     public class SwayResolver : GLib.Object, BindingResolver {
 

@@ -20,8 +20,6 @@ using Gee;
 
 namespace linux_onboarding {
 
-    // Held by SeatGrabObserver across its grab/ungrab cycles.
-    protected Gdk.Seat seat;
 
     public class CarouselSetup : Window {
 
@@ -146,34 +144,28 @@ namespace linux_onboarding {
                 GtkLayerShell.init_for_window (this);
                 GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
                 GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
-            } else if (is_wayland) {
-                // Wayland without layer shell — GNOME/Mutter is the case that
-                // matters. Asking for any of the above here is not a degraded
-                // experience, it is a SIGABRT at show_all(); see
-                // LayerShellSupport for the measurements.
-                //
-                // The window itself does not grab here. The grab is the
-                // observer's, taken in PracticeSession.start() — see
-                // SeatGrabObserver for why KEYBOARD only, and why recovery on
-                // GNOME is the user clicking back in rather than anything we
-                // can do from inside the process.
-            } else {
-                this.map.connect (() => {
-                   var gdkwin = this.get_window ();
-                   if (gdkwin != null) {
-                       var grabbed_seat = grab_inputs(gdkwin);
-                       if (grabbed_seat != null) {
-                           set_seat(grabbed_seat);
-                       } else {
-                           stderr.printf ("Failed to acquire access to input devices, aborting.");
-                           // app.quit() destroys no windows, so nothing else here
-                           // would run; tear down first, then ask to exit.
-                           quit();
-                           app.quit();
-                       }
-                   }
-               });
             }
+
+            // Every other session — Wayland without a layer shell (GNOME/Mutter),
+            // and X11 — configures nothing here, and neither one grabs.
+            //
+            // Layer shell is not merely unavailable on Mutter, it is fatal:
+            // asking for any of the calls above is a SIGABRT at show_all()
+            // rather than a degraded window (#26, and LayerShellSupport for the
+            // measurements).
+            //
+            // The X11 branch used to take a KEYBOARD | POINTER seat grab the
+            // moment the window mapped, and abort startup if it failed. Three
+            // things were wrong with that. It asked for POINTER, which on an
+            // XWayland connection into Mutter or KWin is the one thing that
+            // stops GTK requesting the shortcuts inhibitor at all (#11) — so the
+            // app held the pointer and lost the capability the grab was for. It
+            // held the user's keyboard for the whole run, including while they
+            // were reading slides and had asked for nothing. And a failed grab
+            // killed the app, when the honest consequence is only that practice
+            // is unavailable. PracticeSession owns the grab now, on every
+            // desktop: taken at PLAY, keyboard only, dropped when the workflow
+            // ends (#29).
 
             // Last, so the window is fully configured before an observer starts
             // reading its key events, and after the Escape handler above so that
@@ -279,7 +271,6 @@ namespace linux_onboarding {
         public void quit() {
             release_practice ();
             clean_config ();
-            if (seat != null) seat.ungrab ();
             hide ();
             close ();
         }
@@ -293,10 +284,6 @@ namespace linux_onboarding {
             if (practice != null) practice.uninstall ();
         }
 
-        public void set_seat(Gdk.Seat seat) {
-            linux_onboarding.seat = seat;
-        }
-
         // Belt and braces behind release_practice(): that undoes what this run
         // installed, this sweeps up anything a run that was killed left behind, in
         // every platform that claims the session rather than only the one we used.
@@ -304,39 +291,5 @@ namespace linux_onboarding {
             PlatformRegistry.cleanup_stale_state ();
         }
 
-        // Grabs the input devices for a given window
-        private Gdk.Seat ? grab_inputs (Gdk.Window gdkwin) {
-            var display = gdkwin.get_display ();
-            if (display == null) {
-                stderr.printf ("Failed to get Display\n");
-                return null;
-            }
-
-            var seat = display.get_default_seat ();
-            if (seat == null) {
-                stdout.printf ("Failed to get Seat from Display\n");
-                return null;
-            }
-
-            int attempt = 0;
-            Gdk.GrabStatus ? grabStatus = null;
-            int wait_time = 1000;
-
-            do {
-                grabStatus = seat.grab (gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
-                if (grabStatus != Gdk.GrabStatus.SUCCESS) {
-                    attempt++;
-                    wait_time = wait_time * 2;
-                    GLib.Thread.usleep (wait_time);
-                }
-            } while (grabStatus != Gdk.GrabStatus.SUCCESS && attempt < 8);
-
-            if (grabStatus != Gdk.GrabStatus.SUCCESS) {
-                stderr.printf ("Aborting, failed to grab input: %d\n", grabStatus);
-                return null;
-            } else {
-                return seat;
-            }
-        }
     }
 }
