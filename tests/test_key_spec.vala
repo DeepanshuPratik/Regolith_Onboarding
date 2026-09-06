@@ -162,10 +162,52 @@ namespace linux_onboarding.Tests {
             check_str ("<><Shift> Enter", spec.format_spec ("<><Shift> Enter"), " Shift Enter");
         });
 
-        Test.add_func ("/key-spec/format-spec-display/strips-brackets", () => {
+        // What the practice page puts after "PRESS:". This used to strip the
+        // angle brackets and nothing else, which turned the Super token "<>"
+        // into two spaces: the one modifier every Regolith shortcut starts with
+        // was invisible, and "<> Enter" read as "PRESS:   Enter".
+        Test.add_func ("/key-spec/format-spec-display/names-super", () => {
+            var spec = new KeySpec ();
+            check_str ("bare <> is Super",
+                       spec.format_spec_display ("<> Enter"), "Super + Enter");
+            check_str ("the FontAwesome glyph is Super too",
+                       spec.format_spec_display ("<> Enter"), "Super + Enter");
+        });
+
+        Test.add_func ("/key-spec/format-spec-display/names-every-modifier", () => {
             var spec = new KeySpec ();
             check_str ("<><Shift> Enter",
-                       spec.format_spec_display ("<><Shift> Enter"), "   Shift  Enter");
+                       spec.format_spec_display ("<><Shift> Enter"), "Super + Shift + Enter");
+            check_str ("<Ctrl><Alt> t",
+                       spec.format_spec_display ("<Ctrl><Alt> t"), "Ctrl + Alt + T");
+            check_str ("<CAPS> x",
+                       spec.format_spec_display ("<CAPS> x"), "Caps Lock + X");
+        });
+
+        // A key cap is uppercase, and the arrows and named keys are shown as the
+        // author wrote them.
+        Test.add_func ("/key-spec/format-spec-display/key-names", () => {
+            var spec = new KeySpec ();
+            check_str ("letter",  spec.format_spec_display ("<> a"), "Super + A");
+            check_str ("digit",   spec.format_spec_display ("<> 1"), "Super + 1");
+            check_str ("arrow",   spec.format_spec_display ("<Ctrl><Alt> ←"), "Ctrl + Alt + ←");
+            check_str ("named",   spec.format_spec_display ("<Alt> Tab"), "Alt + Tab");
+            check_str ("question", spec.format_spec_display ("<><Shift> ?"), "Super + Shift + ?");
+        });
+
+        // Display is forgiving where the mode parser is strict: a spec it cannot
+        // read still has to put something legible in front of the user, because
+        // showing nothing is the bug this function had.
+        Test.add_func ("/key-spec/format-spec-display/never-empty", () => {
+            var spec = new KeySpec ();
+            check_str ("unknown modifier is kept",
+                       spec.format_spec_display ("<Hyper> x"), "Hyper + X");
+            check_str ("no closing bracket",
+                       spec.format_spec_display ("<Shift"), "Shift");
+            check_str ("opaque id passes through",
+                       spec.format_spec_display ("Session_25"), "Session_25");
+            check_str ("modifier with no key",
+                       spec.format_spec_display ("<>"), "Super");
         });
     }
 }

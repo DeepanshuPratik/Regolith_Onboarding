@@ -36,11 +36,73 @@ namespace linux_onboarding {
                 .replace (">", " ")
                 .replace ("  ", " ");
     }
+    /**
+     * The shortcut as the user should read it: "Super + Shift + Enter".
+     *
+     * This used to strip the angle brackets and leave everything else alone,
+     * which was fine for every modifier that has a name in the spec and wrong
+     * for the one that does not. Super is written "<>" — deliberately empty
+     * between the brackets — so stripping them turned the modifier that starts
+     * almost every shortcut in the shipped workflows into two spaces, and the
+     * practice page asked the user to press "   Enter".
+     *
+     * Forgiving where format_spec_for_mode is strict, and for the opposite
+     * reason. That method writes a line into the user's window-manager config,
+     * so an unrecognised modifier has to be a refusal; this one only puts words
+     * on a label, where refusing means showing nothing and the user cannot act
+     * on nothing. An unknown token is therefore displayed verbatim, and an
+     * unparseable spec falls back to its own text with the brackets removed.
+     */
     public string format_spec_display (string raw_keybinding) {
-        // TODO: this won't work for keybindings with < > characters
-        return raw_keybinding
-                .replace ("<", " ")
-                .replace (">", " ");
+        var parts = new StringBuilder ();
+        string remaining = raw_keybinding;
+
+        while (remaining.has_prefix ("<")) {
+            int close = remaining.index_of (">");
+            if (close < 0) return strip_brackets (raw_keybinding);   // malformed
+
+            string tok = remaining.slice (1, close);
+            if (parts.len > 0) parts.append (" + ");
+            parts.append (modifier_display_name (tok));
+            remaining = remaining.slice (close + 1, remaining.length);
+        }
+
+        remaining = remaining.strip ();
+        if (remaining.length == 0) return parts.str.length > 0
+            ? parts.str
+            : strip_brackets (raw_keybinding);
+
+        if (parts.len > 0) parts.append (" + ");
+        parts.append (key_display_name (remaining));
+        return parts.str;
+    }
+
+    /**
+     * A bare "<>" and the FontAwesome glyph U+F17A are both Super. The glyph is
+     * detected by its first byte being non-ASCII, the same test the mode parser
+     * uses — a font that lacks it would otherwise render the modifier as a
+     * missing-glyph box, which is no more visible than the two spaces this
+     * replaced.
+     */
+    private string modifier_display_name (string tok) {
+        if (tok.length == 0 || (uint8) tok[0] > 127) return "Super";
+        switch (tok) {
+            case "Shift": return "Shift";
+            case "Alt":   return "Alt";
+            case "Ctrl":  return "Ctrl";
+            case "CAPS":  return "Caps Lock";
+            default:      return tok;   // unrecognised: show it rather than lose it
+        }
+    }
+
+    /** Key caps are uppercase; everything longer is the author's own wording. */
+    private string key_display_name (string key) {
+        if (key.length == 1 && key[0].isalpha ()) return key.up ();
+        return key;
+    }
+
+    private string strip_brackets (string raw) {
+        return raw.replace ("<", " ").replace (">", " ").strip ();
     }
 
     public string format_spec_for_mode (string raw_keybinding) {
