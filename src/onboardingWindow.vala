@@ -115,10 +115,32 @@ namespace linux_onboarding {
                 return false;
             });
 
-            if (PlatformRegistry.probe ().is_wayland ()) {
+            var is_wayland = PlatformRegistry.probe ().is_wayland ();
+
+            if (is_wayland && LayerShellSupport.available ()) {
+                // sway and any other compositor carrying zwlr_layer_shell_v1.
+                // EXCLUSIVE is how this window holds the keyboard during
+                // practice: the compositor routes every key here, including the
+                // modifier combinations it would otherwise have eaten itself.
                 GtkLayerShell.init_for_window (this);
                 GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
                 GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
+            } else if (is_wayland) {
+                // Wayland without layer shell — GNOME/Mutter is the case that
+                // matters. Asking for any of the above here is not a degraded
+                // experience, it is a SIGABRT at show_all(); see
+                // LayerShellSupport for the measurements.
+                //
+                // ==> This branch is deliberately empty, and it is NOT finished. <==
+                //
+                // Holding the keyboard is a real capability that this session now
+                // simply does not have, so practice cannot capture a keypress
+                // here. Filling it is issue #14: a keyboard-only seat grab, which
+                // is what plays the role EXCLUSIVE plays above. Until #14 lands,
+                // an empty branch is the correct behaviour — the window opens,
+                // the deck and the workflow catalogue work, and the registry
+                // hands practice a null observer that explains itself — but do
+                // not read the emptiness as "nothing is needed here".
             } else {
                 this.map.connect (() => {
                    var gdkwin = this.get_window ();
