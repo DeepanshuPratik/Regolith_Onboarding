@@ -169,6 +169,56 @@ ffmpeg -i in.mp4 -i palette.png \
 ls -lh out.gif   # aim well under 600 KB; drop to fps=12 or scale=560 if not
 ```
 
+## The other way: photograph the real thing
+
+For a tiling desktop, a screenshot beats generated art at the one job the image
+has, which is to be recognised. The reference set shipped with this branding was
+captured this way, and the rig is worth copying because it needs no hardware and
+disturbs nothing:
+
+```bash
+# A nested compositor with its own output, its own HOME, and no bar
+WLR_BACKENDS=headless sway -c capture.conf
+```
+
+`capture.conf` sets `output HEADLESS-1 mode 1360x920` — exactly 2x the demo slot,
+so nothing is cropped later — plus the border colours you want the screenshots to
+teach with:
+
+```
+default_border pixel 4
+gaps inner 0
+client.focused   #2f6fb5 #232733 #d8e0ee #2f6fb5 #2f6fb5
+client.unfocused #414a60 #232733 #aab6c8 #414a60 #414a60
+```
+
+A script inside the session then arranges windows with `swaymsg` and captures
+each state with `grim`. Because `swaymsg` drives the layout, a state you could
+only reach with three keystrokes is one line, and a sequence of captures with a
+small `sleep` between them is an animation:
+
+```bash
+for i in $(seq 1 10); do
+  swaymsg resize grow width 30px
+  sleep 0.14
+  grim -t png "shots/resize-$(printf '%02d' $i).png"
+done
+```
+
+Two things matter more than they sound:
+
+- **Set the terminal font much larger than you would use.** The slot is 340 px
+  across. Text at a normal size becomes noise; the shipped captures use a 26pt
+  monospace so the panes read as panes with texture in them.
+- **Fill the panes.** A mostly-empty terminal shrinks to an empty grey rectangle.
+  Six or eight lines of plausible output — real commands, real-looking output,
+  nothing invented — is enough.
+
+Screenshots carry text, which the rule above forbids in generated art. The
+difference is that a screenshot's text is real, and it is the one case where a
+picture of the desktop is more honest than an abstraction of it. Keep it to
+neutral commands, and never put UI strings from your own app in a picture.
+
 ## Before you ship a set
 
 - [ ] Every file is at most 680 px on its long edge, and 3:2 or close to it.

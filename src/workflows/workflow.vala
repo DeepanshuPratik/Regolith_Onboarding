@@ -56,6 +56,17 @@ namespace linux_onboarding {
         public Gtk.Widget load_demo (string relative, int box_w, int box_h) {
             return AssetLoader.fitted (base_dir, resource_base, relative, box_w, box_h);
         }
+
+        /**
+         * The catalogue tile's thumbnail: fitted like the demo slot, but still.
+         *
+         * This used to go through load_image, which scales to exactly the size
+         * asked for — so a 3:2 asset in a 2:1 tile was stretched. Nothing looked
+         * broken enough to report, which is the worst kind of wrong.
+         */
+        public Gtk.Widget load_thumbnail (string relative, int box_w, int box_h) {
+            return AssetLoader.fitted (base_dir, resource_base, relative, box_w, box_h, false);
+        }
     }
 
     /**
@@ -111,7 +122,8 @@ namespace linux_onboarding {
          * the box is left alone rather than upscaled into blur.
          */
         public static Gtk.Widget fitted (string? base_dir, string resource_base,
-                                         string relative, int box_w, int box_h) {
+                                         string relative, int box_w, int box_h,
+                                         bool animate = true) {
             if (relative.length == 0) return new Gtk.Image ();
 
             Gdk.PixbufAnimation? anim = null;
@@ -135,6 +147,15 @@ namespace linux_onboarding {
                 int w, h;
                 fit_size (still.get_width (), still.get_height (), box_w, box_h, out w, out h);
                 return new Gtk.Image.from_pixbuf (still.scale_simple (w, h, Gdk.InterpType.BILINEAR));
+            }
+
+            if (!animate) {
+                // A catalogue of four tiles all playing at once is a fairground.
+                // The first frame, fitted, is what a tile wants.
+                var first = anim.get_static_image ();
+                int fw, fh;
+                fit_size (first.get_width (), first.get_height (), box_w, box_h, out fw, out fh);
+                return new Gtk.Image.from_pixbuf (first.scale_simple (fw, fh, Gdk.InterpType.BILINEAR));
             }
 
             return new AnimatedImage (anim, box_w, box_h);

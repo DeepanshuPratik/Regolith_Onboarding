@@ -88,7 +88,7 @@ namespace linux_onboarding {
 
            // Images resolve against wherever the workflow came from, so a
            // user-installed workflow can ship its own artwork.
-           var thumbnail = item.load_image(item.image, TILE_WIDTH, TILE_HEIGHT);
+           var thumbnail = item.load_thumbnail(item.image, TILE_WIDTH, TILE_HEIGHT);
 
            var button = new Button();
            button.get_style_context().add_class("workflow-button");
