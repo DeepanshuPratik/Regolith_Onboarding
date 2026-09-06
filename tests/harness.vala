@@ -82,6 +82,7 @@ public static int main (string[] args) {
     Test.set_nonfatal_assertions ();
 
     linux_onboarding.Tests.register_key_spec ();
+    linux_onboarding.Tests.register_kde_bindings ();
     linux_onboarding.Tests.register_key_tables ();
     linux_onboarding.Tests.register_key_synthesizer ();
     linux_onboarding.Tests.register_sanitiser ();

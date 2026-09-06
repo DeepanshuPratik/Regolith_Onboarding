@@ -33,6 +33,32 @@ namespace linux_onboarding {
         private KeyTables keys = new KeyTables ();
         private KeySpec  spec = new KeySpec ();
 
+        /**
+         * Whether anything here can actually inject a keystroke.
+         *
+         * Here rather than in each dispatcher because this class is what decides
+         * which tool runs, and a dispatcher that checked for a different one
+         * would let the user watch a step complete while their desktop did
+         * nothing. On Wayland either tool is worth claiming: ydotool is the one
+         * that works, and the xdotool fallback below is what an XWayland-hosted
+         * session gets.
+         */
+        public bool can_synthesize () {
+            if (Desktop.get_default ().is_wayland) {
+                return GLib.Environment.find_program_in_path ("ydotool") != null
+                    || GLib.Environment.find_program_in_path ("xdotool") != null;
+            }
+            return GLib.Environment.find_program_in_path ("xdotool") != null;
+        }
+
+        /** Names the missing tool, for the log and the catalogue's notice. */
+        public string missing_tool_reason () {
+            if (can_synthesize ()) return "";
+            return Desktop.get_default ().is_wayland
+                ? "Neither ydotool nor xdotool is installed, so shortcuts cannot be performed for you."
+                : "xdotool is not installed, so shortcuts cannot be performed for you.";
+        }
+
         /** Command that replays key_id, e.g. "<><Shift> Enter". */
         public string command_for (string key_id) {
             bool use_ydotool = false;

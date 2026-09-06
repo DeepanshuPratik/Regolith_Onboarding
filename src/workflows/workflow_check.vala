@@ -34,6 +34,13 @@ namespace linux_onboarding {
             var spec = new KeySpec ();
             var synth = new KeySynthesizer ();
 
+            // The whole reason resolution is a service of its own: an author can
+            // ask what their key_ids actually do on this desktop without opening
+            // a window or pressing anything. BindingResolver's own contract names
+            // this command as its offline consumer, and until now nothing here
+            // called it.
+            var resolver = PlatformRegistry.resolver ();
+
             stdout.printf ("%s\n", PlatformRegistry.probe ().describe ());
             stdout.printf ("branding: %s\n\n", Branding.get_default ().name);
 
@@ -78,8 +85,13 @@ namespace linux_onboarding {
 
                     stdout.printf ("    %-20s bindsym %-24s synth: %s\n",
                                    key_id, bindsym, command);
+                    stdout.printf ("    %-20s %s\n", "", describe_binding (resolver, key_id));
                 }
                 stdout.printf ("\n");
+            }
+
+            if (!resolver.available ()) {
+                stdout.printf ("Note: %s\n\n", resolver.unavailable_reason ());
             }
 
             if (problems > 0) {
@@ -88,6 +100,29 @@ namespace linux_onboarding {
             }
             stdout.printf ("All steps resolve.\n");
             return 0;
+        }
+
+        /**
+         * What this desktop says the key already does.
+         *
+         * None of the three answers is a problem, and none of them affects the
+         * exit code. UNBOUND is an ordinary fact about a working desktop — most
+         * GNOME defaults ship empty — and it tells the author their step will be
+         * performed by synthesis rather than by the desktop's own action. UNKNOWN
+         * means the desktop could not be consulted at all, which is the normal
+         * answer on i3 and on any session with no resolver; reporting it as a
+         * failure would make every such build look broken.
+         */
+        private static string describe_binding (BindingResolver resolver, string key_id) {
+            string bound_to;
+            switch (resolver.resolve (key_id, out bound_to)) {
+                case BindingLookup.BOUND:
+                    return "bound here to: " + bound_to;
+                case BindingLookup.UNBOUND:
+                    return "not bound on this desktop; the app will synthesize it";
+                default:
+                    return "binding unknown; the app will synthesize it";
+            }
         }
     }
 }

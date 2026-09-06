@@ -65,6 +65,7 @@ namespace linux_onboarding {
             return {
                 new SwayPlatform (),
                 new GnomePlatform (),
+                new KdePlatform (),
                 new X11Platform (),
                 new WaylandPlatform ()
             };
@@ -167,13 +168,17 @@ namespace linux_onboarding {
                 if (d != null && d.available ()) return d;
             }
 
-            // Pairs the fallback observer with the only dispatcher that knows to
+            // Pairs the fallback observer with the dispatcher that knows to
             // release its grab. Reached on a Wayland session that fell back to the
             // seat grab, where the platform that would normally dispatch has
             // declined an observer it did not make and X11Platform never claimed
-            // the session at all — leaving nobody in the list to answer.
+            // the session at all — leaving nobody in the list to answer. This used
+            // to hand back X11Dispatcher, which meant xdotool on a Wayland
+            // session; the shared dispatcher asks KeySynthesizer which tool to
+            // use, so the fallback now reaches for ydotool where that is the one
+            // that works.
             var seat_grab = observer as SeatGrabObserver;
-            if (seat_grab != null) return new X11Dispatcher (seat_grab);
+            if (seat_grab != null) return new SeatGrabSynthDispatcher (seat_grab);
 
             return new NullDispatcher ();
         }

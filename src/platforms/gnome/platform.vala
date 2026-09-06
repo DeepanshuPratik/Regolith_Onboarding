@@ -104,7 +104,7 @@ namespace linux_onboarding {
          */
         public ActionDispatcher? dispatcher (ShortcutObserver observer) {
             var seat_grab = observer as SeatGrabObserver;
-            return seat_grab == null ? null : new GnomeDispatcher (seat_grab);
+            return seat_grab == null ? null : new SeatGrabSynthDispatcher (seat_grab);
         }
 
         /**

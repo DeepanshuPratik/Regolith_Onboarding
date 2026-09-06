@@ -38,13 +38,21 @@ namespace linux_onboarding {
         private string ipc = "";
 
         public SwayPlatform () {
-            if (Environment.get_variable ("SWAYSOCK") != null) {
+            // Set-but-empty is not a session: `env SWAYSOCK= app` would
+            // otherwise make this platform claim a KDE or GNOME session and
+            // answer for a window manager that is not running.
+            if (has_socket ("SWAYSOCK")) {
                 wm_id = "sway";
                 ipc = "swaymsg";
-            } else if (Environment.get_variable ("I3SOCK") != null) {
+            } else if (has_socket ("I3SOCK")) {
                 wm_id = "i3";
                 ipc = "i3-msg";
             }
+        }
+
+        private static bool has_socket (string name) {
+            var value = Environment.get_variable (name);
+            return value != null && value.strip () != "";
         }
 
         public string id () { return "sway"; }

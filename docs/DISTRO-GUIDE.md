@@ -434,14 +434,23 @@ below.
 ```
 
 Resolves every step without opening a window and prints what each `key_id`
-becomes — the bindsym the WM binding mode will install, and the synthesized
-keypress used as a fallback:
+becomes — the bindsym the WM binding mode will install, the synthesized keypress
+used as a fallback, and **what the desktop itself says the key is bound to**:
 
 ```
 Launching Applications  (bundled:regolith/01-launching.json)
     <> Enter             bindsym Mod4+Return         synth: ydotool key KEY_LEFTMETA+KEY_ENTER
+                         bound here to: exec --no-startup-id x-terminal-emulator
     <><Shift> ?          bindsym Mod4+Shift+question synth: ...+KEY_LEFTSHIFT+KEY_SLASH
+                         not bound on this desktop; the app will synthesize it
 ```
+
+That third line is the one worth reading when you are authoring for a desktop
+you do not use daily. None of its three answers is an error: *bound* means the
+desktop performs the action itself, *not bound* means the app will synthesize
+the keystroke, and *unknown* means this desktop has no readable binding table
+(i3, or any session with no resolver) — normal, and not something you can fix in
+a workflow file.
 
 It exits non-zero if anything is wrong, so it can gate your packaging. Worth
 running whenever you edit a workflow: a bad `key_id` fails quietly at runtime —
@@ -517,14 +526,22 @@ The practical support table:
 | i3 | Yes | Binding mode + IPC; no resolver (keys are synthesized) |
 | Any X11 session | Yes | Keyboard-only seat grab + GTK key events |
 | GNOME on Wayland | Yes* | Keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
-| KDE (KWin) on Wayland | Yes* | Same keyboard-only grab mechanism |
+| KDE (KWin) on Wayland | Yes*† | Same keyboard-only grab; bindings from `kglobalshortcutsrc` |
 
-\* GNOME and KDE are **code-complete but unauthored**: the platform implements
-observation, resolution and dispatch, but no `workflows/gnome/*.json` or
-`workflows/kde/*.json` ship with the reference branding, so practice has nothing
-to teach until someone authors the workflow set — which needs real hardware and
-a second data point on default bindings. The app works end-to-end on those
-desktops the moment the JSON is supplied.
+\* GNOME and KDE are **unauthored**: each platform implements observation,
+resolution and dispatch, but no `workflows/gnome/*.json` or `workflows/kde/*.json`
+ship with the reference branding, so practice has nothing to teach until someone
+authors the workflow set — which needs real hardware and a second data point on
+default bindings. The code path is complete the moment the JSON is supplied.
+
+† KDE has **never been run on a Plasma machine**, and this table said it worked
+for a while when no KDE code existed at all (#28). What exists now: `KdePlatform`
+composes the same seat-grab observer and synthesis dispatcher GNOME uses, and
+`KdeResolver` reads `kglobalshortcutsrc`, with its parsing covered by
+`tests/test_kde_bindings.vala` and verified end-to-end against a synthetic
+shortcut file. What has not happened is a run on Plasma. If you ship this on KDE,
+`--check-workflows` is the first thing to run: it prints what each key is bound
+to according to KWin's own file.
 
 Where practice is unavailable the app says so plainly and presents the same
 workflows as a reference card. Branding, slides and the catalogue work
@@ -537,6 +554,13 @@ is the whole contract, and this section is a walkthrough with a real example.
 
 Say you are adding **Hyprland** and want it to observe and dispatch by its own
 IPC while getting window placement from the generic Wayland placer.
+
+Before writing an observer, check whether you need one. `src/platforms/seatgrab/`
+holds the mechanism for desktops with no window-manager IPC — a keyboard-only
+seat grab and the dispatcher that releases it to replay a keystroke — and X11,
+GNOME and KDE all compose it rather than keeping a copy each. `src/platforms/kde/`
+is the smallest example of what that leaves you writing: a `platform.vala` naming
+the pieces, and a resolver for wherever that desktop keeps its bindings.
 
 **1. Create `src/platforms/hyprland/`.** Put a `platform.vala` in it. The
 platform declares which session it owns and returns the pieces of the five

@@ -17,15 +17,21 @@
 namespace linux_onboarding {
 
     /**
-     * Performs a step's action on GNOME by replaying the keystroke and letting
-     * Mutter act on it as usual.
+     * Performs a step's action by replaying the keystroke and letting the
+     * desktop act on it as usual.
      *
-     * Always synthesis, never a command. GNOME has no counterpart to `swaymsg` —
-     * nothing that takes an action name and performs it — so although
-     * GnomeResolver can say that a key is bound to `terminal`, that name is an
-     * identifier and not something runnable. bound_command is therefore ignored
-     * here; it stays in the signature because it is the contract's, exactly as
-     * on X11.
+     * The dispatcher for every desktop with no window-manager IPC to run an
+     * action through: X11, GNOME and KDE all compose this one rather than
+     * keeping three copies of the same twelve lines. It was GnomeDispatcher and
+     * X11Dispatcher, which differed only in which tool they checked for — and
+     * that check belongs to KeySynthesizer, which is what picks the tool.
+     *
+     * Always synthesis, never a command. None of these desktops has a
+     * counterpart to `swaymsg` — nothing that takes an action name and performs
+     * it — so although a resolver can say a key is bound to `terminal`, that
+     * name is an identifier and not something runnable. bound_command is
+     * therefore ignored here; it stays in the signature because it is the
+     * contract's.
      *
      * The grab dance around the replay is the point of this class, and it is not
      * redundant with the observer's own start/stop. Spike #11 measured what
@@ -46,34 +52,26 @@ namespace linux_onboarding {
      * right call — it is correct whenever focus never left, which is the common
      * case for a shortcut that does not raise a window.
      */
-    public class GnomeDispatcher : GLib.Object, ActionDispatcher {
+    public class SeatGrabSynthDispatcher : GLib.Object, ActionDispatcher {
 
         private SeatGrabObserver observer;
         private KeySynthesizer synth = new KeySynthesizer ();
 
-        public GnomeDispatcher (SeatGrabObserver observer) {
+        public SeatGrabSynthDispatcher (SeatGrabObserver observer) {
             this.observer = observer;
         }
 
         /**
-         * False when neither synthesis tool is installed.
+         * False when the tool that would run is not installed.
          *
-         * Answered honestly rather than optimistically, because synthesis is the
-         * only route here: with no tool there is nothing to fall back to, and a
-         * dispatcher that claimed to work would leave the user watching a step
-         * complete while their desktop did nothing. KeySynthesizer picks between
-         * the two by the same test — ydotool on Wayland, xdotool otherwise — so
-         * this checks for both rather than guessing which it will choose.
+         * Asked of KeySynthesizer rather than answered here, because it is
+         * KeySynthesizer that chooses between ydotool and xdotool. A dispatcher
+         * checking for one while the synthesizer reached for the other is
+         * exactly the dishonesty #16 asked dispatchers to avoid.
          */
-        public bool available () {
-            return GLib.Environment.find_program_in_path ("ydotool") != null
-                || GLib.Environment.find_program_in_path ("xdotool") != null;
-        }
+        public bool available () { return synth.can_synthesize (); }
 
-        public string unavailable_reason () {
-            return available () ? ""
-                : "Neither ydotool nor xdotool is installed, so shortcuts cannot be performed for you on GNOME.";
-        }
+        public string unavailable_reason () { return synth.missing_tool_reason (); }
 
         public bool dispatch (string key_id, string? bound_command) {
             if (!available ()) return false;

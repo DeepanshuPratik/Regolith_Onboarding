@@ -140,12 +140,16 @@ are keyed by desktop environment, and how to lay out a marketplace repository.
 | i3 | Yes — WM binding mode + IPC; keys synthesized (no resolver) |
 | Any X11 session | Yes — keyboard-only seat grab |
 | GNOME on Wayland | Yes* — keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
-| KDE (KWin) on Wayland | Yes* — same keyboard-only grab mechanism |
+| KDE (KWin) on Wayland | Yes*† — same grab; bindings read from `kglobalshortcutsrc` |
 
-\* GNOME and KDE are **code-complete but unauthored**: practice works end-to-end
-the moment a `workflows/gnome`/`workflows/kde` set is supplied, but no such
-workflow ships with the reference branding yet, so practice has nothing to teach
-there until someone authors it.
+\* GNOME and KDE are **unauthored**: the platforms are implemented, but no
+`workflows/gnome` or `workflows/kde` set ships with the reference branding, so
+practice has nothing to teach there until someone authors one.
+
+† KDE has **never been run on a Plasma machine**. The observer and dispatcher are
+the ones GNOME uses, and KWin has honoured the shortcuts inhibitor since Plasma
+5.20; the resolver's parsing is covered by tests. Treat it as implemented and
+unverified rather than as known-working.
 
 Where practice is unavailable the app says so plainly and presents the same
 workflows as a reference card. Branding, slides and the catalogue work
@@ -156,9 +160,11 @@ everywhere.
 ```
 src/
 ├── platforms/     per-desktop code; each implements a subset of five contracts
+│   ├── seatgrab/  the keyboard-only grab and replay dispatch, shared by three
 │   ├── sway/      binding mode + IPC observation, resolution, dispatch
-│   ├── x11/       keyboard-only seat grab, X11 dispatch
-│   ├── gnome/     seat-grab observation, GSettings resolution, dispatch
+│   ├── x11/       X11 window placement, composing seatgrab/
+│   ├── gnome/     GSettings resolution, composing seatgrab/
+│   ├── kde/       kglobalshortcutsrc resolution, composing seatgrab/
 │   ├── wayland/   generic Wayland window placement
 │   ├── platform.vala     the Platform interface
 │   └── registry.vala     the compile-time ordered platform list

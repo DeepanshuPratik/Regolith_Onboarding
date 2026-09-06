@@ -50,7 +50,7 @@ namespace linux_onboarding {
          */
         public ActionDispatcher? dispatcher (ShortcutObserver observer) {
             var seat_grab = observer as SeatGrabObserver;
-            return seat_grab == null ? null : new X11Dispatcher (seat_grab);
+            return seat_grab == null ? null : new SeatGrabSynthDispatcher (seat_grab);
         }
 
         public WindowPlacer? placer (Gtk.Window window) {

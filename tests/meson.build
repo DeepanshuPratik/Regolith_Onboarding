@@ -13,6 +13,7 @@
 # main () in harness.vala.
 test_sources += files(
   'harness.vala',
+  'test_kde_bindings.vala',
   'test_key_spec.vala',
   'test_key_synthesizer.vala',
   'test_key_tables.vala',
