@@ -122,6 +122,8 @@ subdir('tests')
 # Observers, placers and dispatchers are deliberately absent — they need a live
 # session, and a test that needs one is a test nobody runs.
 test_sources += files(
+  'src/Constants.vala',
+  'src/branding/onboarding_state.vala',
   'src/branding/version.vala',
   'src/keys/key_spec.vala',
   'src/keys/key_synthesizer.vala',

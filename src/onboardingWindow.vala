@@ -103,7 +103,10 @@ namespace linux_onboarding {
             // welcome still shows, and its "Get Started" lands on the catalogue
             // because next is resolved from the firing page, not from a fixed
             // slide count.
-            state = OnboardingState.load ();
+            // Per desktop (#31): the same machine gets its own record on
+            // Regolith and on GNOME, because the deck introduces a catalogue and
+            // a practice loop that differ between them.
+            state = OnboardingState.load (PlatformRegistry.probe ().primary_desktop ());
             var slides = branding.slides_for (state.last_seen_version);
             for (int i = 0; i < slides.length; i++) {
                 int index = pages.size;

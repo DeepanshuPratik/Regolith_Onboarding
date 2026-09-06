@@ -42,7 +42,8 @@ namespace linux_onboarding {
      */
     public class WorkflowLocator : GLib.Object {
 
-        public const string DATA_SUBDIR = "linux-onboarding";
+        /** Kept as an alias of the namespace constant: callers say WorkflowLocator.DATA_SUBDIR. */
+        public const string DATA_SUBDIR = linux_onboarding.DATA_SUBDIR;
         private const string WORKFLOWS = "workflows";
 
         private Desktop desktop = Desktop.get_default ();

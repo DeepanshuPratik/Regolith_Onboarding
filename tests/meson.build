@@ -17,5 +17,6 @@ test_sources += files(
   'test_key_synthesizer.vala',
   'test_key_tables.vala',
   'test_sanitiser.vala',
+  'test_state.vala',
   'test_version.vala'
 )
