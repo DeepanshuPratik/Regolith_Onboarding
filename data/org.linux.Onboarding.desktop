@@ -1,0 +1,23 @@
+# The basename of this file is load-bearing and is checked at configure time.
+#
+# GNOME remembers the "wants to inhibit shortcuts" consent against the window's
+# Wayland app_id, which it resolves to <app_id>.desktop. If no such file is
+# installed the consent is never stored and the dialog returns on every single
+# launch. So this file must stay named after APP_ID in src/Constants.vala.
+# Rename one and you must rename the other — see docs/DISTRO-GUIDE.md.
+#
+# Everything below the basename is yours to rebrand.
+
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=Getting Started
+GenericName=Desktop Onboarding
+Comment=Learn your desktop by practising its keyboard shortcuts
+Icon=org.linux.Onboarding
+Exec=linux-onboarding
+Terminal=false
+Categories=Utility;Documentation;GTK;
+Keywords=onboarding;welcome;tour;tutorial;getting started;first run;keyboard;shortcuts;keybindings;tiling;help;
+StartupNotify=true
+StartupWMClass=org.linux.Onboarding

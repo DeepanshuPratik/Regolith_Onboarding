@@ -1,7 +1,31 @@
 project('linux-onboarding', 'vala', version: '1.12.1')
 
 # 2. Import Modules
-gnome = import('gnome')  
+gnome = import('gnome')
+fs = import('fs')
+
+# The application id. Deliberately reverse-DNS and deliberately not the binary
+# basename: GNOME's lookup of an app_id against installed desktop files is
+# loose enough that a spike binary named `obs` inherited OBS Studio's stored
+# permissions, so a generic token is a real hazard here.
+#
+# GTK3 takes the Wayland app_id from the program name (verified on 3.24.41:
+# xdg_toplevel.set_app_id carries g_get_prgname(), not the GApplication id), so
+# src/main.vala sets the program name to this string, and data/ installs a
+# desktop file named after it. All three have to agree.
+app_id = 'org.linux.Onboarding'
+
+# Nothing enforces that agreement at runtime — the compositor compares strings
+# and simply finds nothing on a mismatch. The symptom is a consent dialog on
+# every launch on a GNOME machine, which no build and no test here would catch,
+# so the two halves are compared at configure time instead.
+if not fs.read('src/Constants.vala').contains('APP_ID = "' + app_id + '"')
+  error(
+    'app_id mismatch: meson.build says \'' + app_id + '\' but src/Constants.vala ' +
+    'does not declare APP_ID = "' + app_id + '". These must stay in step, along ' +
+    'with data/' + app_id + '.desktop — see docs/DISTRO-GUIDE.md.',
+  )
+endif
 
 project_sources = []
 subdir('src')
@@ -40,6 +64,9 @@ branding_resources = gnome.compile_resources(
   branding_xml,
   source_dir: branding_dir,
 )
+
+# After branding_dir, because the launcher icon comes out of it.
+subdir('data')
 
 add_project_arguments(['--pkg', 'GtkLayerShell-0.1'], language: 'vala')
 add_project_arguments(['--pkg', 'posix'], language: 'vala')

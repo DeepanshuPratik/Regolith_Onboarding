@@ -34,6 +34,17 @@ namespace linux_onboarding {
      */
     public static int main (string[] args) {
 
+        // Announce ourselves as APP_ID rather than as the binary's basename.
+        //
+        // GTK3 does not use the GApplication id for this: the Wayland app_id it
+        // sends in xdg_toplevel.set_app_id is g_get_prgname(), which defaults to
+        // argv[0]'s basename, so without this line the app_id would be
+        // "linux-onboarding". GNOME stores the shortcuts-inhibit consent against
+        // that string and looks it up as <app_id>.desktop; the desktop file we
+        // install is named for APP_ID, and if the two do not match nothing is
+        // remembered and every launch asks again. Must run before app.run().
+        Environment.set_prgname (APP_ID);
+
         // Resolve the session's platform once; everything else reads its facts
         // from the registry rather than probing the environment itself.
         stdout.printf ("linux-onboarding: %s\n", PlatformRegistry.probe ().describe ());

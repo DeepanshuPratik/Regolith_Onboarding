@@ -32,7 +32,7 @@ rebuild.
 my-distro-branding/
 ├── branding.conf                     required
 ├── welcome.html                      your first page
-├── logo.png                          referenced by welcome.html
+├── logo.png                          welcome.html, and the launcher icon
 ├── theme.css                         optional
 ├── slides/                           optional
 │   ├── 01-tiling.html
@@ -140,6 +140,83 @@ doing it this way. An unknown action name is logged and ignored.
 The welcome page is expected to carry its own button, and so is given the full
 height with no Back/Next strip beneath it. Slides get that strip from the app
 and usually need no action links at all.
+
+## The application id, and the desktop file named after it
+
+`meson install` places two files besides the binary:
+
+```
+$datadir/applications/org.linux.Onboarding.desktop     the launcher entry
+$datadir/icons/hicolor/512x512/apps/org.linux.Onboarding.png
+```
+
+`org.linux.Onboarding` is the application id. It is three things at once, and
+they are the same string on purpose:
+
+| Where | What it is |
+|---|---|
+| `APP_ID` in `src/Constants.vala` | the GApplication id, and what `main.vala` sets the program name to |
+| the window's Wayland `app_id` | GTK3 sends `g_get_prgname()`, i.e. the program name, in `xdg_toplevel.set_app_id` |
+| the desktop file's **basename** | how a compositor finds the app behind a window |
+
+### Why the basename is load-bearing
+
+On GNOME, taking the keyboard grab this app needs for practice asks the user
+"the app *X* wants to inhibit shortcuts". Mutter remembers the answer — but it
+records it against the desktop file it resolved from the window's `app_id`, by
+looking for `<app_id>.desktop`. **If there is no such file, nothing is stored
+and the dialog comes back on every single launch**, in the middle of a first-run
+experience, with no explanation and nothing in the logs to point at.
+
+That is a silent failure in both directions. Rename the desktop file and leave
+`APP_ID` alone, or the reverse, and the build still succeeds, the app still
+runs, `--check-workflows` still passes, and the only symptom is a security
+prompt on every launch on a machine you may not be testing on.
+
+So `meson.build` asserts it. `app_id` is declared once at the top of
+`meson.build`, the installed desktop file is `data/$app_id.desktop`, and
+configuration fails if `src/Constants.vala` does not declare the same string:
+
+```
+ERROR: app_id mismatch: meson.build says 'org.example.Welcome' but
+src/Constants.vala does not declare APP_ID = "org.example.Welcome".
+```
+
+If you rebrand, change all three together:
+
+1. `app_id` in `meson.build`
+2. `APP_ID` in `src/Constants.vala`
+3. rename `data/org.linux.Onboarding.desktop`, and its `Icon=` and
+   `StartupWMClass=` keys, to match
+
+Pick something specific. During the spike that produced this requirement, a
+throwaway binary called `obs` inherited **OBS Studio's** stored permissions —
+GNOME's matching is looser than you would like. A reverse-DNS id under a domain
+you control is the safe shape; `onboarding` or `welcome` on their own are not.
+
+### Name, comment and icon
+
+Everything in the desktop file below the basename is yours. `Name`,
+`GenericName` and `Comment` are deliberately generic (`Getting Started`) so they
+read correctly under any distro; replace them with your own wording.
+
+The icon is **not** a fixed asset of this repository — it is `logo.png` from
+your `-Dbranding_dir`, installed under the application id. Rebranding the build
+rebrands the launcher icon with it, and no distro ships another distro's logo by
+accident. The contract that comes with that: **`logo.png` should be a square
+PNG**, 512×512 in the shipped Regolith branding. A non-square one still
+installs, it just looks wrong at launcher sizes. If your branding directory has
+no `logo.png` at all, configuration warns and the launcher falls back to a
+generic icon.
+
+### On sway there is no app_id at all
+
+Worth knowing when you go looking: on a Wayland session that supports it, the
+window is a `zwlr_layer_shell_v1` surface, and layer surfaces carry a namespace
+(`gtk-layer-shell`) rather than an `app_id` — `set_app_id` is never sent. The
+desktop file matters on the paths that use a normal toplevel: GNOME, KDE, and
+X11 (where the id becomes the `WM_CLASS`, which is what `StartupWMClass`
+matches). GNOME is the one that makes it urgent.
 
 ## Workflows
 
