@@ -70,7 +70,7 @@ namespace linux_onboarding.Tests {
         Test.add_func ("/key-spec/for-mode/punctuation-becomes-a-keysym", () => {
             var spec = new KeySpec ();
             check_str ("<><Shift> ?",
-                       spec.format_spec_for_mode ("<><Shift> ?"), "Mod4+Shift+question");
+                       spec.format_spec_for_mode ("<><Shift> ?"), "Mod4+question");
         });
 
         // sway silently canonicalises "Space" to "space", so a spec that keeps
@@ -166,6 +166,40 @@ namespace linux_onboarding.Tests {
         // angle brackets and nothing else, which turned the Super token "<>"
         // into two spaces: the one modifier every Regolith shortcut starts with
         // was invisible, and "<> Enter" read as "PRESS:   Enter".
+        /**
+         * A symbol that can only be typed with Shift must NOT carry Shift in the
+         * bindsym, or the binding matches nothing at all.
+         *
+         * Sway resolves a press two ways: the raw keysym with the modifiers as
+         * held, and the translated keysym with Shift consumed where Shift is what
+         * produced the symbol. Pressing Super+Shift+/ is raw `slash` with Shift,
+         * translated `question` without it. `Mod4+Shift+question` matches
+         * neither — raw has the wrong keysym, translated has no Shift — so the
+         * step could never fire. Regolith's own config gets this right for the
+         * keybinding viewer (`$mod+question`) while the comment above it, which
+         * is where the workflow's key_id came from, says `<><Shift> ?`.
+         */
+        Test.add_func ("/key-spec/format-spec-for-mode/shifted-symbols-drop-shift", () => {
+            var spec = new KeySpec ();
+            check_str ("question", spec.format_spec_for_mode ("<><Shift> ?"), "Mod4+question");
+            check_str ("exclam",   spec.format_spec_for_mode ("<><Shift> !"), "Mod4+exclam");
+            check_str ("plus",     spec.format_spec_for_mode ("<><Shift> +"), "Mod4+plus");
+        });
+
+        /**
+         * The opposite case, and the reason this is not "always drop Shift": a
+         * letter, digit or named key keeps it. Shift+f is raw `f` with Shift
+         * held, which is exactly what `Mod4+Shift+f` matches.
+         */
+        Test.add_func ("/key-spec/format-spec-for-mode/unshifted-keys-keep-shift", () => {
+            var spec = new KeySpec ();
+            check_str ("letter", spec.format_spec_for_mode ("<><Shift> f"), "Mod4+Shift+f");
+            check_str ("named",  spec.format_spec_for_mode ("<><Shift> Enter"), "Mod4+Shift+Return");
+            check_str ("digit",  spec.format_spec_for_mode ("<><Shift> 1"), "Mod4+Shift+1");
+            check_str ("slash stays unshifted",
+                       spec.format_spec_for_mode ("<><Shift> /"), "Mod4+Shift+slash");
+        });
+
         Test.add_func ("/key-spec/format-spec-display/names-super", () => {
             var spec = new KeySpec ();
             check_str ("bare <> is Super",

@@ -165,7 +165,54 @@ namespace linux_onboarding {
         // through to a file the WM will execute.
         if (!is_safe_keysym_shape (keysym)) return "";
 
-        return mods.str + keysym;
+        return drop_redundant_shift (mods.str, keysym) + keysym;
+    }
+
+    /**
+     * Removes `Shift+` from the modifier list when the key is a symbol that
+     * only exists because Shift was held.
+     *
+     * Not cosmetic — without this the binding matches nothing. A window manager
+     * resolves a press two ways: the **raw** keysym with the modifiers as held,
+     * and the **translated** keysym with Shift consumed where Shift is what
+     * produced the symbol. Pressing Super+Shift+/ is therefore raw `slash` with
+     * Shift held, and translated `question` with no Shift. `Mod4+Shift+question`
+     * matches neither: the raw lookup has the wrong keysym, and the translated
+     * lookup has no Shift to give it. The binding is silently dead.
+     *
+     * A letter or a named key is the opposite case and must keep its Shift:
+     * Shift+f is raw `f` with Shift held, which is what `Mod4+Shift+f` matches.
+     * So this drops Shift for shift-only symbols and nothing else.
+     *
+     * Found from a real report: the Regolith keybinding viewer step never fired.
+     * Regolith's own sway config binds `$mod+question` — correctly, without
+     * Shift — while the comment above it, which is where workflow authors take
+     * their key_id from, reads `<><Shift> ?`. Both spellings describe the same
+     * physical press; only one of them is a binding that works.
+     *
+     * The set below is the US layout, like every other table in this file. On a
+     * layout where these symbols are typed without Shift, an author writes them
+     * without Shift and never reaches this.
+     */
+    private string drop_redundant_shift (string mods, string keysym) {
+        if (!mods.contains ("Shift+")) return mods;
+        return needs_shift_to_type (keysym) ? mods.replace ("Shift+", "") : mods;
+    }
+
+    /** Keysyms that exist only on the shifted level of a US keyboard. */
+    private bool needs_shift_to_type (string keysym) {
+        switch (keysym) {
+            case "question":     case "exclam":       case "at":
+            case "numbersign":   case "dollar":       case "percent":
+            case "asciicircum":  case "ampersand":    case "asterisk":
+            case "parenleft":    case "parenright":   case "underscore":
+            case "plus":         case "braceleft":    case "braceright":
+            case "bar":          case "colon":        case "quotedbl":
+            case "less":         case "greater":      case "asciitilde":
+                return true;
+            default:
+                return false;
+        }
     }
 
     /**
