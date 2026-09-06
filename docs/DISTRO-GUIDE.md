@@ -132,6 +132,7 @@ win. The styling contract — the class names worth overriding — is:
 | `.pill-button.suggested-action` | Primary buttons |
 | `.playButton`, `.cancelButton` | Practice controls |
 | `.workflow-button`, `.add-tile` | Catalogue tiles |
+| `.focus-prompt`, `.focus-prompt-text` | The "another window has the keyboard" prompt |
 
 Note GTK CSS is not web CSS: there is no `max-width`, no `line-height`, no
 flexbox. Unknown properties log a parse error and are ignored. This applies to
@@ -287,12 +288,27 @@ the slides between them are gated.
 #### Where the state lives, and when it is written
 
 One file, `~/.config/linux-onboarding/state`, holding the last branding version
-the user was shown:
+the user was shown **on each desktop**, one group per desktop:
 
 ```ini
-[State]
+[State:regolith]
 LastSeenBrandingVersion=1.0
+
+[State:gnome]
+LastSeenBrandingVersion=1.1
 ```
+
+Per desktop, not per machine, because a user who moves from Regolith to GNOME
+has not seen your deck on GNOME — and what it introduces, the catalogue and the
+practice loop, is different there. The group name is the normalised desktop id,
+the same one that keys `workflows/` (see "Keyed by desktop environment"), so
+`Regolith-Wayland` and `Regolith-X11` share one record.
+
+A file written by a version before this carried a single `[State]` group with no
+desktop in it. It records a version but not who saw it, so it is **not**
+honoured: that user is treated as a first run once per desktop, and the old
+group is dropped the next time anything is written. Showing a slide twice is an
+annoyance; never showing it is the bug.
 
 It is written when the user actually **reaches the last slide the deck owed
 them**, not when the window opens. Recording at startup would mean someone who

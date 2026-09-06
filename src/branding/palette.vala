@@ -33,9 +33,10 @@ namespace linux_onboarding {
      *     has to be able to say so: nothing here parses CSS, so the sheet's own
      *     background is invisible to us, and guessing it from the GTK theme gets
      *     a light colour behind a dark page.
-     *  2. The GTK theme's own `theme_bg_color`, which is what app.css asks for
-     *     when a distro sets no Background. Following the user's theme is the
-     *     right default for an unbranded build.
+     *  2. The GTK theme's own `theme_bg_color` — the same name app.css paints
+     *     the window with, so the pre-paint colour and the painted one agree.
+     *     Following the user's theme is the right default for an unbranded
+     *     build.
      *  3. A neutral mid-grey, if even that lookup fails. Never white: white is
      *     the failure this class exists to prevent, and a wrong grey is a much
      *     smaller error than a flash.
@@ -121,6 +122,13 @@ namespace linux_onboarding {
 
         private const string DEFAULT_ACCENT = "#4a90d9";
 
+        // The two candidates foreground_on() picks between.
+        private const string LIGHT_FG = "#ffffff";
+        private const string DARK_FG  = "#1a1a1a";
+
+        // Where contrast with white equals contrast with black. See foreground_on().
+        private const double WHITE_BLACK_CROSSOVER = 0.179;
+
         private static string? cached_accent = null;
 
         /**
@@ -196,8 +204,41 @@ namespace linux_onboarding {
          */
         internal static string gtk_css_for (string accent) {
             return ("@define-color onboarding_accent %s;\n" +
-                    "@define-color onboarding_accent_fg #ffffff;\n" +
-                    "@define-color onboarding_accent_dim alpha(%s, 0.14);\n").printf (accent, accent);
+                    "@define-color onboarding_accent_fg %s;\n" +
+                    "@define-color onboarding_accent_dim alpha(%s, 0.14);\n")
+                   .printf (accent, foreground_on (accent), accent);
+        }
+
+        /**
+         * A foreground that reads on `accent`, which is what the name promises
+         * and what a hardcoded white is not: GNOME's yellow accent is #c88800,
+         * and white on it fails legibility outright.
+         *
+         * WCAG relative luminance, against the crossover where contrast with
+         * white and contrast with black are equal: (L + 0.05)^2 = 0.0525, so
+         * L = 0.179. Picking the brighter side of that is the same decision a
+         * full contrast-ratio comparison would make, without computing both
+         * ratios to compare them.
+         *
+         * The channels must be linearised first. Applying the luminance weights
+         * to the gamma-encoded bytes — the tempting shortcut — puts GNOME's
+         * yellow #c88800 at 0.55 rather than its true 0.30, which is exactly the
+         * accent that has to come out dark.
+         */
+        internal static string foreground_on (string accent) {
+            if (!is_hex_colour (accent)) return LIGHT_FG;
+
+            double luminance = 0.2126 * linear_channel (accent, 1)
+                             + 0.7152 * linear_channel (accent, 3)
+                             + 0.0722 * linear_channel (accent, 5);
+
+            return luminance > WHITE_BLACK_CROSSOVER ? DARK_FG : LIGHT_FG;
+        }
+
+        // sRGB byte -> linear light, per the sRGB transfer function.
+        private static double linear_channel (string hex, int offset) {
+            double c = long.parse (hex.slice (offset, offset + 2), 16) / 255.0;
+            return c <= 0.04045 ? c / 12.92 : Math.pow ((c + 0.055) / 1.055, 2.4);
         }
 
         /**

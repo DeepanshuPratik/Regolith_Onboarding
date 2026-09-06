@@ -44,35 +44,40 @@ namespace linux_onboarding {
          * session gets.
          */
         public bool can_synthesize () {
-            if (Desktop.get_default ().is_wayland) {
-                return GLib.Environment.find_program_in_path ("ydotool") != null
-                    || GLib.Environment.find_program_in_path ("xdotool") != null;
-            }
-            return GLib.Environment.find_program_in_path ("xdotool") != null;
+            return GLib.Environment.find_program_in_path (tool ()) != null;
+        }
+
+        /**
+         * The tool that would actually run here — the single place that decides,
+         * so availability and the command cannot disagree.
+         *
+         * On a native Wayland connection that is ydotool and only ydotool.
+         * Claiming xdotool would be the dishonesty #16 asked dispatchers to
+         * avoid: it cannot inject into a Wayland compositor, so the user would
+         * watch a step complete while their desktop did nothing. Note
+         * Desktop.is_wayland is already false under GDK_BACKEND=x11, so an
+         * XWayland-hosted session takes the xdotool branch, which is correct
+         * for it.
+         */
+        internal string tool () {
+            return Desktop.get_default ().is_wayland ? "ydotool" : "xdotool";
         }
 
         /** Names the missing tool, for the log and the catalogue's notice. */
         public string missing_tool_reason () {
             if (can_synthesize ()) return "";
-            return Desktop.get_default ().is_wayland
-                ? "Neither ydotool nor xdotool is installed, so shortcuts cannot be performed for you."
-                : "xdotool is not installed, so shortcuts cannot be performed for you.";
+            return "%s is not installed, so shortcuts cannot be performed for you.".printf (tool ());
         }
 
         /** Command that replays key_id, e.g. "<><Shift> Enter". */
         public string command_for (string key_id) {
-            bool use_ydotool = false;
-            string command;
-
-            if (Desktop.get_default ().is_wayland) {
-                // xdotool cannot inject into a Wayland compositor; ydotool goes
-                // through /dev/uinput and can, when its daemon is running.
-                use_ydotool = GLib.Environment.find_program_in_path ("ydotool") != null;
-                command = use_ydotool ? "ydotool key "
-                                      : "xdotool sleep 0.5 key --clearmodifiers ";
-            } else {
-                command = "xdotool sleep 0.5 key --clearmodifiers ";
-            }
+            // One decision, made in tool(): xdotool cannot inject into a Wayland
+            // compositor, ydotool goes through /dev/uinput and can when its
+            // daemon is running. Spelling that test again here is what let
+            // availability and the command disagree about which tool would run.
+            bool use_ydotool = tool () == "ydotool";
+            string command = use_ydotool ? "ydotool key "
+                                         : "xdotool sleep 0.5 key --clearmodifiers ";
 
             var parts = spec.format_spec (key_id).split (" ");
             for (int i = 0; i < parts.length - 1; i++) {

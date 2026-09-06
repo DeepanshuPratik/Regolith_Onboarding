@@ -51,6 +51,7 @@ namespace linux_onboarding {
         private const uint FIRST_PAINT_TIMEOUT_MS = 1500;
 
         private bool shown_once = false;
+        private uint first_paint_timeout_id = 0;
 
         // Last page the deck owes this user: the final slide it decided to show,
         // or the welcome page when the delta is empty. Reaching it is what marks
@@ -243,23 +244,38 @@ namespace linux_onboarding {
          * the window is mapped (#26 — asking for it on Mutter is a SIGABRT, not a
          * degraded window), and it is, whether the map comes now or in a second.
          */
-        public void present_when_ready () {
+        public void show_when_ready () {
             if (first_deck_page == null) {
                 show_deck_now ();
                 return;
             }
 
             first_deck_page.ready.connect (show_deck_now);
-            Timeout.add (FIRST_PAINT_TIMEOUT_MS, () => {
+            first_paint_timeout_id = Timeout.add (FIRST_PAINT_TIMEOUT_MS, () => {
+                first_paint_timeout_id = 0;
                 show_deck_now ();
                 return Source.REMOVE;
             });
         }
 
-        // Whichever of the two paths above arrives first, and only that one.
+        /**
+         * Whichever of the two paths above arrives first, and only that one.
+         *
+         * Both are dropped here rather than left to fire into a window that has
+         * already been shown — or destroyed. A pending timeout holds a reference
+         * to this window for as long as it is armed, which is the pattern
+         * SeatGrabObserver follows next door with cancel_regrab_timeout().
+         */
         private void show_deck_now () {
             if (shown_once) return;
             shown_once = true;
+
+            if (first_paint_timeout_id != 0) {
+                GLib.Source.remove (first_paint_timeout_id);
+                first_paint_timeout_id = 0;
+            }
+            if (first_deck_page != null) first_deck_page.ready.disconnect (show_deck_now);
+
             show_all ();
         }
 

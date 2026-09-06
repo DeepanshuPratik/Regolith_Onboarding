@@ -7,16 +7,15 @@
   --bg: #232733;
   --fg: #d8e0ee;
   --muted: #aab6c8;
-  /* The desktop's accent where one is known, Regolith's own otherwise.
-     app:///palette.css defines --desktop-accent and is linked before this
-     sheet, so anything set here still wins — see DISTRO-GUIDE. */
+  /* app:///palette.css always defines --desktop-accent when it is linked, so
+     the fallback here is for a page that does not link it. It is linked before
+     this sheet, so anything set here still wins — see DISTRO-GUIDE. */
   --accent: var(--desktop-accent, #6ab0f3);
   --key-bg: #2c3243;
   --key-border: #414a60;
   /* Matched to .pill-button.suggested-action in theme.css: the deck's own
      button and the GTK ones beneath it should not read as two designs. */
   --cta-bg: var(--desktop-accent, #2f6fb5);
-  --cta-bg-hover: var(--desktop-accent, #3a82cf);
   --cta-border: #2a5f9c;
   --cta-fg: #f2f6fb;
 }
@@ -141,5 +140,5 @@ a { color: var(--accent); }
 }
 
 /* Brightened rather than a second colour, so the hover state follows whatever
-   accent the desktop supplied instead of drifting back to Regolith's blue. */
-.cta:hover { background: var(--cta-bg-hover); filter: brightness(1.12); }
+   accent is in force instead of drifting back to Regolith's blue. */
+.cta:hover { filter: brightness(1.12); }

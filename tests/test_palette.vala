@@ -116,7 +116,34 @@ namespace linux_onboarding.Tests {
         check_bool ("web", Palette.web_css_for (accent, true).contains (accent), true);
     }
 
+    /**
+     * The name says "a foreground that reads on it", so it has to. White was
+     * hardcoded here, which fails outright on GNOME's yellow accent.
+     */
+    private void test_palette_foreground_contrast () {
+        check_str ("dark accent takes white",  Palette.foreground_on ("#2f6fb5"), "#ffffff");
+        check_str ("purple takes white",       Palette.foreground_on ("#9141ac"), "#ffffff");
+        check_str ("gnome yellow takes black", Palette.foreground_on ("#c88800"), "#1a1a1a");
+        check_str ("near-white takes black",   Palette.foreground_on ("#f5f5f5"), "#1a1a1a");
+        check_str ("black takes white",        Palette.foreground_on ("#000000"), "#ffffff");
+    }
+
+    /** Anything unparseable falls back rather than reaching CSS half-formed. */
+    private void test_palette_foreground_of_rubbish () {
+        check_str ("not a colour", Palette.foreground_on ("wat"), "#ffffff");
+    }
+
+    /** The generated sheet carries the computed foreground, not a fixed one. */
+    private void test_palette_gtk_css_foreground_follows_accent () {
+        check_bool ("yellow gets a dark foreground",
+                    Palette.gtk_css_for ("#c88800").contains ("@define-color onboarding_accent_fg #1a1a1a;"),
+                    true);
+    }
+
     public void register_palette () {
+        Test.add_func ("/palette/foreground-contrast", test_palette_foreground_contrast);
+        Test.add_func ("/palette/foreground-of-rubbish", test_palette_foreground_of_rubbish);
+        Test.add_func ("/palette/gtk-css-foreground", test_palette_gtk_css_foreground_follows_accent);
         Test.add_func ("/palette/kde-accent", test_palette_kde_accent);
         Test.add_func ("/palette/kde-accent-rejects-rubbish", test_palette_kde_accent_rejects_rubbish);
         Test.add_func ("/palette/kde-dark", test_palette_kde_dark_detection);

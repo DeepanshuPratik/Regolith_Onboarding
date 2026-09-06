@@ -13,8 +13,11 @@
     padding: 28px;
 
     /* The user's GTK theme, so an unbranded build looks native in light and
-       dark alike. A distro's theme.css overrides this wholesale. */
-    background-color: @window_bg_color;
+       dark alike. A distro's theme.css overrides this wholesale.
+       @theme_bg_color, not @window_bg_color: the latter is a GTK4/libadwaita
+       name that resolves to nothing here, which left an unbranded build with no
+       background at all. */
+    background-color: @theme_bg_color;
     border: 1px solid alpha(currentColor, 0.16);
     box-shadow: 0 6px 24px alpha(black, 0.18);
 }

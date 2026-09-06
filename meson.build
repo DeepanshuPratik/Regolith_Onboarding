@@ -74,6 +74,8 @@ add_project_arguments(['--pkg', 'posix'], language: 'vala')
 layer_shell_dep = meson.get_compiler('c').find_library('gtk-layer-shell', required: true)
 app_deps = [dependency('gio-unix-2.0')]
 app_deps += dependency('json-glib-1.0')
+# palette.vala linearises sRGB channels with Math.pow.
+app_deps += meson.get_compiler('c').find_library('m', required: false)
 app_deps += dependency('atk')
 app_deps += dependency('cairo-gobject')
 app_deps += dependency('gdk-3.0')
@@ -150,7 +152,9 @@ test_deps = [
   dependency('gdk-3.0'),
   dependency('gtk+-3.0'),
   # branding.vala's slide list is a Gee collection.
-  dependency('gee-0.8')
+  dependency('gee-0.8'),
+  # palette.vala linearises sRGB channels with Math.pow.
+  meson.get_compiler('c').find_library('m', required: false)
 ]
 
 unit_tests = executable(

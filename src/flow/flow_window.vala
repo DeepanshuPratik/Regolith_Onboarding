@@ -26,10 +26,10 @@ namespace linux_onboarding {
      * for the running desktop by PlatformRegistry.
      *
      * This page also draws the click-to-continue prompt. The observer can only
- * report that its grab has gone deaf (needs_user_focus); what the user sees
- * and clicks is presentation, so it belongs here.
- *
- * Observation is handed in rather than built here. The observer's install()
+     * report that its grab has gone deaf (needs_user_focus); what the user sees
+     * and clicks is presentation, so it belongs here.
+     *
+     * Observation is handed in rather than built here. The observer's install()
      * writes into the window manager and belongs to the whole run, so it is the
      * app that owns a PracticeSession; a page only borrows it for the length of
      * one workflow, between start() and stop().
@@ -64,7 +64,6 @@ namespace linux_onboarding {
         // than an edge one. Kept out of the instruction box on purpose — that
         // box is rebuilt and reordered by index between steps.
         private Gtk.Box focus_prompt;
-        private Gtk.Button resume_button;
         private Gtk.Image demo;
         private Gtk.Box demo_box;
         private Gtk.Box checkedCommand;
@@ -242,7 +241,7 @@ namespace linux_onboarding {
             explanation.set_justify (Gtk.Justification.CENTER);
             explanation.get_style_context ().add_class ("focus-prompt-text");
 
-            resume_button = new Button.with_label ("CLICK HERE TO CONTINUE");
+            var resume_button = new Button.with_label ("CLICK HERE TO CONTINUE");
             resume_button.get_style_context ().add_class ("playButton");
             resume_button.clicked.connect (on_user_returned);
 

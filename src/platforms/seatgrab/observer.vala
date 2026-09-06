@@ -73,7 +73,14 @@ namespace linux_onboarding {
             owner.focus_in_event.connect (on_focus_in);
         }
 
-        public bool available () { return grab_seat != null || true; }
+        /**
+         * Always true: a seat grab can be constructed in any session, and
+         * whether it will actually receive keys is not knowable until one
+         * arrives — start() and the re-grab timeout are what report that.
+         * (This read `grab_seat != null || true`, which said the same thing
+         * while looking like it asked a question.)
+         */
+        public bool available () { return true; }
 
         public string unavailable_reason () { return ""; }
 
