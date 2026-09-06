@@ -13,25 +13,106 @@ than by reading a table.
 Originally written for [Regolith Linux](https://regolith-desktop.com), which
 remains the reference branding shipped in this repository.
 
-## Building
+## Install from source
+
+The app is a native Vala/GTK3 application built with Meson. It has no binary
+release channel the project publishes — you build it from this repository, or
+a distro builds and ships it (see [For distro maintainers](#for-distro-maintainers)).
+
+### 1. Install the build dependencies
+
+Everything below is needed at build time. The `-dev`/`-devel` packages pull in
+the runtime libraries too, so installing the build list is also installing the
+runtime.
+
+**Debian / Ubuntu** (Ubuntu 24.04 or later):
+
+```bash
+sudo apt install meson ninja-build valac python3 \
+  libglib2.0-dev libjson-glib-1.0-dev libgdk-pixbuf-2.0-dev \
+  libgtk-3-dev libhandy-1-dev libgee-0.8-dev libgtk-layer-shell-dev \
+  libx11-dev libwebkit2gtk-4.1-dev
+```
+
+`libwebkit2gtk-4.1-dev` comes from **universe** on Ubuntu — enable it with
+`sudo add-apt-repository universe` if the package is not found. There is no
+`4.0` package on Ubuntu 24.04 and later; it must be **`4.1`**.
+
+On Debian, the same packages apply (`libjson-glib-1.0-dev` is `libjson-glib-dev`
+on older releases).
+
+**Fedora / RHEL-family:**
+
+```bash
+sudo dnf install meson ninja-build vala \
+  glib2-devel json-glib-devel gdk-pixbuf2-devel gtk3-devel \
+  libhandy-devel libgee-devel gtk-layer-shell-devel libX11-devel \
+  webkit2gtk4.1-devel
+```
+
+**Arch Linux:**
+
+```bash
+sudo pacman -S --needed meson ninja vala base-devel \
+  glib2 json-glib gdk-pixbuf2 gtk3 libhandy libgee gtk-layer-shell \
+  libx11 webkit2gtk-4.1
+```
+
+### 2. Configure, build, test
 
 ```bash
 meson setup build
 meson compile -C build
-./build/linux-onboarding
+meson test -C build     # optional, but does not take long
 ```
 
-Build dependencies: `valac`, `meson`, `gtk+-3.0`, `libhandy-1`, `json-glib-1.0`,
-`gee-0.8`, `gtk-layer-shell`, `webkit2gtk-4.1`.
+This builds with the reference Regolith branding shipped in the repository.
+Point the build at your own branding later with
+`-Dbranding_dir=/path/to/my-distro-branding` — see
+[docs/DISTRO-GUIDE.md](docs/DISTRO-GUIDE.md).
 
-On Debian and Ubuntu, `libwebkit2gtk-4.1-dev` comes from **universe**. There is
-no `4.0` package on Ubuntu 24.04 and later; it must be `4.1`.
+### 3. Install
+
+```bash
+sudo meson install -C build
+```
+
+This installs the binary plus a launcher entry and icon named for the
+application id `org.linux.Onboarding`. To remove again:
+
+```bash
+sudo ninja -C build uninstall
+```
+
+### 4. Run
+
+```bash
+linux-onboarding          # installed by meson install
+# or, without installing:
+./build/linux-onboarding
+```
 
 Validate a set of workflows without launching the UI:
 
 ```bash
 ./build/linux-onboarding --check-workflows
 ```
+
+### Optional runtime tools
+
+Practice dispatches shortcuts by triggering their real bindings. Which external
+tool that needs depends on the desktop:
+
+| Desktop | Tool | Debian/Ubuntu package |
+|---|---|---|
+| Any X11 session | `xdotool` | `xdotool` |
+| Wayland (when the app synthesises instead of resolving) | `ydotool` + its daemon `ydotoold` | `ydotool` |
+| sway | `swaymsg` | ships with the `sway` package |
+| i3 | `i3-msg` | ships with the `i3` package |
+
+The app checks for these at runtime and degrades honestly: a missing
+dispatcher tool disables that desktop's practice (the workflows still show as a
+reference card) rather than failing silently.
 
 ## For distro maintainers
 
