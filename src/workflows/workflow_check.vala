@@ -42,7 +42,13 @@ namespace linux_onboarding {
             var resolver = PlatformRegistry.resolver ();
 
             stdout.printf ("%s\n", PlatformRegistry.probe ().describe ());
-            stdout.printf ("branding: %s\n\n", Branding.get_default ().name);
+            stdout.printf ("branding: %s\n", Branding.get_default ().name);
+            // What this desktop will actually be dressed in. Cheap to print and
+            // the only way to check per-desktop theming without opening a window
+            // on the desktop in question.
+            stdout.printf ("palette:  accent %s, %s\n\n",
+                           Palette.accent_hex (),
+                           Palette.prefer_dark () ? "dark" : "light");
 
             var workflows = new WorkflowLocator ().load ();
             if (workflows.size == 0) {

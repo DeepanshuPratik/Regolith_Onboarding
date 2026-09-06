@@ -35,6 +35,13 @@ namespace linux_onboarding {
         /** Reserved host: app://action/<name> addresses the app, not the bundle. */
         public const string ACTION_HOST = "action";
 
+        /**
+         * Reserved path: app:///palette.css is generated per session rather than
+         * looked up in the bundle. A distro page links it to pick up the
+         * desktop's accent; a distro that does not link it is unaffected.
+         */
+        public const string PALETTE_FILE = "palette.css";
+
         private static bool registered = false;
 
         public static void register () {
@@ -57,6 +64,18 @@ namespace linux_onboarding {
 
                 var path = request.get_path ();
                 while (path.has_prefix ("/")) path = path.substring (1);
+
+                // One generated sheet alongside the bundled files: the desktop's
+                // accent, so a slide can match the window it sits in (#32). Not a
+                // file in the branding directory because its content depends on
+                // the session, which is exactly what a compiled-in bundle cannot
+                // express.
+                if (path == PALETTE_FILE) {
+                    var css = Palette.web_palette_css ().data;
+                    request.finish (new MemoryInputStream.from_data (css, null),
+                                    css.length, "text/css");
+                    return;
+                }
 
                 var resource = Branding.RESOURCE_ROOT + "/" + path;
                 try {

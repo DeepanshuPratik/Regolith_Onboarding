@@ -72,6 +72,11 @@ namespace linux_onboarding {
             var css_provider = new Gtk.CssProvider();
             css_provider.load_from_resource(APP_PATH + "/css/app.css");
             Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+            // Beneath both of the above in priority: the desktop's own accent,
+            // as defaults that app.css consumes and a distro's theme.css may
+            // override (#32).
+            Palette.apply (this.get_screen ());
+
             // Distro theme layers over the base sheet, so it must load after it.
             Branding.get_default ().apply_theme (this.get_screen ());
 

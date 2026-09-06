@@ -1,45 +1,58 @@
+/*
+ * The application's base stylesheet.
+ *
+ * Two rules for anything added here. Colours that vary by desktop come from
+ * Palette's generated sheet (@onboarding_accent and friends), loaded beneath
+ * this one so a distro's theme.css still wins; and this is GTK CSS, not web CSS
+ * — no max-width, no line-height, no flexbox, and an unknown property is a parse
+ * error in the log rather than a rule that quietly does nothing.
+ */
+
 .main-container {
-    /* Create the rounded corners. 16px is a nice modern radius. */
     border-radius: 16px;
+    padding: 28px;
 
-    /* Add padding around all the content inside the window. */
-    padding: 24px;
-
-    /*
-     * This is crucial for theme compatibility.
-     * It uses the standard named color for a window's background
-     * from the user's current GTK theme. This ensures your app
-     * will look native in both light and dark themes.
-     */
+    /* The user's GTK theme, so an unbranded build looks native in light and
+       dark alike. A distro's theme.css overrides this wholesale. */
     background-color: @window_bg_color;
-
-    /* Add a subtle border for better definition */
-    border: 1px solid alpha(currentColor, 0.2);
-
-    /* Add a subtle shadow for a modern look */
-    box-shadow: 0 4px 16px alpha(currentColor, 0.1);
+    border: 1px solid alpha(currentColor, 0.16);
+    box-shadow: 0 6px 24px alpha(black, 0.18);
 }
 
+/* Catalogue tiles. The accent only appears on interaction: a grid of coloured
+   tiles reads as decoration, a tile that lights up under the pointer reads as
+   something to click. */
 .workflow-button {
     background: none;
-    border: none;
+    border: 1px solid transparent;
     box-shadow: none;
-    padding: 10px;
+    padding: 14px;
+    border-radius: 14px;
 }
 
 .workflow-button:hover {
-    background-color: alpha(currentColor, 0.08); /* A subtle hover effect */
-    border-radius: 12px;
+    background-color: @onboarding_accent_dim;
+    border-color: alpha(@onboarding_accent, 0.35);
+}
+
+.workflow-button:focus {
+    border-color: @onboarding_accent;
 }
 
 .workflow-button .heading {
     font-weight: bold;
     font-size: 1.1em;
 }
+
 /* The "install more workflows" tile, sized to sit in the catalogue grid. */
 .add-tile {
     border: 1px dashed alpha(currentColor, 0.3);
-    border-radius: 12px;
+    border-radius: 14px;
+}
+
+.add-tile:hover {
+    border-color: alpha(@onboarding_accent, 0.55);
+    background-color: @onboarding_accent_dim;
 }
 
 .add-tile-plus {
@@ -60,6 +73,20 @@
     font-weight: bold;
     padding: 12px 24px;
     border-radius: 99px;
+}
+
+/* The accent is the desktop's, so this button is Breeze blue on KDE and
+   Adwaita blue on GNOME without either of them being named here. */
+.pill-button.suggested-action {
+    background-image: none;
+    background-color: @onboarding_accent;
+    border: 1px solid @onboarding_accent;
+    color: @onboarding_accent_fg;
+}
+
+.pill-button.suggested-action:hover {
+    background-image: none;
+    background-color: shade(@onboarding_accent, 1.12);
 }
 
 /* Commands the user is expected to read before running. */

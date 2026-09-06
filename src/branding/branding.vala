@@ -76,6 +76,20 @@ namespace linux_onboarding {
          * name it. See Palette, which is the only reader.
          */
         public string background       { get; private set; default = ""; }
+
+        /**
+         * The accent colour, as #rrggbb, or "" to follow the desktop.
+         *
+         * Setting it is how a distro opts out of per-desktop accenting: it wins
+         * over anything read from GNOME or KDE. See Palette.
+         */
+        public string accent           { get; private set; default = ""; }
+
+        /**
+         * "desktop" (default), "light" or "dark". Whether the deck follows the
+         * desktop into dark mode or insists on one of them.
+         */
+        public string color_scheme     { get; private set; default = "desktop"; }
         public bool   allow_slide_scripts { get; private set; default = false; }
         public string marketplace_name { get; private set; default = ""; }
         public string marketplace_url  { get; private set; default = ""; }
@@ -135,7 +149,9 @@ namespace linux_onboarding {
             var theme = read (keyfile, "Branding", "Theme", "");
             if (theme != "") theme_resource = RESOURCE_ROOT + "/" + theme;
 
-            background = read (keyfile, "Branding", "Background", "");
+            background   = read (keyfile, "Branding", "Background", "");
+            accent       = read (keyfile, "Branding", "Accent", "");
+            color_scheme = read (keyfile, "Branding", "ColorScheme", "desktop");
 
             allow_slide_scripts = read (keyfile, "Branding", "AllowSlideScripts", "false").down () == "true";
 

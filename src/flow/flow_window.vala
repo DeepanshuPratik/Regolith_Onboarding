@@ -236,6 +236,9 @@ namespace linux_onboarding {
             var explanation = new Label (
                 "Another window has the keyboard, so the shortcut you press cannot reach this step.");
             explanation.set_line_wrap (true);
+            // GTK CSS has no max-width, so the measure is set here rather than
+            // in flow.css, where it would be a parse error in the log.
+            explanation.max_width_chars = 44;
             explanation.set_justify (Gtk.Justification.CENTER);
             explanation.get_style_context ().add_class ("focus-prompt-text");
 

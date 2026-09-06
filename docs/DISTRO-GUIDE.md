@@ -138,6 +138,62 @@ flexbox. Unknown properties log a parse error and are ignored. This applies to
 `theme.css` only — the welcome page and slides are real web pages and get real
 CSS, which is why the screens you are most likely to want to design are HTML.
 
+### Per-desktop colours
+
+The same branding should not look identical on sway, GNOME and KDE, so the app
+resolves an **accent colour** for the session it is running in. In order:
+
+1. **`Accent=#rrggbb` in branding.conf.** Your choice, on every desktop. This is
+   the opt-out, and it is the whole of it.
+2. **The desktop's own accent**, where it will say: GNOME's
+   `org.gnome.desktop.interface accent-color` (GNOME 47 and later), KDE's
+   `AccentColor` in `kdeglobals`.
+3. **A colour shipped per desktop** — Adwaita blue on GNOME, Breeze blue on KDE,
+   and so on — so every session has an accent even when nothing can be read.
+
+`ColorScheme=` decides dark mode the same way: `desktop` (the default, following
+GNOME's `color-scheme` or KDE's named scheme), or `light`/`dark` to insist.
+
+**Your `theme.css` still wins.** The palette is loaded beneath both the app's
+stylesheet and yours, so it supplies defaults rather than overriding a design.
+In GTK it defines three names, which the app's own sheet consumes and you may
+too:
+
+| Name | Is |
+|---|---|
+| `@onboarding_accent` | The resolved accent |
+| `@onboarding_accent_fg` | A foreground that reads on it |
+| `@onboarding_accent_dim` | The accent at 14% — hover and tint states |
+
+**In the HTML deck** the same colour arrives as a custom property, from a
+generated stylesheet served at `app:///palette.css`:
+
+```html
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+```
+
+```css
+:root {
+  /* the desktop's, or your own if it could not be read */
+  --accent: var(--desktop-accent, #6ab0f3);
+}
+```
+
+Link it first, as above: your sheet comes second and therefore wins, which is
+the same precedence as on the GTK side. It also sets `color-scheme`, which is
+what makes a scrollbar or a form control inside a slide match the rest of the
+app. Linking it is optional — a deck that ignores it is unaffected.
+
+To see what any of this resolves to without opening a window:
+
+```
+$ ./build/linux-onboarding --check-workflows | head -3
+desktop=KDE candidates=[kde, default] wayland=true wm=unknown
+branding: Regolith
+palette:  accent #3daee9, light
+```
+
 ### The HTML deck
 
 The welcome page and the slides after it are ordinary HTML files rendered by
@@ -438,6 +494,8 @@ becomes — the bindsym the WM binding mode will install, the synthesized keypre
 used as a fallback, and **what the desktop itself says the key is bound to**:
 
 ```
+palette:  accent #2f6fb5, dark
+
 Launching Applications  (bundled:regolith/01-launching.json)
     <> Enter             bindsym Mod4+Return         synth: ydotool key KEY_LEFTMETA+KEY_ENTER
                          bound here to: exec --no-startup-id x-terminal-emulator

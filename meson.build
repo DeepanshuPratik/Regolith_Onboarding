@@ -133,6 +133,11 @@ test_sources += files(
   # platform that can be held to account without a Plasma machine.
   'src/platforms/kde/resolver.vala',
   'src/services/binding_resolver.vala',
+  # Palette's colour parsing and generated stylesheets. branding.vala comes with
+  # it because Palette reads the distro's overrides from it; nothing in the suite
+  # constructs a Branding, so no compiled-in resource is needed.
+  'src/branding/branding.vala',
+  'src/branding/palette.vala',
   # KeySynthesizer.command_for asks Desktop which session it is in.
   'src/session/desktop.vala'
 )
@@ -143,7 +148,9 @@ test_deps = [
   dependency('glib-2.0'),
   dependency('gobject-2.0'),
   dependency('gdk-3.0'),
-  dependency('gtk+-3.0')
+  dependency('gtk+-3.0'),
+  # branding.vala's slide list is a Gee collection.
+  dependency('gee-0.8')
 ]
 
 unit_tests = executable(

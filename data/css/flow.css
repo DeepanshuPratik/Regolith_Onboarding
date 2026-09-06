@@ -1,7 +1,7 @@
 /* These were `snow` — literal white, on a page whose background comes from the
    distro's theme, so on a dark build they were two white slabs the branding had
-   no way to reach (#33). Theme colours instead: the accent for the primary
-   action, a tint of the foreground for the secondary one. */
+   no way to reach (#33). The accent for the primary action, a tint of the
+   foreground for the secondary one — and the accent follows the desktop (#32). */
 .cancelButton {
   border: 1px solid alpha(currentColor, 0.25);
   background-color: alpha(currentColor, 0.10);
@@ -15,10 +15,10 @@
 }
 
 .playButton {
-  border: 1px solid @theme_selected_bg_color;
-  background-color: @theme_selected_bg_color;
+  border: 1px solid @onboarding_accent;
+  background-color: @onboarding_accent;
   background-image: none;
-  color: @theme_selected_fg_color;
+  color: @onboarding_accent_fg;
   border-radius: 10px;
   padding: 8px 18px;
   font-weight: bold;
@@ -26,8 +26,8 @@
 
 .playButton:hover,
 .playButton:focus {
-  border-color: @theme_selected_bg_color;
-  background-color: shade(@theme_selected_bg_color, 1.12);
+  border-color: @onboarding_accent;
+  background-color: shade(@onboarding_accent, 1.12);
   background-image: none;
 }
 .heading{
@@ -56,7 +56,7 @@
     font-weight: bold;
     margin-top: 4px;
     margin-bottom: 12px;
-    color: @theme_selected_bg_color; /* Use the theme's accent color */
+    color: @onboarding_accent;
 }
 
 /* Descriptive text for the action */
@@ -99,12 +99,10 @@
     border-radius: 12px;
     padding: 14px 18px;
     margin-top: 10px;
-    border: 1px solid @theme_selected_bg_color;
-    background-color: alpha(@theme_selected_bg_color, 0.12);
+    border: 1px solid @onboarding_accent;
+    background-color: @onboarding_accent_dim;
 }
 
 .focus-prompt-text {
     font-size: 1em;
-    /* Wrapped at a readable measure rather than the width of the page. */
-    max-width: 380px;
 }
