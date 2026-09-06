@@ -40,6 +40,18 @@ namespace linux_onboarding {
 
         private OnboardingState state;
 
+        // The first page in the deck, kept so that show_all() can wait for it to
+        // paint (#33). Null when a distro ships neither a welcome page nor any
+        // slides, which is a legitimate build.
+        private SlidePage? first_deck_page = null;
+
+        // How long the window waits for that first paint before showing itself
+        // anyway. Long enough for a bundled page over the app:// scheme, short
+        // enough that a wedged web process costs a beat rather than the app.
+        private const uint FIRST_PAINT_TIMEOUT_MS = 1500;
+
+        private bool shown_once = false;
+
         // Last page the deck owes this user: the final slide it decided to show,
         // or the welcome page when the delta is empty. Reaching it is what marks
         // the branding version seen.
@@ -203,7 +215,47 @@ namespace linux_onboarding {
         private void add_deck_page (SlidePage page) {
             int index = pages.size;
             page.action.connect ((name) => { dispatch_action (name, index); });
+            if (first_deck_page == null) first_deck_page = page;
             pages.add (page);
+        }
+
+        /**
+         * Show the window once there is something in it to see.
+         *
+         * The app used to open as a white box: show_all() ran the moment the
+         * constructor returned, while every deck page was still loading, so the
+         * first frame was a WebView with no document in it (#33). Waiting for the
+         * first page's ready signal costs a few hundred milliseconds of nothing
+         * on screen and buys a first frame that is the actual deck.
+         *
+         * The timeout is not optional. A page that never finishes — a broken
+         * bundle, a web process that will not start — must not leave the app
+         * running with no window and no explanation, so whichever comes first
+         * wins and show_all() happens either way.
+         *
+         * Note this is only the *map*. Everything order-sensitive already
+         * happened in the constructor: gtk-layer-shell must be initialised before
+         * the window is mapped (#26 — asking for it on Mutter is a SIGABRT, not a
+         * degraded window), and it is, whether the map comes now or in a second.
+         */
+        public void present_when_ready () {
+            if (first_deck_page == null) {
+                show_deck_now ();
+                return;
+            }
+
+            first_deck_page.ready.connect (show_deck_now);
+            Timeout.add (FIRST_PAINT_TIMEOUT_MS, () => {
+                show_deck_now ();
+                return Source.REMOVE;
+            });
+        }
+
+        // Whichever of the two paths above arrives first, and only that one.
+        private void show_deck_now () {
+            if (shown_once) return;
+            shown_once = true;
+            show_all ();
         }
 
         /**

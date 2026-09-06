@@ -41,6 +41,25 @@ namespace linux_onboarding {
          */
         public signal void action (string name);
 
+        /**
+         * This page has loaded as far as it ever will — finished, or failed.
+         *
+         * The window waits for the first page's ready before mapping itself, so
+         * the first frame the user sees is the deck rather than an empty box
+         * (#33). Emitted at most once: WebKit reaches FINISHED again on every
+         * in-page navigation, and a signal that fired each time would be a
+         * "the window may now appear" that arrives long after it has.
+         */
+        public signal void ready ();
+
+        private bool announced = false;
+
+        private void announce_ready () {
+            if (announced) return;
+            announced = true;
+            ready ();
+        }
+
         private Navigate go_back;
         private Navigate go_forward;
 
@@ -84,6 +103,14 @@ namespace linux_onboarding {
                 ? new WebKit.WebView ()
                 : new WebKit.WebView.with_related_view (process_leader);
             if (process_leader == null) process_leader = view;
+
+            // A WebView is opaque white until its document paints, which is the
+            // white box the app used to open as (#33). The document's own
+            // background arrives with an external stylesheet over the app://
+            // scheme, so there is a gap even once the markup is parsed; this
+            // closes the first half of it, and an inlined background in the page
+            // closes the second.
+            view.set_background_color (Palette.window_background ());
 
             var settings = view.get_settings ();
             settings.enable_javascript = Branding.get_default ().allow_slide_scripts;
@@ -133,7 +160,15 @@ namespace linux_onboarding {
 
             view.load_failed.connect ((ev, failing_uri, err) => {
                 warning ("slide failed to load (%s): %s", failing_uri, err.message);
+                // Ready in the sense the window cares about: this page is never
+                // going to paint anything better, so nothing should keep waiting
+                // for it.
+                announce_ready ();
                 return false;
+            });
+
+            view.load_changed.connect ((ev) => {
+                if (ev == WebKit.LoadEvent.FINISHED) announce_ready ();
             });
 
             return view;

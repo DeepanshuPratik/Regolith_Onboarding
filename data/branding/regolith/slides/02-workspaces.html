@@ -1,5 +1,9 @@
 <!doctype html>
 <meta charset="utf-8">
+<!-- Critical: the background inline, so this page paints the app's colour before
+     the stylesheet below has been fetched over the app:// scheme. Without it the
+     document exists and is white for as long as that fetch takes (#33). -->
+<style>html,body{background:#232733;color:#d8e0ee}</style>
 <link rel="stylesheet" href="assets/style.css">
 <div class="slide">
   <h1>Ten desktops, one keystroke apart</h1>

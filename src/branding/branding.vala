@@ -65,6 +65,17 @@ namespace linux_onboarding {
         public string welcome_resource { get; private set; default = ""; }
 
         public string theme_resource   { get; private set; default = ""; }
+
+        /**
+         * The window background, as a colour GDK can parse, or "" to follow the
+         * user's GTK theme.
+         *
+         * Here rather than inferred from theme.css because nothing in this app
+         * parses CSS: this is the colour painted where the app's own content has
+         * not painted yet, and a distro shipping a dark sheet has to be able to
+         * name it. See Palette, which is the only reader.
+         */
+        public string background       { get; private set; default = ""; }
         public bool   allow_slide_scripts { get; private set; default = false; }
         public string marketplace_name { get; private set; default = ""; }
         public string marketplace_url  { get; private set; default = ""; }
@@ -123,6 +134,8 @@ namespace linux_onboarding {
 
             var theme = read (keyfile, "Branding", "Theme", "");
             if (theme != "") theme_resource = RESOURCE_ROOT + "/" + theme;
+
+            background = read (keyfile, "Branding", "Background", "");
 
             allow_slide_scripts = read (keyfile, "Branding", "AllowSlideScripts", "false").down () == "true";
 

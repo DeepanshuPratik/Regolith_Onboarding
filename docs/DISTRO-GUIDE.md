@@ -66,6 +66,11 @@ SlideOrder=01-tiling.html;02-workspaces.html;03-practice.html;
 # Optional, default false.
 AllowSlideScripts=false
 
+# The window background. Optional; omit it to follow the user's GTK theme.
+# Set it to whatever your theme.css paints .main-container — see "No white
+# flash" below.
+Background=#232733
+
 # Optional. The branding version each slide first appeared in.
 [Slides]
 01-tiling.html=1.0
@@ -83,6 +88,34 @@ is needed where no page is rendered: the catalogue, the startup log and
 now markup inside `welcome.html`, because the welcome page renders in the same
 WebKit deck as the slides. The `[Marketplace]` `Url` is what the `+` tile in
 the catalogue hands to the system browser.
+
+### No white flash: `Background` and the inline background
+
+Nothing in this application parses your `theme.css`, so it cannot know what
+colour your window is. `Background` is how you tell it, and it is worth setting:
+it is the colour painted wherever your own content has not painted *yet*, which
+in practice means the deck's first frame.
+
+Two places need it, and both matter:
+
+- **`Background=` in branding.conf** sets the WebView's base colour, which is
+  otherwise opaque white. Match it to whatever `theme.css` paints
+  `.main-container`. Omit it and the app follows the user's GTK theme, which is
+  right for an unthemed build and wrong behind a dark sheet.
+- **An inline background in each page's `<head>`**, because a stylesheet in a
+  `<link>` is fetched over the `app://` scheme *after* the document starts
+  painting. Until it arrives the document is white however the widget behind it
+  is painted:
+
+  ```html
+  <style>html,body{background:#232733;color:#d8e0ee}</style>
+  <link rel="stylesheet" href="assets/style.css">
+  ```
+
+The window also waits for your first page to finish loading before it maps
+itself, so the first thing on screen is the deck rather than an empty frame. A
+page that never loads does not hold the app hostage — there is a timeout, and
+the window appears regardless.
 
 ### theme.css
 

@@ -26,7 +26,9 @@ namespace linux_onboarding {
 
         protected override void activate () {
             var window = new linux_onboarding.CarouselSetup (this);
-            window.show_all ();
+            // Not show_all(): the deck is still loading, and mapping now is what
+            // made the app open as a white box (#33).
+            window.present_when_ready ();
         }
 
         /**

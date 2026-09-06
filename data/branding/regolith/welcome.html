@@ -3,6 +3,10 @@
 <!-- The welcome page sits at the top of the branding directory, so its
      relative paths resolve from there: the logo beside it, and the same
      stylesheet the slides use so the deck reads as one piece. -->
+<!-- Critical: the background inline, so this page paints the app's colour before
+     the stylesheet below has been fetched over the app:// scheme. Without it the
+     document exists and is white for as long as that fetch takes (#33). -->
+<style>html,body{background:#232733;color:#d8e0ee}</style>
 <link rel="stylesheet" href="slides/assets/style.css">
 <div class="welcome">
   <img class="logo" src="logo.png" alt="">

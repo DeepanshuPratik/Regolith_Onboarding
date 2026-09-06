@@ -37,7 +37,6 @@ namespace linux_onboarding {
       private Gtk.Grid grid;
       private Gtk.Label headerText;
       private workflowElement on_selected;
-      private WorkflowLocator locator = new WorkflowLocator ();
 
       public WorkFlows(Gee.List<Workflow> workflowList, owned workflowElement workflow_element){
         Object(orientation: Gtk.Orientation.VERTICAL, spacing: 20);
