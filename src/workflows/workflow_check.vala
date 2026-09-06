@@ -31,11 +31,10 @@ namespace linux_onboarding {
     public class WorkflowCheck : GLib.Object {
 
         public static int run () {
-            var desktop = Desktop.get_default ();
-            var cfg = new configManager ();
+            var spec = new KeySpec ();
             var synth = new KeySynthesizer ();
 
-            stdout.printf ("%s\n", desktop.describe ());
+            stdout.printf ("%s\n", PlatformRegistry.probe ().describe ());
             stdout.printf ("branding: %s\n\n", Branding.get_default ().name);
 
             var workflows = new WorkflowLocator ().load ();
@@ -60,7 +59,7 @@ namespace linux_onboarding {
                     }
 
                     var key_id = step.get_string_member ("key_id");
-                    var bindsym = cfg.format_spec_for_mode (key_id);
+                    var bindsym = spec.format_spec_for_mode (key_id);
                     var command = synth.command_for (key_id);
 
                     if (bindsym == "") {

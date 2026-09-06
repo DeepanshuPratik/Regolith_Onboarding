@@ -13,25 +13,30 @@
  * You should have received a copy of the Apache License along with this program.       *
  *  If not, see <http://www.apache.org/licenses/>.                                      *
  ****************************************************************************************/
-using Gtk;
-using Gee;
+namespace linux_onboarding {
 
-namespace linux_onboarding{
+  /**
+   * Translation between the three ways a keybinding is written down here.
+   *
+   * Workflow JSON carries a remontoire spec ("<><Shift> Enter"); a window
+   * manager wants a bindsym spec ("Mod4+Shift+Return"); the user wants to read
+   * something with the brackets stripped out. None of that is desktop-specific
+   * — it is string and table work that every platform under src/platforms/ does
+   * identically — so it lives here rather than being owned by any one of them.
+   *
+   * Pure functions with no session state, deliberately: --check-workflows calls
+   * these with no display connection at all.
+   */
+  public class KeySpec {
 
-  public class configManager{
-
-    public configManager(){
-
-    }
-
-    public  string format_spec (string raw_keybinding) {
+    public string format_spec (string raw_keybinding) {
         // TODO: this won't work for keybindings with < > characters
         return raw_keybinding
                 .replace ("<", "")
                 .replace (">", " ")
                 .replace ("  ", " ");
     }
-    public  string format_spec_display (string raw_keybinding) {
+    public string format_spec_display (string raw_keybinding) {
         // TODO: this won't work for keybindings with < > characters
         return raw_keybinding
                 .replace ("<", " ")

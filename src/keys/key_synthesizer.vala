@@ -20,11 +20,18 @@ namespace linux_onboarding {
      * Builds a shell command that replays a keybinding through an input-synthesis
      * tool. This is the last-resort way to make a step's action actually happen:
      * we re-send the keys and let the window manager act on them as usual.
+     *
+     * Lives beside the other key tables rather than inside the dispatchers that
+     * use it, even though it is the dispatchers' fallback: --check-workflows
+     * prints the command it would build for every step, which is the only way an
+     * author finds out that a key_id translates to something ydotool will refuse.
+     * A translator nobody can inspect offline is a translator that fails
+     * silently at practice time.
      */
     public class KeySynthesizer : GLib.Object {
 
-        private KeybindingsHandler keys = new KeybindingsHandler ();
-        private configManager cfg = new configManager ();
+        private KeyTables keys = new KeyTables ();
+        private KeySpec  spec = new KeySpec ();
 
         /** Command that replays key_id, e.g. "<><Shift> Enter". */
         public string command_for (string key_id) {
@@ -41,7 +48,7 @@ namespace linux_onboarding {
                 command = "xdotool sleep 0.5 key --clearmodifiers ";
             }
 
-            var parts = cfg.format_spec (key_id).split (" ");
+            var parts = spec.format_spec (key_id).split (" ");
             for (int i = 0; i < parts.length - 1; i++) {
                 command += translate (parts[i], use_ydotool) + "+";
             }
@@ -56,7 +63,7 @@ namespace linux_onboarding {
             var mapped = keys.remontoireSymToKey.get (token);
             // Fall through to the keysym table so punctuation and Space reach
             // ydotool under names it recognises.
-            var xkey = (mapped != null) ? mapped : cfg.to_keysym (token);
+            var xkey = (mapped != null) ? mapped : spec.to_keysym (token);
             return use_ydotool ? to_ydotool_key (xkey) : xkey;
         }
 

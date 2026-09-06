@@ -21,8 +21,9 @@ namespace linux_onboarding {
      * Walks the user through one workflow, one keybinding at a time.
      *
      * This page owns presentation and step sequencing only. Noticing that the key
-     * was actually pressed, and performing the action it is normally bound to, are
-     * delegated to a CaptureBackend chosen for the running desktop.
+     * was actually pressed, performing the action it is normally bound to, and
+     * getting the window out of the way are three separate services, each chosen
+     * for the running desktop by PlatformRegistry.
      */
     public class WorkFlowPage : Box {
 
@@ -37,17 +38,14 @@ namespace linux_onboarding {
         private string description = " ";
         private string image = "";
 
-        private int curr_x = 0;
-        private int curr_y = 0;
-
         private uint current_key_sequence = 0;
         private bool isPlayed = false;
-        private string mode = "";
 
         private Workflow workflow;
         private Json.Array? steps;
-        private CaptureBackend capture;
-        private KeySynthesizer synth = new KeySynthesizer ();
+        private ShortcutObserver observer;
+        private ActionDispatcher dispatcher;
+        private WindowPlacer? placer = null;
         private bool capture_started = false;
         private workflowList return_to_list;
 
@@ -82,12 +80,12 @@ namespace linux_onboarding {
             if (steps == null || steps.get_length () == 0) return;
 
             buttonHolder = new Box(Gtk.Orientation.HORIZONTAL, 2);
-            var configmanager = new configManager();
+            var keyspec = new KeySpec();
 
             process_workflow_sequence(steps.get_element(current_key_sequence).get_object());
 
             headingLabel = new Label(heading);
-            commandLabel = new Label("PRESS: " + configmanager.format_spec_display(command));
+            commandLabel = new Label("PRESS: " + keyspec.format_spec_display(command));
             headingLabel.get_style_context().add_class("heading");
             descriptionLabel = new Label(description);
             instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
@@ -103,7 +101,7 @@ namespace linux_onboarding {
             midBox.add(demo_box);
             this.add(midBox);
 
-            bool can_practice = CaptureBackends.supported ();
+            bool can_practice = PlatformRegistry.can_practice ();
 
             cancel_button = new Gtk.Button();
             cancel_button.get_style_context().add_class("cancelButton");
@@ -119,24 +117,41 @@ namespace linux_onboarding {
             buttonHolder.set_halign(Gtk.Align.CENTER);
             instructionAndPlayHolder.add(buttonHolder);
 
-            capture = CaptureBackends.for_session (this);
-            capture.step_matched.connect (on_step_matched);
-            capture.aborted.connect (on_aborted);
+            use_observer (PlatformRegistry.observer (this));
 
             play_button.clicked.connect (on_play);
             cancel_button.clicked.connect (on_cancel);
         }
 
-        // PLAY shrinks the window out of the way and hands control to the backend
+        /**
+         * Adopts an observer and the dispatcher that goes with it.
+         *
+         * The two are swapped together on purpose: on a grab-based desktop the
+         * dispatcher has to release the grab its observer is holding, so one left
+         * pointing at a discarded observer would synthesize keys straight back
+         * into our own window.
+         */
+        private void use_observer (ShortcutObserver o) {
+            observer = o;
+            observer.step_matched.connect (on_step_matched);
+            observer.aborted.connect (on_aborted);
+            dispatcher = PlatformRegistry.dispatcher (observer);
+        }
+
+        // Built on first use rather than in the constructor: both of its methods
+        // need a realised toplevel, and this page is constructed before it has one.
+        private WindowPlacer window_placer () {
+            if (placer == null)
+                placer = PlatformRegistry.placer ((Gtk.Window) this.get_toplevel());
+            return placer;
+        }
+
+        // PLAY shrinks the window out of the way and hands control to the observer
         // so the user can perform the shortcut against their real desktop.
         private void on_play () {
             if (isPlayed) return;
 
-            var window = (Gtk.Window) this.get_toplevel();
-            if (curr_x == 0 && curr_y == 0)
-                window.get_position(out curr_x, out curr_y);
-            new HandleScreenMode(window, "TILEUP", curr_x, curr_y);
-            mode = "TILEUP";
+            window_placer ().shrink_for_practice ();
 
             instructionAndPlayHolder.remove(descriptionLabel);
             checkedCommand.add(checkTicked);
@@ -154,18 +169,24 @@ namespace linux_onboarding {
             play_button.set_label("CAPTURING");
 
             if (!capture_started) {
-                if (!capture.start (steps)) {
+                // install() moves to startup once something owns an observer for the
+                // whole run; until then it happens here, with this workflow alone.
+                // One workflow's keys in the binding mode is exactly what the old
+                // start(steps) installed, so nothing visible changes.
+                var only_this = new Gee.ArrayList<Workflow> ();
+                only_this.add (workflow);
+
+                if (!observer.install (only_this) || !observer.start ()) {
                     stderr.printf ("%s failed to start — falling back to seat grab\n",
-                                   capture.get_type ().name ());
-                    capture = CaptureBackends.fallback (this);
-                    capture.step_matched.connect (on_step_matched);
-                    capture.aborted.connect (on_aborted);
-                    capture.start (steps);
+                                   observer.get_type ().name ());
+                    use_observer (PlatformRegistry.fallback_observer (this));
+                    observer.install (only_this);
+                    observer.start ();
                 }
                 capture_started = true;
             }
 
-            capture.arm (command);
+            observer.arm (command);
             this.show_all();
         }
 
@@ -173,15 +194,15 @@ namespace linux_onboarding {
         // move on after a beat so the tick is actually seen.
         private void on_step_matched () {
             current_key_sequence++;
-            capture.dispatch (command, synth.command_for (command));
+            // null: let the dispatcher resolve the binding itself if it can. Only it
+            // knows whether it would rather run the real command or replay the keys.
+            dispatcher.dispatch (command, null);
             handleTick();
             this.show_all();
 
             GLib.Timeout.add_seconds (STEP_ADVANCE_DELAY_SECONDS, () => {
-                var toplevel = this.get_toplevel();
-                if (!(toplevel is Gtk.Window)) return false;
-                new HandleScreenMode((Gtk.Window) toplevel, "WINDOW", curr_x, curr_y);
-                mode = "WINDOW";
+                if (!(this.get_toplevel() is Gtk.Window)) return false;
+                window_placer ().restore ();
 
                 if (current_key_sequence >= steps.get_length()) {
                     finish ();
@@ -204,22 +225,18 @@ namespace linux_onboarding {
         }
 
         private void restore_window () {
-            var window = (Gtk.Window) this.get_toplevel();
-            if (curr_x == 0 && curr_y == 0)
-                window.get_position(out curr_x, out curr_y);
-            new HandleScreenMode(window, "WINDOW", curr_x, curr_y);
-            mode = "WINDOW";
+            window_placer ().restore ();
         }
 
         private void finish () {
-            capture.stop ();
+            observer.stop ();
             return_to_list ();
             this.destroy();
         }
 
         // Resets all UI labels/images after a step completes and loads the next one.
         private void reset_ui_for_next_step(Json.Object next_obj) {
-            var cfg = new configManager();
+            var keyspec = new KeySpec();
             process_workflow_sequence(next_obj);
             this.margin = 20;
             play_button.margin_end = 5;
@@ -231,7 +248,7 @@ namespace linux_onboarding {
             instructionAndPlayHolder.remove(checkedCommand);
             headingLabel = new Label(heading);
             headingLabel.get_style_context().add_class("heading");
-            commandLabel = new Label("PRESS: " + cfg.format_spec_display(command));
+            commandLabel = new Label("PRESS: " + keyspec.format_spec_display(command));
             descriptionLabel = new Label(description);
             createInstructionBox();
             demo = workflow.load_image(image);

@@ -46,7 +46,7 @@ namespace linux_onboarding {
         this.set_margin_end(20);
         this.on_selected = (owned) workflow_element;
 
-        bool can_practice = CaptureBackends.supported ();
+        bool can_practice = PlatformRegistry.can_practice ();
 
         headerText = new Label(can_practice ? "Select a Workflow to Practice"
                                             : "Keyboard Shortcuts");
@@ -54,7 +54,7 @@ namespace linux_onboarding {
         this.add(headerText);
 
         if (!can_practice) {
-          var notice = new Label(CaptureBackends.unsupported_reason ());
+          var notice = new Label(PlatformRegistry.no_practice_reason ());
           notice.get_style_context().add_class("notice");
           notice.wrap = true;
           notice.justify = Gtk.Justification.CENTER;

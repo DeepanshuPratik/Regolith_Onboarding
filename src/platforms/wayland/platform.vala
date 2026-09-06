@@ -14,35 +14,32 @@
  *  If not, see <http://www.apache.org/licenses/>.                                      *
  ****************************************************************************************/
 using Gtk;
-using GtkLayerShell;
 
 namespace linux_onboarding {
 
-    public class Application : Gtk.Application {
-        public Application () {
-            Object (application_id: APP_ID,
-                flags: ApplicationFlags.FLAGS_NONE);
-        }
-
-        protected override void activate () {
-            var window = new linux_onboarding.CarouselSetup (this);
-            window.show_all ();
-        }
-    }
     /**
-     * Application entry point
+     * Any Wayland session, whatever compositor is running it.
+     *
+     * A display-server layer rather than a desktop: it sits near the bottom of
+     * the registry's list and contributes the one capability that is decided by
+     * the protocol in use rather than by the desktop on top of it. Every Wayland
+     * desktop here gets its window placement from this, and a compositor that
+     * wants different placement overrides it simply by being listed above.
+     *
+     * It observes nothing and dispatches nothing on purpose. A Wayland
+     * compositor with no IPC we understand consumes its own shortcuts before any
+     * client sees them, and there is no portable way to observe a shortcut the
+     * compositor owns — the GlobalShortcuts portal registers new bindings, it
+     * does not report existing ones.
      */
-    public static int main (string[] args) {
+    public class WaylandPlatform : GLib.Object, Platform {
 
-        // Resolve the session's platform once; everything else reads its facts
-        // from the registry rather than probing the environment itself.
-        stdout.printf ("linux-onboarding: %s\n", PlatformRegistry.probe ().describe ());
+        public string id () { return "wayland"; }
 
-        foreach (var arg in args) {
-            if (arg == "--check-workflows") return WorkflowCheck.run ();
+        public bool claims_session () { return Desktop.get_default ().is_wayland; }
+
+        public WindowPlacer? placer (Gtk.Window window) {
+            return new LayerShellPlacer (window);
         }
-
-        var app = new Application ();
-        return app.run (args);
     }
 }

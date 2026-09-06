@@ -20,16 +20,7 @@ using Gee;
 
 namespace linux_onboarding {
 
-    // Keyvals the capture code compares against.
-    public const int KEY_CODE_ESCAPE = 65307;
-    public const int KEY_CODE_TAB    = 65289;
-    public const int KEY_CODE_UP     = 65362;
-    public const int KEY_CODE_DOWN   = 65364;
-    public const int KEY_CODE_LEFT   = 65361;
-    public const int KEY_CODE_RIGHT  = 65363;
-    public const int KEY_CODE_ENTER  = 65293;
-
-    // Held by SeatGrabBackend across its grab/ungrab cycles.
+    // Held by SeatGrabObserver across its grab/ungrab cycles.
     protected Gdk.Seat seat;
 
     public class CarouselSetup : Window {
@@ -49,7 +40,7 @@ namespace linux_onboarding {
             Object(application: app, type: Gtk.WindowType.POPUP);
             window_position = WindowPosition.CENTER;
 
-            if (Desktop.get_default ().is_wayland) {
+            if (PlatformRegistry.probe ().is_wayland ()) {
                 set_size_request (800,450);
             } else {
                 set_default_size (800,450);
@@ -124,7 +115,7 @@ namespace linux_onboarding {
                 return false;
             });
 
-            if (Desktop.get_default ().is_wayland) {
+            if (PlatformRegistry.probe ().is_wayland ()) {
                 GtkLayerShell.init_for_window (this);
                 GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
                 GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
@@ -196,10 +187,10 @@ namespace linux_onboarding {
             linux_onboarding.seat = seat;
         }
 
-        // Escape can quit while a workflow is mid-flight, so make sure no binding
-        // mode is left installed in the WM's config.d.
+        // Escape can quit while a workflow is mid-flight, so make sure no platform
+        // has left anything installed outside the process.
         private void clean_config() {
-            WmModeBackend.cleanup_stale_state ();
+            PlatformRegistry.cleanup_stale_state ();
         }
 
         // Grabs the input devices for a given window

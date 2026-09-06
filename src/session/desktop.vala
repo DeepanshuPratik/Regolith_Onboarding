@@ -16,43 +16,19 @@
 
 namespace linux_onboarding {
 
-    // Window managers this application knows how to drive directly.
-    public enum WindowManager {
-        SWAY,
-        I3,
-        UNKNOWN;
-
-        // Name of the IPC client binary for this WM. Callers must check
-        // is_tiling() first; UNKNOWN has no meaningful command.
-        public string ipc_command () {
-            switch (this) {
-                case SWAY: return "swaymsg";
-                case I3:   return "i3-msg";
-                default:   return "";
-            }
-        }
-
-        public string to_id () {
-            switch (this) {
-                case SWAY: return "sway";
-                case I3:   return "i3";
-                default:   return "unknown";
-            }
-        }
-
-        public bool is_tiling () {
-            return this == SWAY || this == I3;
-        }
-    }
-
     /**
-     * Session facts resolved once at startup: which desktop environment we are
-     * running under, whether this is Wayland, and which window manager (if any)
-     * we can talk to.
+     * The session facts nobody has to be a platform to read: which desktop
+     * environment announced itself, and whether we are on Wayland.
      *
      * The desktop identity drives which set of workflows is loaded. Distros
      * report it through XDG_CURRENT_DESKTOP, which is a colon-separated list in
      * descending specificity — Regolith sets "Regolith-Wayland:GNOME:sway".
+     *
+     * Deliberately no longer answers "which window manager is this". That
+     * question used to be a three-value enum here, which meant a new tiling WM
+     * could not be recognised without editing this file — a central edit of
+     * exactly the kind src/platforms/ exists to avoid. It now belongs to
+     * whichever platform recognises the WM; see SessionProbe.window_manager().
      */
     public class Desktop : GLib.Object {
 
@@ -60,7 +36,6 @@ namespace linux_onboarding {
 
         public string raw_desktop { get; private set; }
         public bool   is_wayland  { get; private set; }
-        public WindowManager wm   { get; private set; }
 
         // Normalised desktop ids in priority order, always ending in "default".
         // "Regolith-Wayland:GNOME:sway" -> { "regolith", "gnome", "sway", "default" }
@@ -81,10 +56,6 @@ namespace linux_onboarding {
             var session_type = Environment.get_variable ("XDG_SESSION_TYPE");
             var gdk_backend  = Environment.get_variable ("GDK_BACKEND");
             is_wayland = (session_type == "wayland") && (gdk_backend != "x11");
-
-            if (Environment.get_variable ("SWAYSOCK") != null)      wm = WindowManager.SWAY;
-            else if (Environment.get_variable ("I3SOCK") != null)   wm = WindowManager.I3;
-            else                                                    wm = WindowManager.UNKNOWN;
 
             candidates = build_candidates (raw_desktop);
         }
@@ -117,12 +88,17 @@ namespace linux_onboarding {
             get { return candidates[0]; }
         }
 
-        public string describe () {
+        /**
+         * One line of session facts. Takes the window-manager id from the caller
+         * rather than knowing one, because the facts here cannot name a WM any
+         * more — the probe that is describing itself supplies that.
+         */
+        public string describe (string wm_id) {
             return "desktop=%s candidates=[%s] wayland=%s wm=%s".printf (
                 raw_desktop.length > 0 ? raw_desktop : "<unset>",
                 string.joinv (", ", candidates),
                 is_wayland.to_string (),
-                wm.to_id ());
+                wm_id.length > 0 ? wm_id : "unknown");
         }
     }
 }

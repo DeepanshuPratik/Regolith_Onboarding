@@ -18,27 +18,32 @@ using Gtk;
 namespace linux_onboarding {
 
     /**
-     * Capture with no window-manager cooperation: grab the seat and read GTK key
-     * events directly.
+     * Observation with no window-manager cooperation: grab the seat and read GTK
+     * key events directly.
      *
      * This is how the app worked before binding modes existed, and it remains the
      * right answer on X11, where a grab really does receive every key. On Wayland
      * it is a poor substitute — the compositor claims its own shortcuts before any
      * client sees them, so a step bound to Super+Enter will never match. It stays
-     * available there only as a fallback for when WmModeBackend.start() fails.
+     * reachable there only as the registry's fallback for when a better observer
+     * fails to start.
+     *
+     * The grab is this class's to hold, which is why the X11 dispatcher is handed
+     * an instance of it rather than working alone: a synthesized keystroke sent
+     * while we still hold the grab comes straight back to our own window.
      */
-    public class SeatGrabBackend : GLib.Object, CaptureBackend {
+    public class SeatGrabObserver : GLib.Object, ShortcutObserver {
 
         private Gtk.Widget owner;
-        private KeybindingsHandler keys = new KeybindingsHandler ();
-        private configManager cfg = new configManager ();
+        private KeyTables keys = new KeyTables ();
+        private KeySpec spec = new KeySpec ();
 
         private bool   listening  = false;
         private uint   armed_mask = 0;
         private uint   armed_key  = 0;
         private bool   armed_from_table = false;
 
-        public SeatGrabBackend (Gtk.Widget owner) {
+        public SeatGrabObserver (Gtk.Widget owner) {
             this.owner = owner;
             owner.key_press_event.connect (on_key_press);
         }
@@ -47,7 +52,16 @@ namespace linux_onboarding {
 
         public string unavailable_reason () { return ""; }
 
-        public bool start (Json.Array steps) {
+        /**
+         * Nothing to put outside the process: a seat grab lives and dies with
+         * start()/stop(), and unlike a binding mode it leaves nothing behind for a
+         * later run to clean up.
+         */
+        public bool install (Gee.List<Workflow> workflows) { return true; }
+
+        public void uninstall () {}
+
+        public bool start () {
             // On X11 the main window already grabbed at map time; only the Wayland
             // fallback path needs to take one here.
             if (Desktop.get_default ().is_wayland) {
@@ -67,7 +81,7 @@ namespace linux_onboarding {
         }
 
         public void arm (string key_id) {
-            var tokens = cfg.format_spec (key_id).split (" ");
+            var tokens = spec.format_spec (key_id).split (" ");
             if (tokens.length == 0) { listening = false; return; }
 
             armed_mask = 0;
@@ -81,12 +95,17 @@ namespace linux_onboarding {
             listening = true;
         }
 
-        public void dispatch (string key_id, string fallback_command) {
-            // Drop the grab so the keystroke we are about to synthesize reaches the
-            // window manager rather than coming straight back to us.
+        /**
+         * Drop the grab so a keystroke the dispatcher is about to synthesize
+         * reaches the window manager rather than coming straight back to us.
+         * Called by X11Dispatcher, which is the only thing that needs it.
+         */
+        public void release_grab () {
             if (linux_onboarding.seat != null) linux_onboarding.seat.ungrab ();
-            Posix.system (fallback_command);
+        }
 
+        /** Take the grab back once the dispatched action has been sent. */
+        public void retake_grab () {
             var gdkwin = owner.get_window ();
             if (linux_onboarding.seat != null && gdkwin != null) {
                 linux_onboarding.seat.grab (gdkwin,

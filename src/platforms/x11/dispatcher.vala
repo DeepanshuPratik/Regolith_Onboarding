@@ -13,36 +13,42 @@
  * You should have received a copy of the Apache License along with this program.       *
  *  If not, see <http://www.apache.org/licenses/>.                                      *
  ****************************************************************************************/
-using Gtk;
-using GtkLayerShell;
 
 namespace linux_onboarding {
 
-    public class Application : Gtk.Application {
-        public Application () {
-            Object (application_id: APP_ID,
-                flags: ApplicationFlags.FLAGS_NONE);
-        }
-
-        protected override void activate () {
-            var window = new linux_onboarding.CarouselSetup (this);
-            window.show_all ();
-        }
-    }
     /**
-     * Application entry point
+     * Performs a step's action by replaying the keystroke through xdotool and
+     * letting the window manager act on it as usual.
+     *
+     * There is no resolver on X11 — no equivalent of `swaymsg -t get_config` that
+     * would tell us what a key is bound to — so any command handed down is
+     * ignored and synthesis is the only route. bound_command stays in the
+     * signature because it is the contract's, not because anything here can use
+     * it.
+     *
+     * The grab dance around the synthesis is the whole reason this is a separate
+     * class rather than a shared synthesizing dispatcher: the keys have to be
+     * sent while the seat is released, and only the observer holding the grab can
+     * release it.
      */
-    public static int main (string[] args) {
+    public class X11Dispatcher : GLib.Object, ActionDispatcher {
 
-        // Resolve the session's platform once; everything else reads its facts
-        // from the registry rather than probing the environment itself.
-        stdout.printf ("linux-onboarding: %s\n", PlatformRegistry.probe ().describe ());
+        private SeatGrabObserver observer;
+        private KeySynthesizer synth = new KeySynthesizer ();
 
-        foreach (var arg in args) {
-            if (arg == "--check-workflows") return WorkflowCheck.run ();
+        public X11Dispatcher (SeatGrabObserver observer) {
+            this.observer = observer;
         }
 
-        var app = new Application ();
-        return app.run (args);
+        public bool available () { return true; }
+
+        public string unavailable_reason () { return ""; }
+
+        public bool dispatch (string key_id, string? bound_command) {
+            observer.release_grab ();
+            Posix.system (synth.command_for (key_id));
+            observer.retake_grab ();
+            return true;
+        }
     }
 }

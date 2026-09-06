@@ -63,11 +63,22 @@ namespace linux_onboarding {
         public abstract bool is_wayland ();
 
         /**
-         * The window manager we can drive directly, or UNKNOWN when there is
-         * none we understand. Callers must check is_tiling() before trusting
-         * anything derived from it.
+         * A stable id for the window manager we can drive directly — "sway",
+         * "i3", "hyprland" — or "" when there is none we understand.
+         *
+         * A free string rather than the enum this used to be. The enum was a
+         * closed set that only the file declaring it could extend, so reporting
+         * a new window manager meant an edit to shared code — precisely the
+         * central edit src/platforms/ exists to eliminate. A platform now names
+         * its own WM from inside its own directory.
+         *
+         * Purely descriptive: it reaches the startup log, --check-workflows and
+         * the config paths a platform builds for itself. Nothing branches on it
+         * to decide what is possible — that is what the four available() methods
+         * are for, and a caller comparing this against a literal to work out
+         * whether practice will work has rebuilt the enum by hand.
          */
-        public abstract WindowManager window_manager ();
+        public abstract string window_manager ();
 
         /**
          * Normalised desktop ids in descending specificity, always ending in
@@ -94,7 +105,7 @@ namespace linux_onboarding {
             return "desktop=[%s] wayland=%s wm=%s".printf (
                 string.joinv (", ", desktop_candidates ()),
                 is_wayland ().to_string (),
-                window_manager ().to_id ());
+                window_manager ());
         }
     }
 }
