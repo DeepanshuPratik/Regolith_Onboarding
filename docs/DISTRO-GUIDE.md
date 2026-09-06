@@ -602,11 +602,21 @@ The practical support table:
 | GNOME on Wayland | Yes* | Keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
 | KDE (KWin) on Wayland | Yes*† | Same keyboard-only grab; bindings from `kglobalshortcutsrc` |
 
-\* GNOME and KDE are **unauthored**: each platform implements observation,
-resolution and dispatch, but no `workflows/gnome/*.json` or `workflows/kde/*.json`
-ship with the reference branding, so practice has nothing to teach until someone
-authors the workflow set — which needs real hardware and a second data point on
-default bindings. The code path is complete the moment the JSON is supplied.
+\* GNOME ships a workflow set as of this branch — `workflows/gnome/`, three
+workflows whose seven steps all resolve against GNOME's own GSettings. KDE is
+**unauthored**: the platform implements observation, resolution and dispatch,
+but no `workflows/kde/*.json` ship, so practice has nothing to teach there until
+someone authors the set. The code path is complete the moment the JSON is
+supplied.
+
+Authoring for GNOME has one constraint worth knowing before you start, and it is
+not obvious: **almost every GNOME default shortcut moves the keyboard somewhere
+else.** Opening a terminal, switching windows, opening the app grid — each hands
+focus to what it opened, and GNOME does not let an application take focus back
+(see `docs/adr/0001-keyboard-only-grab.md`). The shipped set is ordered around
+that: overlays that Escape dismisses come first, and the two steps that really
+do move focus are last in their workflow, with descriptions that tell the user
+to click the window to carry on. Order your steps the same way.
 
 † KDE has **never been run on a Plasma machine**, and this table said it worked
 for a while when no KDE code existed at all (#28). What exists now: `KdePlatform`

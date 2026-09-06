@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "desktop": "gnome",
+  "workflows": [
+    {
+      "name": "Working with Workspaces",
+      "description": "GNOME gives you a fresh, empty desktop whenever you want one. These two keys are a pair: the first takes you away, the second brings you back to this window.",
+      "steps": [
+        {
+          "key_id": "<Ctrl><Alt> →",
+          "heading": "Move to the next workspace",
+          "description": "A new workspace is created as you need it, so there is always one more to the right. This window stays where it is — you are the one who moved."
+        },
+        {
+          "key_id": "<Ctrl><Alt> ←",
+          "heading": "Come back",
+          "description": "The same key in the other direction. If this window is no longer on screen when you get here, that is the shortcut working: press Ctrl+Alt+Left again until you see it, then click it to carry on."
+        }
+      ]
+    }
+  ]
+}

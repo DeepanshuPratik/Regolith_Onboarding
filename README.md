@@ -142,9 +142,10 @@ are keyed by desktop environment, and how to lay out a marketplace repository.
 | GNOME on Wayland | Yes* — keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
 | KDE (KWin) on Wayland | Yes*† — same grab; bindings read from `kglobalshortcutsrc` |
 
-\* GNOME and KDE are **unauthored**: the platforms are implemented, but no
-`workflows/gnome` or `workflows/kde` set ships with the reference branding, so
-practice has nothing to teach there until someone authors one.
+\* GNOME now ships a workflow set (`workflows/gnome/`, three workflows, seven
+steps, every one of them resolving to a real GNOME action). KDE is
+**unauthored**: the platform is implemented, but no `workflows/kde` set ships,
+so practice has nothing to teach there until someone authors one.
 
 † KDE has **never been run on a Plasma machine**. The observer and dispatcher are
 the ones GNOME uses, and KWin has honoured the shortcuts inhibitor since Plasma
