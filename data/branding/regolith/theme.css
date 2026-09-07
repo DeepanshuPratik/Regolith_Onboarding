@@ -6,6 +6,7 @@
  * styling contract and are the ones worth overriding.
  */
 
+.carousel,
 .main-container,
 .practice-page {
     background-color: #232733;
@@ -17,6 +18,10 @@
 }
 
 .heading {
+    color: #6ab0f3;
+}
+
+.practice-command {
     color: #6ab0f3;
 }
 

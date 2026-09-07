@@ -8,6 +8,16 @@
  * error in the log rather than a rule that quietly does nothing.
  */
 
+/*
+ * The toplevel itself. .main-container covers it on the deck and the
+ * catalogue, but the practice page replaces that container rather than sitting
+ * inside it — so without this the window falls back to the GTK theme's default
+ * and a dark build shows a light frame around the practice card.
+ */
+.carousel {
+    background-color: @theme_bg_color;
+}
+
 .main-container {
     border-radius: 16px;
     padding: 28px;

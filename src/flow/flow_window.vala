@@ -143,6 +143,7 @@ namespace linux_onboarding {
             // a step without one does not reflow the page.
             demo_box.set_size_request(DEMO_WIDTH, DEMO_HEIGHT);
             demo_box.set_valign(Gtk.Align.CENTER);
+            demo_box.get_style_context().add_class("media-container");
             demo_box.add(demo);
             midBox.add(instructionAndPlayHolder);
             midBox.add(demo_box);
@@ -198,6 +199,12 @@ namespace linux_onboarding {
             this.expand = false;
             this.set_halign(Gtk.Align.CENTER);
             demo_box.remove(demo);
+            // The slot is a fixed size so the page does not change shape between
+            // steps — but practice takes the demo away, and a slot still holding
+            // 340x230 for a widget that is gone is a rectangle of nothing in the
+            // middle of the shrunken card. Give the space back until the next
+            // step needs it.
+            demo_box.set_size_request(-1, -1);
             isPlayed = true;
             play_button.set_label("CAPTURING");
 
@@ -361,6 +368,7 @@ namespace linux_onboarding {
             wrap_step_text ();
             createInstructionBox();
             demo = workflow.load_demo(image, DEMO_WIDTH, DEMO_HEIGHT);
+            demo_box.set_size_request(DEMO_WIDTH, DEMO_HEIGHT);
             demo_box.add(demo);
             play_button.get_style_context().add_class("playButton");
             play_button.set_label("PLAY");
@@ -407,12 +415,30 @@ namespace linux_onboarding {
          * its longest description, which differs per step.
          */
         private void wrap_step_text () {
-            Label[] wrapped = { headingLabel, descriptionLabel, commandLabel };
+            Label[] wrapped = { headingLabel, descriptionLabel };
             foreach (var label in wrapped) {
                 label.set_line_wrap (true);
                 label.max_width_chars = TEXT_WIDTH_CHARS;
                 label.set_justify (Gtk.Justification.CENTER);
             }
+
+            // The shortcut itself never wraps. On the shrunken practice card
+            // there is less width than this label wants, and wrapping it put
+            // "Super +" on one line and "V" on the next — the one string on the
+            // page that has to be readable at a glance, broken in half. Letting
+            // it set the card's minimum width is the right trade.
+            commandLabel.set_line_wrap (false);
+            commandLabel.set_justify (Gtk.Justification.CENTER);
+
+            // flow.css and theme.css have carried styles for these three since
+            // before this page existed, and the page never applied them — so the
+            // step's own text was the only thing on a dark card wearing the GTK
+            // theme's default label colour, which is nearly illegible on it.
+            // .text-secondary and .practice-command are both in the documented
+            // styling contract, so a distro can already reach them.
+            descriptionLabel.get_style_context ().add_class ("practice-description");
+            descriptionLabel.get_style_context ().add_class ("text-secondary");
+            commandLabel.get_style_context ().add_class ("practice-command");
         }
 
         public void createInstructionBox() {

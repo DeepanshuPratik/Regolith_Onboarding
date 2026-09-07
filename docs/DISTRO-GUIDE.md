@@ -124,6 +124,7 @@ win. The styling contract — the class names worth overriding — is:
 
 | Class | Applies to |
 |---|---|
+| `.carousel` | The window itself — paint this, or a light frame shows around the practice card |
 | `.main-container`, `.practice-page` | The window's content panels |
 | `.title-1` | Page titles |
 | `.heading` | Step headings and tile captions |
