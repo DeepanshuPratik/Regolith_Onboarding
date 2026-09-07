@@ -87,11 +87,30 @@ namespace linux_onboarding {
 
         private void build (string resource_path, Gtk.Widget? nav) {
             this.margin = 12;
+            this.hexpand = true;
+            this.vexpand = true;
+            // Each carousel page draws into its own GdkWindow, and libhandy
+            // positions it at `i * (carousel_width + spacing)`. Without an
+            // explicit clip on that window, the next page's painted content
+            // spills leftward into the visible area when it is wider than the
+            // page can hold (GNOME/Sway/X11 ks runs onto a second line and the
+            // overflow paints across the carousel). The widget-level clip is
+            // what makes adjacent pages invisible until the carousel scrolls.
+            // Defer the call to Idle so we don't re-enter size_allocate from
+            // inside the same handler.
+            this.size_allocate.connect ((alloc) => {
+                Idle.add (() => {
+                    this.set_clip (alloc);
+                    return Source.REMOVE;
+                });
+            });
 
             SlideScheme.register ();
 
             var view = build_view ();
             view.expand = true;
+            view.hexpand = true;
+            view.vexpand = true;
             this.add (view);
             if (nav != null) this.add (nav);
 

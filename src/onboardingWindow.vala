@@ -153,6 +153,12 @@ namespace linux_onboarding {
 
             for (int i = 0; i < pages.size; i++)
                 carousel.insert (pages[i], i);
+            // The 100-pixel gap is the "there's another page" hint the deck
+            // relies on. Per-page GdkWindows created by libhandy are not
+            // clipped to their allocation by default, so wider deck content
+            // (longer ks, wider kbd chips) would otherwise paint across the
+            // gap into the visible window — see SlidePage.build(). With that
+            // clip in place, the spacing is purely visual.
             carousel.set_spacing(100);
 
             // Welcome plus the catalogue is not a deck, and two faint dots under
