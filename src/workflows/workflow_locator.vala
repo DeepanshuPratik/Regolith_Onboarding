@@ -118,31 +118,94 @@ namespace linux_onboarding {
             }
         }
 
-        private void load_dir (Gee.ArrayList<Workflow> into, string dir) {
+        /**
+         * Everything in one desktop's directory, in both layouts.
+         *
+         * Flat — `gnome/01-navigation.json` — is what every existing install and
+         * the bundled branding use. One folder per workflow —
+         * `gnome/navigation/navigation.json` — is what the marketplace ships, so
+         * that a workflow's images live beside it and two authors can both
+         * ship `assets/keys.png` without colliding.
+         *
+         * **One level, not arbitrary depth.** This walks the user's config
+         * directory; a folder they happen to have put there is not a workflow,
+         * and recursing into everything would be a surprising amount of reading
+         * somebody else's disk.
+         *
+         * Names are sorted together across both shapes, so an `NN-` prefix
+         * still controls the order the catalogue lists them in whichever layout
+         * a workflow arrived as.
+         */
+        internal void load_dir (Gee.ArrayList<Workflow> into, string dir) {
+            var found = new Gee.ArrayList<string> ();   // sort keys
+            var paths = new Gee.HashMap<string, string> ();
+
             try {
                 var d = Dir.open (dir, 0);
                 string? name;
-                var names = new Gee.ArrayList<string> ();
-                while ((name = d.read_name ()) != null)
-                    if (name.has_suffix (".json")) names.add (name);
+                while ((name = d.read_name ()) != null) {
+                    var child = Path.build_filename (dir, name);
 
-                // Stable order so a NN- prefix can be used to control listing order.
-                names.sort ((a, b) => strcmp (a, b));
-
-                foreach (var n in names) {
-                    var path = Path.build_filename (dir, n);
-                    string contents;
-                    try {
-                        FileUtils.get_contents (path, out contents);
-                    } catch (Error e) {
-                        warning ("Cannot read '%s': %s", path, e.message);
+                    if (name.has_suffix (".json")) {
+                        found.add (name);
+                        paths.set (name, child);
                         continue;
                     }
-                    into.add_all (WorkflowParser.from_data (contents, dir, path));
+
+                    if (!FileUtils.test (child, FileTest.IS_DIR)) continue;
+
+                    var own = workflow_in_folder (child, name);
+                    if (own != null) {
+                        found.add (name);
+                        paths.set (name, own);
+                    }
                 }
             } catch (Error e) {
                 warning ("Cannot list '%s': %s", dir, e.message);
+                return;
+            }
+
+            found.sort ((a, b) => strcmp (a, b));
+
+            foreach (var key in found) {
+                var path = paths.get (key);
+                string contents;
+                try {
+                    FileUtils.get_contents (path, out contents);
+                } catch (Error e) {
+                    warning ("Cannot read '%s': %s", path, e.message);
+                    continue;
+                }
+                // The base directory is the one holding the JSON, so a workflow
+                // in its own folder resolves `assets/x.png` against that folder
+                // rather than against the desktop directory it shares with
+                // everyone else.
+                into.add_all (WorkflowParser.from_data (contents, Path.get_dirname (path), path));
             }
         }
+
+        /**
+         * The single JSON inside a workflow folder, or null if this is not one.
+         *
+         * A folder holding several JSONs is somebody's own directory rather
+         * than a marketplace workflow — the marketplace allows exactly one per
+         * folder — and reading all of them would be guessing.
+         */
+        private string? workflow_in_folder (string folder, string folder_name) {
+            string? only = null;
+            try {
+                var d = Dir.open (folder, 0);
+                string? name;
+                while ((name = d.read_name ()) != null) {
+                    if (!name.has_suffix (".json")) continue;
+                    if (only != null) return null;          // more than one
+                    only = Path.build_filename (folder, name);
+                }
+            } catch (Error e) {
+                return null;
+            }
+            return only;
+        }
+
     }
 }

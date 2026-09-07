@@ -16,6 +16,7 @@ test_sources += files(
   'test_asset_fit.vala',
   'test_kde_bindings.vala',
   'test_key_spec.vala',
+  'test_locator.vala',
   'test_key_synthesizer.vala',
   'test_key_tables.vala',
   'test_palette.vala',

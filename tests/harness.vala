@@ -83,6 +83,7 @@ public static int main (string[] args) {
 
     linux_onboarding.Tests.register_asset_fit ();
     linux_onboarding.Tests.register_key_spec ();
+    linux_onboarding.Tests.register_locator ();
     linux_onboarding.Tests.register_kde_bindings ();
     linux_onboarding.Tests.register_key_tables ();
     linux_onboarding.Tests.register_key_synthesizer ();

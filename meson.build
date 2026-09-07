@@ -140,10 +140,13 @@ test_sources += files(
   # AssetLoader.fit_size: the demo slot's arithmetic, which is what keeps the
   # practice page the same size from one step to the next.
   'src/workflows/workflow.vala',
+  # WorkflowLocator.load_dir: which layouts on disk are found at all.
+  'src/workflows/workflow_locator.vala',
+  'src/workflows/workflow_parser.vala',
+  'src/branding/branding.vala',
   # Palette's colour parsing and generated stylesheets. branding.vala comes with
   # it because Palette reads the distro's overrides from it; nothing in the suite
   # constructs a Branding, so no compiled-in resource is needed.
-  'src/branding/branding.vala',
   'src/branding/palette.vala',
   # KeySynthesizer.command_for asks Desktop which session it is in.
   'src/session/desktop.vala'
