@@ -210,10 +210,18 @@ rest fall through to the next platform. Worked example and the full contract:
 
 ## Screenshots
 
-<img alt="Sample1" height="200" src="data/images/sample1.jpeg" />
-<img alt="Sample3" height="200" src="data/images/sample3.jpeg" />
-<img alt="Sample4" height="200" src="data/images/sample4.jpeg" />
-<img alt="Light theme" height="200" src="data/images/regolith%20light%20theme.jpeg" />
+The welcome page the user sees when the deck first opens, for each of the
+five drop-in brandings in `data/branding/`. The carousel window is cropped
+from a 1280×800 Xephyr run at the deck's native 900×620.
+
+| | |
+|---|---|
+| ![Regolith welcome — the shipped reference: dark deck, hexagonal R mark, blue Get Started pill](docs/screenshots/regolith-welcome.png) | ![GNOME welcome — light surface, Ubuntu-style circle, Adwaita-blue pill](docs/screenshots/gnome-welcome.png) |
+| ![Regolith-on-Wayland welcome — same Regolith deck, with an "ON WAYLAND" subtitle marking the successor](docs/screenshots/regolith-wayland-welcome.png) | ![sway welcome — terminal hero showing ~/.config/sway/config as the brand mark](docs/screenshots/sway-welcome.png) |
+| ![X11 welcome — the fallback deck, with a large white X glyph and an honest "this isn't a desktop" intro](docs/screenshots/x11-welcome.png) | |
+
+The deck the project itself is built against is `regolith/`. The others
+ship as sibling brandings — see [data/branding/README.md](data/branding/README.md).
 
 ## Licence
 
