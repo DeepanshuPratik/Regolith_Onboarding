@@ -23,13 +23,13 @@
           "key_id": "<> Space",
           "heading": "Application Launcher",
           "description": "Search and start any installed application by name.",
-          "image": "images/ilia.jpeg"
+          "image": "images/launcher.jpg"
         },
         {
           "key_id": "<><Shift> ?",
           "heading": "Keybinding Viewer",
           "description": "Shows every shortcut available. Your reference when you forget one.",
-          "image": "images/ilia.jpeg"
+          "image": "images/launcher.jpg"
         }
       ]
     }

@@ -6,10 +6,16 @@
  * styling contract and are the ones worth overriding.
  */
 
+/* The window and the panels that fill it share one background. Only the
+   window carries a border — an inner panel with its own is a second frame. */
 .carousel,
 .main-container,
 .practice-page {
     background-color: #232733;
+}
+
+.carousel,
+.main-container {
     border: 1px solid alpha(#8aa2c8, 0.18);
 }
 
@@ -22,6 +28,10 @@
 }
 
 .practice-command {
+    color: #6ab0f3;
+}
+
+.add-tile-plus {
     color: #6ab0f3;
 }
 

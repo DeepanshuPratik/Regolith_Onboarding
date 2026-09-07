@@ -28,7 +28,14 @@ namespace linux_onboarding {
 
         // One size for the window, whichever desktop it is on.
         private const int WINDOW_WIDTH  = 900;
-        private const int WINDOW_HEIGHT = 560;
+
+        /**
+         * 620 rather than 560 because the catalogue is what needs the room: five
+         * tiles in two rows plus their captions, a heading and the page
+         * indicator. At 560 the second row was inside a scroll view the user had
+         * no reason to suspect, so the bottom row read as cut off.
+         */
+        private const int WINDOW_HEIGHT = 620;
 
         private Gtk.Box container;
         private Hdy.Carousel carousel;
@@ -41,6 +48,10 @@ namespace linux_onboarding {
 
         // Carousel contents in order: welcome, featured slides, workflow list.
         private Gee.ArrayList<Gtk.Widget> pages = new Gee.ArrayList<Gtk.Widget> ();
+
+        // Kept so the deck can decide, once its pages exist, whether there is
+        // anything worth indicating.
+        private Hdy.CarouselIndicatorDots carousel_indicator;
 
         private OnboardingState state;
 
@@ -92,7 +103,7 @@ namespace linux_onboarding {
             carousel = new Hdy.Carousel();
             container.add(carousel);
 
-            var carousel_indicator = new Hdy.CarouselIndicatorDots();
+            carousel_indicator = new Hdy.CarouselIndicatorDots();
             carousel_indicator.set_carousel(carousel);
             container.add(carousel_indicator);
 
@@ -143,6 +154,16 @@ namespace linux_onboarding {
             for (int i = 0; i < pages.size; i++)
                 carousel.insert (pages[i], i);
             carousel.set_spacing(100);
+
+            // Welcome plus the catalogue is not a deck, and two faint dots under
+            // it read as a stray mark rather than as progress. The indicator
+            // earns its place only when there is a slide to page through — which
+            // on most runs, after the version has been recorded once, there is
+            // not.
+            if (pages.size < 3) {
+                carousel_indicator.no_show_all = true;
+                carousel_indicator.hide ();
+            }
 
             record_version_once_deck_is_seen ();
 

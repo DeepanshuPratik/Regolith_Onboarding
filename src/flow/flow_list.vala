@@ -31,8 +31,21 @@ namespace linux_onboarding {
     public class WorkFlows : Box {
       public delegate void workflowElement(Workflow workflow);
 
-      private const int TILE_WIDTH = 300;
-      private const int TILE_HEIGHT = 150;
+      /**
+       * Tile thumbnail size, at the same 3:2 the practice slot uses.
+       *
+       * It was 300x150 — 2:1 — which letterboxed every asset authored for the
+       * demo slot, so each tile carried a band of empty space.
+       *
+       * Small enough that two rows of three fit the window outright, which
+       * matters more than it sounds: when the rows do not fit, GTK does not
+       * scroll, it *squeezes*. The second row then loses its captions and the
+       * add tile's plus is clipped to a sliver — which is exactly what made that
+       * tile look like a stray dot on the panel. The scroll view underneath is a
+       * safety net for a catalogue with many workflows, not the normal case.
+       */
+      private const int TILE_WIDTH = 210;
+      private const int TILE_HEIGHT = 140;
 
       private Gtk.Grid grid;
       private Gtk.Label headerText;
@@ -79,7 +92,10 @@ namespace linux_onboarding {
       private void populate(Gee.List<Workflow> workflowList) {
         foreach (var child in grid.get_children()) grid.remove(child);
 
-        int columns = (workflowList.size > 3) ? 2 : 1;
+        // Counting the add tile, because it is the thing that ends up orphaned
+        // on a row of its own when the count is only of workflows.
+        int total = workflowList.size + 1;
+        int columns = (total <= 2) ? total : (total <= 4 ? 2 : 3);
         int i = 0;
 
         foreach (var item in workflowList) {
@@ -92,7 +108,16 @@ namespace linux_onboarding {
 
            var button = new Button();
            button.get_style_context().add_class("workflow-button");
-           button.set_tooltip_text(item.description);
+           button.set_tooltip_text("%s — %s".printf (item.name, item.description));
+
+           // One line, ellipsised. A wrapping caption made the row as tall as
+           // the longest name, and when that did not fit GTK squeezed the row
+           // and clipped every caption in it — "Settings at Your Fingertips"
+           // was enough to do it. The full name is in the tooltip.
+           label.set_line_wrap (false);
+           label.set_ellipsize (Pango.EllipsizeMode.END);
+           label.max_width_chars = 22;
+           label.justify = Gtk.Justification.CENTER;
 
            var tile = new Grid();
            tile.set_row_spacing(10);
@@ -118,14 +143,22 @@ namespace linux_onboarding {
        * docs/DISTRO-GUIDE.md. Nothing is downloaded or executed by the app.
        */
       private Gtk.Button build_add_tile(bool catalogue_is_empty) {
-        var plus = new Label("+");
+        // An icon rather than a "+" label. The label was a 44px font whose glyph
+        // rendered as 21x12 pixels of ink — a plus fills very little of its own
+        // em box, and what was left after the row squeezed it read as a stray
+        // dash on the panel rather than as an affordance. An icon has a pixel
+        // size that means what it says.
+        var plus = new Gtk.Image.from_icon_name("list-add-symbolic", Gtk.IconSize.DIALOG);
+        plus.pixel_size = 48;
         plus.get_style_context().add_class("add-tile-plus");
 
         var caption = new Label(catalogue_is_empty
-            ? "No workflows yet — add some"
+            ? "No workflows yet"
             : "Add more workflows");
         caption.get_style_context().add_class("heading");
-        caption.wrap = true;
+        caption.set_line_wrap (false);
+        caption.set_ellipsize (Pango.EllipsizeMode.END);
+        caption.max_width_chars = 22;
         caption.justify = Gtk.Justification.CENTER;
 
         var inner = new Box(Gtk.Orientation.VERTICAL, 10);

@@ -133,6 +133,7 @@ win. The styling contract — the class names worth overriding — is:
 | `.pill-button.suggested-action` | Primary buttons |
 | `.playButton`, `.cancelButton` | Practice controls |
 | `.workflow-button`, `.add-tile` | Catalogue tiles |
+| `.add-tile-plus` | The add-tile icon — colour only; its size is set in code |
 | `.focus-prompt`, `.focus-prompt-text` | The "another window has the keyboard" prompt |
 
 Note GTK CSS is not web CSS: there is no `max-width`, no `line-height`, no

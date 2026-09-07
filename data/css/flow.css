@@ -35,11 +35,15 @@
 }
 /* Main container for the practice page content.
    Gives it a max-width for readability on large screens. */
-   .practice-page {
-    border-radius: 16px;
-    border: 1px solid alpha(currentColor, 0.2);
-    box-shadow: 0 4px 16px alpha(currentColor, 0.1);
-    padding: 20px;
+/*
+ * The practice page. Deliberately flat: it replaces .main-container rather than
+ * sitting inside it, so the window it fills is already the panel. Giving this a
+ * border and a shadow of its own drew a second rounded box inside the first,
+ * inset by an arbitrary amount and outlined in a different weight — two frames
+ * where the design has one.
+ */
+.practice-page {
+    padding: 24px;
     background-color: @theme_bg_color;
 }
 

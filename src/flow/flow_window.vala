@@ -143,7 +143,6 @@ namespace linux_onboarding {
             // a step without one does not reflow the page.
             demo_box.set_size_request(DEMO_WIDTH, DEMO_HEIGHT);
             demo_box.set_valign(Gtk.Align.CENTER);
-            demo_box.get_style_context().add_class("media-container");
             demo_box.add(demo);
             midBox.add(instructionAndPlayHolder);
             midBox.add(demo_box);
