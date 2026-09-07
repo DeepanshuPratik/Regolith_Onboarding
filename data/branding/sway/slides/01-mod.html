@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{background:#0f1115;color:#e6ebf2}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1><code>$mod</code> is the only modifier you need</h1>
+  <p class="lede">
+    sway's whole keymap is built on one variable. Whatever key you bind to
+    <code>$mod</code> in your config is the prefix for every shortcut on this
+    page — by default the Super key, but the Sway installation guide recommends
+    the Caps-Lock key for users who type a lot, since Super is closer to the
+    home row.
+  </p>
+  <ul>
+    <li><kbd>Edit ~/.config/sway/config</kbd><span><span class="what">Change <code>$mod</code>.</span> <span class="why">One line, one <code>Mod4</code> instead of another. Log out and back in.</span></span></li>
+    <li><kbd>man 5 sway</kbd><span><span class="what">The reference.</span> <span class="why">Every option, with examples, is one terminal away.</span></span></li>
+    <li><kbd>swaymsg reload</kbd><span><span class="what">Apply a config change.</span> <span class="why">No logout; useful while iterating on bindings.</span></span></li>
+    <li><kbd>swaymsg -t get_config</kbd><span><span class="what">See what sway is actually using.</span> <span class="why">The shipped defaults plus yours, concatenated, in one dump.</span></span></li>
+  </ul>
+  <p class="footnote">If a binding does nothing, check whether <code>$mod</code> in your config is what your finger is pressing.</p>
+</div>

@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{background:#1c1f2a;color:#d8e0ee}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="slides/assets/style.css">
+<div class="welcome">
+  <!-- Regolith hexagonal R, inline so --brand-ink / --brand-paper can recolour it.
+       The hex is one path; the R is another, painted in --bg so it reads as a
+       cutout against the hex. -->
+  <svg class="logo" viewBox="0 0 96 96" role="img" aria-label="Regolith mark">
+    <!-- Hexagon: flat-top. -->
+    <polygon points="48,4 90,26 90,70 48,92 6,70 6,26"
+             fill="var(--brand-paper)" stroke="var(--brand-ink)" stroke-width="3"/>
+    <!-- The R: a slab-serif R centred in the hex. Built as a single path so it
+         reads cleanly at any size. -->
+    <path d="M36 28 H56 a12 12 0 0 1 0 24 H46 L62 70 H52 L40 52 H40 V70 H36 Z
+             M40 36 V44 H56 a4 4 0 0 0 0 -8 Z"
+          fill="var(--brand-ink)"/>
+  </svg>
+  <h1>Welcome to Regolith</h1>
+  <p class="subtitle">on Wayland</p>
+  <p class="lede">
+    The same Regolith, now driven by sway. Your shortcuts carry over; the
+    compositor gives you sharper scaling and per-monitor HiDPI.
+  </p>
+  <a class="cta" href="app://action/next">Get Started</a>
+</div>

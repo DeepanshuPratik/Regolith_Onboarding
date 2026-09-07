@@ -1,0 +1,70 @@
+/*
+ * Regolith-on-Wayland theme.
+ *
+ * Same dark blue surface as the i3 build, but with a sharper accent — sway's
+ * border colours are tighter and its keyboard hints benefit from a touch more
+ * contrast. The accent stays blue so a returning Regolith user reads it as
+ * "the same desktop, different window manager".
+ */
+
+.carousel,
+.main-container,
+.practice-page {
+    background-color: #1c1f2a;
+}
+
+.carousel,
+.main-container {
+    border: 1px solid alpha(#8aa2c8, 0.20);
+    border-radius: 0;
+}
+
+.title-1 {
+    color: #e2e8f2;
+}
+
+.heading {
+    color: #7fb6ff;
+}
+
+.practice-command {
+    color: #7fb6ff;
+}
+
+.add-tile-plus {
+    color: #7fb6ff;
+}
+
+.text-secondary {
+    color: #aab6c8;
+}
+
+.notice {
+    color: #d0b070;
+}
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: #2f6fb5;
+    color: #f2f6fb;
+    border: 1px solid #2a5f9c;
+    border-radius: 4px;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: #3a82cf;
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: alpha(#8aa2c8, 0.14);
+    color: #e2e8f2;
+    border: 1px solid alpha(#8aa2c8, 0.25);
+    border-radius: 4px;
+}
+
+.workflow-button:hover {
+    background-color: alpha(#7fb6ff, 0.14);
+}

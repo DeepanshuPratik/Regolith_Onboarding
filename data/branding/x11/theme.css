@@ -1,0 +1,67 @@
+/*
+ * X11 fallback theme. The plainest possible surface: charcoal, light text,
+ * square corners, no decoration. The point of this build is that X11 by
+ * itself isn't a desktop — so the chrome should not pretend to be one.
+ */
+
+.carousel,
+.main-container,
+.practice-page {
+    background-color: #1a1a1a;
+}
+
+.carousel,
+.main-container {
+    border: 1px solid alpha(#c0c0c0, 0.12);
+    border-radius: 0;
+}
+
+.title-1 {
+    color: #e6e6e6;
+}
+
+.heading {
+    color: #cccccc;
+}
+
+.practice-command {
+    color: #cccccc;
+}
+
+.add-tile-plus {
+    color: #cccccc;
+}
+
+.text-secondary {
+    color: #999999;
+}
+
+.notice {
+    color: #c8a060;
+}
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: #333333;
+    color: #f0f0f0;
+    border: 1px solid #555555;
+    border-radius: 0;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: #404040;
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: alpha(#c0c0c0, 0.06);
+    color: #e6e6e6;
+    border: 1px solid alpha(#c0c0c0, 0.18);
+    border-radius: 0;
+}
+
+.workflow-button:hover {
+    background-color: alpha(#cccccc, 0.12);
+}

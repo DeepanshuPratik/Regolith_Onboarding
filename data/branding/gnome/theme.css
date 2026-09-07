@@ -1,0 +1,74 @@
+/*
+ * GNOME / Ubuntu theme. Light surface, Adwaita blue, pill buttons.
+ *
+ * The palette variables come from the app's own stylesheet:
+ *   @onboarding_accent      — resolved per-desktop accent
+ *   @onboarding_accent_fg   — foreground that reads on it
+ *   @onboarding_accent_dim  — accent at 14%, for hover/tint
+ *
+ * We use them by name so the deck recolours itself when the user changes
+ * the system accent.
+ */
+
+.carousel,
+.main-container,
+.practice-page {
+    background-color: #fafafa;
+    color: #2e3436;
+}
+
+.carousel,
+.main-container {
+    border: 1px solid alpha(#2e3436, 0.10);
+    border-radius: 12px;
+}
+
+.title-1 {
+    color: #2e3436;
+}
+
+.heading {
+    color: @onboarding_accent;
+}
+
+.practice-command {
+    color: @onboarding_accent;
+}
+
+.add-tile-plus {
+    color: @onboarding_accent;
+}
+
+.text-secondary {
+    color: #5e6969;
+}
+
+.notice {
+    color: #a35d00;
+}
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: @onboarding_accent;
+    color: @onboarding_accent_fg;
+    border: 1px solid alpha(#2e3436, 0.10);
+    border-radius: 999px;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: alpha(@onboarding_accent, 0.86);
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: alpha(#2e3436, 0.06);
+    color: #2e3436;
+    border: 1px solid alpha(#2e3436, 0.12);
+    border-radius: 999px;
+}
+
+.workflow-button:hover {
+    background-color: alpha(@onboarding_accent_dim, 1.0);
+}
