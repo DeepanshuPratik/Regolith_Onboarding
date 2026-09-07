@@ -13,6 +13,18 @@ at it.
 | `sway/` | Almost-black, Nord frost, sharp | `$mod` is the only modifier that matters. | 4 |
 | `x11/` | Charcoal, grey, square | X11 isn't a desktop — the WM you pick is. | 3 |
 
+## Welcome pages
+
+Each deck opens on a `welcome.html` that introduces the desktop in its own
+voice — not generic onboarding copy. The carousel window is cropped from a
+1280×800 Xephyr run.
+
+| | |
+|---|---|
+| ![Regolith welcome — reference dark deck with the hexagonal R mark, blue Get Started pill, four-slide deck](docs/screenshots/regolith-welcome.png) | ![GNOME welcome — light surface with the Ubuntu-style circle, soft orange halo, Adwaita-blue pill, five-slide deck](docs/screenshots/gnome-welcome.png) |
+| ![Regolith-on-Wayland welcome — same dark deck as Regolith, with "ON WAYLAND" subtitle in caps marking the successor](docs/screenshots/regolith-wayland-welcome.png) | ![sway welcome — terminal hero showing ~/.config/sway/config as the brand mark, frost-accent pill, five-slide deck](docs/screenshots/sway-welcome.png) |
+| ![X11 welcome — fallback deck with a large white X glyph, "Welcome to X11" as the honest "this isn't a desktop" intro](docs/screenshots/x11-welcome.png) | |
+
 The shipped `regolith/` is the reference — what the project itself is built
 on. The others are *examples a maintainer can fork from* or *presets a maintainer
 can ship* as part of a multi-branding binary.
