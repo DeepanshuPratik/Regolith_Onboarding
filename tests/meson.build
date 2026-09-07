@@ -21,5 +21,6 @@ test_sources += files(
   'test_palette.vala',
   'test_sanitiser.vala',
   'test_state.vala',
+  'test_sway_vars.vala',
   'test_version.vala'
 )

@@ -89,6 +89,7 @@ public static int main (string[] args) {
     linux_onboarding.Tests.register_palette ();
     linux_onboarding.Tests.register_sanitiser ();
     linux_onboarding.Tests.register_state ();
+    linux_onboarding.Tests.register_sway_vars ();
     linux_onboarding.Tests.register_version ();
 
     return Test.run ();

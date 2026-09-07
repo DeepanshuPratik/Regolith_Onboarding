@@ -188,15 +188,33 @@ namespace linux_onboarding {
          * fields must be split on runs of whitespace — splitting on a single space
          * yields an empty token and shifts the default value out of position.
          */
-        private void parse_var_line (string raw, GLib.Array<string> into) {
+        internal void parse_var_line (string raw, GLib.Array<string> into) {
             var s = raw.replace ("\t", " ");
 
             if (s.has_prefix ("set_from_resource ")) {
-                // set_from_resource $name resource_key default_value
+                // set_from_resource $name resource_key [default...]
+                //
+                // The default is *everything* after the resource key, not the
+                // next token. Regolith declares
+                //
+                //     set_from_resource $wm.program.help wm.program.help ilia -p keybindings
+                //
+                // and taking one token turned that into "ilia", dropping the
+                // page — so practising the keybinding-viewer step dispatched
+                // `ilia -a`, which is the application launcher with every page
+                // loaded. It looked like the launcher getting bigger, which is
+                // exactly what it was.
                 var parts = tokenize (s);
-                if (parts.length >= 4 && parts[1].has_prefix ("$")) {
+                if (parts.length >= 3 && parts[1].has_prefix ("$")) {
+                    int after_key = s.index_of (parts[2], s.index_of (parts[1]) + parts[1].length)
+                                  + parts[2].length;
                     into.append_val (parts[1]);
-                    into.append_val (unquote (parts[3]));
+                    // No default at all is a legitimate line — the value lives
+                    // only in Xresources, which we cannot read here. Recording
+                    // it as empty is what lets the token be substituted away
+                    // rather than surviving as a literal "$name" that the
+                    // dispatched program would receive as an argument.
+                    into.append_val (unquote (s.substring (after_key).strip ()));
                 }
             } else if (s.has_prefix ("set ")) {
                 // set $name value   — the value may itself contain spaces
@@ -231,7 +249,46 @@ namespace linux_onboarding {
          * shorter name first would rewrite "$ws10" into the value of $ws1 followed
          * by a stray "0".
          */
-        private string resolve_vars (string line, GLib.Array<string> vars) {
+        /**
+         * Cleans up what substituting an empty value leaves behind.
+         *
+         * A resource with no default in the config becomes the empty string, so
+         * `-t $ilia.stylesheet` collapses to `-t ` — a flag with nothing after
+         * it, which the program we hand the command to would reject. The flag
+         * goes with its argument: an option whose value we could not resolve is
+         * an option we cannot pass.
+         *
+         * Only single-dash short options are treated this way. A `--flag` in
+         * sway's own vocabulary (`--no-startup-id`) takes no argument and must
+         * survive.
+         */
+        private string tidy_after_substitution (string command) {
+            var kept = new StringBuilder ();
+            var parts = command.split (" ");
+
+            for (int i = 0; i < parts.length; i++) {
+                var token = parts[i];
+                if (token.length == 0) continue;
+
+                bool next_is_empty = (i + 1 < parts.length) && parts[i + 1].length == 0;
+                bool short_option  = token.has_prefix ("-") && !token.has_prefix ("--");
+                if (short_option && next_is_empty) {
+                    i++;            // drop the flag and the hole after it
+                    continue;
+                }
+
+                if (kept.len > 0) kept.append_c (' ');
+                kept.append (token);
+            }
+            return kept.str;
+        }
+
+        /**
+         * internal, not private: the suite drives this and parse_var_line
+         * directly, because the variable expansion is where a real bug lived
+         * and the alternative is a test that needs a sway session to find it.
+         */
+        internal string resolve_vars (string line, GLib.Array<string> vars) {
             int count = (int) vars.length / 2;
             if (count == 0) return line;
 
@@ -250,6 +307,8 @@ namespace linux_onboarding {
             string result = line;
             foreach (var idx in order)
                 result = result.replace (vars.index (idx * 2), vars.index (idx * 2 + 1));
+
+            result = tidy_after_substitution (result);
             return result;
         }
 

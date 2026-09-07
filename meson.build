@@ -134,6 +134,8 @@ test_sources += files(
   # KdeResolver's parsing: pure string work, and the only part of the KDE
   # platform that can be held to account without a Plasma machine.
   'src/platforms/kde/resolver.vala',
+  # SwayResolver's variable expansion: the config-text-in, command-out core.
+  'src/platforms/sway/resolver.vala',
   'src/services/binding_resolver.vala',
   # AssetLoader.fit_size: the demo slot's arithmetic, which is what keeps the
   # practice page the same size from one step to the next.
