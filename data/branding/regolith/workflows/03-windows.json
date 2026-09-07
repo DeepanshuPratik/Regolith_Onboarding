@@ -5,31 +5,31 @@
     {
       "name": "Arranging Windows",
       "description": "Control how new windows are placed and how existing ones behave.",
-      "image": "images/split-side-by-side.jpg",
+      "image": "assets/split-side-by-side.jpg",
       "steps": [
         {
           "key_id": "<> v",
           "heading": "Split Vertically",
           "description": "The next window you open will be placed below this one.",
-          "image": "images/split-stacked.jpg"
+          "image": "assets/split-stacked.jpg"
         },
         {
           "key_id": "<> g",
           "heading": "Split Horizontally",
           "description": "The next window you open will be placed beside this one.",
-          "image": "images/split-side-by-side.jpg"
+          "image": "assets/split-side-by-side.jpg"
         },
         {
           "key_id": "<> f",
           "heading": "Toggle Fullscreen",
           "description": "Expand the focused window to fill the screen, and back again.",
-          "image": "images/fullscreen.jpg"
+          "image": "assets/fullscreen.jpg"
         },
         {
           "key_id": "<><Shift> f",
           "heading": "Toggle Floating",
           "description": "Lift a window out of the tiling layout so it floats freely.",
-          "image": "images/floating-window.jpg"
+          "image": "assets/floating-window.jpg"
         }
       ]
     }

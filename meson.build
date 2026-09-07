@@ -44,12 +44,53 @@ project_resources = gnome.compile_resources(
   source_dir: 'data'
 )
 
-# A distro's branding is compiled in, selected by -Dbranding_dir. Meson has no
-# glob, so the resource manifest is generated at configure time from whatever
-# that directory contains.
-branding_dir = get_option('branding_dir')
+# A distro's branding is compiled in, selected by -DBranding_dir. There is
+# deliberately no default: a build that silently fell back to Regolith's
+# branding would ship another distro's identity to a user who never asked for
+# it, which is a bug, not a fallback worth having.
+#
+# Computed unconditionally (one cheap python3 subprocess) rather than only
+# when something has already gone wrong, because a typo in -DBranding_dir is
+# exactly the moment this list needs to show up — and by the time
+# gen-branding-gresource.py would catch a bad path, it is running inside a
+# configure_file() whose stderr meson does not surface, just "failed with
+# status 1" and a pointer to the log file.
+available_brandings = run_command(
+  'python3', '-c',
+  'import os,sys; root=sys.argv[1]; print(", ".join(sorted(d for d in os.listdir(root) if os.path.isfile(os.path.join(root,d,"branding.conf")))))',
+  meson.project_source_root() / 'data/branding',
+  check: true,
+).stdout().strip()
+
+branding_dir = get_option('Branding_dir')
+if branding_dir == ''
+  error(
+    '-DBranding_dir is required.\n' +
+    '\n' +
+    'Pick one of the bundled directories:\n' +
+    '    meson setup build -DBranding_dir=data/branding/<name>\n' +
+    '\n' +
+    'Available under data/branding/: ' + available_brandings + '\n' +
+    '\n' +
+    'Want a new distro\'s branding? Copy one of those directories, edit its ' +
+    'branding.conf, logo.png, theme.css and slides/ to describe your distro, ' +
+    'and point -DBranding_dir at the copy. See data/branding/README.md.'
+  )
+endif
 if not branding_dir.startswith('/')
   branding_dir = meson.project_source_root() / branding_dir
+endif
+
+if not fs.is_dir(branding_dir) or not fs.exists(branding_dir / 'branding.conf')
+  error(
+    '-DBranding_dir=' + get_option('Branding_dir') + ' is not a branding directory ' +
+    '(no such directory, or it has no branding.conf).\n' +
+    '\n' +
+    'Available under data/branding/: ' + available_brandings + '\n' +
+    '\n' +
+    'Check for a typo, or point -DBranding_dir at your own branding directory ' +
+    '— see data/branding/README.md.'
+  )
 endif
 message('branding_dir: ' + branding_dir)
 

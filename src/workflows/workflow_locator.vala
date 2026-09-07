@@ -20,14 +20,6 @@ namespace linux_onboarding {
     /**
      * Finds the workflows that apply to the running desktop.
      *
-     * Definitions are keyed by desktop environment, since a shortcut that teaches
-     * something on sway means nothing on KDE. Each source directory holds one
-     * subdirectory per desktop id:
-     *
-     *     workflows/regolith/*.json
-     *     workflows/gnome/*.json
-     *     workflows/default/*.json
-     *
      * Four layers are consulted, lowest priority first, and the results are
      * unioned so a user-installed workflow appears next to the built-in ones:
      *
@@ -36,9 +28,25 @@ namespace linux_onboarding {
      *     $XDG_CONFIG_DIRS/linux-onboarding/workflows/  sysadmin (/etc/xdg)
      *     $XDG_CONFIG_HOME/linux-onboarding/workflows/  the user, and marketplace installs
      *
-     * Within a layer only the best-matching desktop directory is read — walking
-     * Desktop.candidates in order and taking the first that exists — so a distro
-     * shipping both regolith/ and default/ gets the specific one, not both.
+     * Only the bundled layer is flat — `workflows/01-launching.json` straight
+     * under the branding directory. -DBranding_dir already commits a build to
+     * one distro's identity, so the resource it compiles in never needs a
+     * desktop id to disambiguate: a GNOME build's bundle is GNOME's, full stop.
+     *
+     * The other three are keyed by desktop environment instead, since a shortcut
+     * that teaches something on sway means nothing on KDE, and unlike the
+     * bundle they are not tied to any one build — the same $XDG_DATA_DIRS can
+     * hold packages for several desktops, and a user's own $XDG_CONFIG_HOME
+     * follows them from one desktop to another:
+     *
+     *     workflows/regolith/*.json
+     *     workflows/gnome/*.json
+     *     workflows/default/*.json
+     *
+     * Within one of those three, only the best-matching desktop directory is
+     * read — walking Desktop.candidates in order and taking the first that
+     * exists — so a layer shipping both regolith/ and default/ gets the
+     * specific one, not both.
      */
     public class WorkflowLocator : GLib.Object {
 
@@ -61,21 +69,28 @@ namespace linux_onboarding {
             return all;
         }
 
-        /** Directory a marketplace install should be copied into; shown in the UI. */
+        /**
+         * Directory a marketplace install should be copied into; shown in the
+         * UI. Keyed by this session's own most specific desktop id — not a
+         * bundled-resource fallthrough, since the marketplace layer is a real
+         * filesystem tree that outlives any one build and is free to hold
+         * more than one desktop's workflows.
+         */
         public string user_install_dir () {
             return Path.build_filename (Environment.get_user_config_dir (),
-                                        DATA_SUBDIR, WORKFLOWS, chosen_bundled_id ());
+                                        DATA_SUBDIR, WORKFLOWS, desktop.primary);
         }
 
+        // Flat: the branding bundle is already this build's one desktop, so
+        // there is no id left to disambiguate. See the class comment.
         private void load_bundled (Gee.ArrayList<Workflow> into) {
-            var id = chosen_bundled_id ();
-            var dir = "%s/%s/%s/".printf (Branding.RESOURCE_ROOT, WORKFLOWS, id);
+            var dir = "%s/%s/".printf (Branding.RESOURCE_ROOT, WORKFLOWS);
 
             string[] children;
             try {
                 children = GLib.resources_enumerate_children (dir, ResourceLookupFlags.NONE);
             } catch (Error e) {
-                return;   // nothing bundled for this desktop
+                return;   // this branding bundles no workflows
             }
 
             foreach (var child in children) {
@@ -83,7 +98,7 @@ namespace linux_onboarding {
                 try {
                     var bytes = GLib.resources_lookup_data (dir + child, ResourceLookupFlags.NONE);
                     var parsed = WorkflowParser.from_data (
-                        (string) bytes.get_data (), null, "bundled:" + id + "/" + child);
+                        (string) bytes.get_data (), null, "bundled:" + child);
                     // Images sit beside the JSON, same as for filesystem workflows.
                     foreach (var w in parsed) w.resource_base = dir.substring (0, dir.length - 1);
                     into.add_all (parsed);
@@ -93,29 +108,28 @@ namespace linux_onboarding {
             }
         }
 
-        // Which bundled desktop directory to use — first candidate that exists.
-        private string chosen_bundled_id () {
-            foreach (var id in desktop.candidates) {
-                var probe = "%s/%s/%s/".printf (Branding.RESOURCE_ROOT, WORKFLOWS, id);
-                try {
-                    var children = GLib.resources_enumerate_children (probe, ResourceLookupFlags.NONE);
-                    if (children.length > 0) return id;
-                } catch (Error e) {
-                    continue;
-                }
-            }
-            return Desktop.FALLBACK_ID;
-        }
-
         private void load_from_root (Gee.ArrayList<Workflow> into, string root) {
             if (!FileUtils.test (root, FileTest.IS_DIR)) return;
 
-            foreach (var id in desktop.candidates) {
+            var dir = first_existing_candidate (root, desktop.candidates);
+            if (dir != null) load_dir (into, dir);
+        }
+
+        /**
+         * The most specific candidate that actually has a directory under
+         * root — "ubuntu" with no bundled workflows falls through to "gnome",
+         * which is the whole reason the walk is a list and not just
+         * `desktop.primary`. A free function so a test can drive it with a
+         * fixture directory and an arbitrary candidate list, rather than
+         * needing a real desktop and a real XDG layout to prove the fallthrough
+         * happens at all.
+         */
+        internal static string? first_existing_candidate (string root, string[] candidates) {
+            foreach (var id in candidates) {
                 var dir = Path.build_filename (root, id);
-                if (!FileUtils.test (dir, FileTest.IS_DIR)) continue;
-                load_dir (into, dir);
-                return;   // most specific match for this layer wins
+                if (FileUtils.test (dir, FileTest.IS_DIR)) return dir;
             }
+            return null;
         }
 
         /**

@@ -82,6 +82,7 @@ public static int main (string[] args) {
     Test.set_nonfatal_assertions ();
 
     linux_onboarding.Tests.register_asset_fit ();
+    linux_onboarding.Tests.register_desktop ();
     linux_onboarding.Tests.register_key_spec ();
     linux_onboarding.Tests.register_locator ();
     linux_onboarding.Tests.register_kde_bindings ();

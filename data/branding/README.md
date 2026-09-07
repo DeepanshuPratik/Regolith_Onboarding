@@ -31,20 +31,28 @@ can ship* as part of a multi-branding binary.
 
 ## Trying one without changing your build
 
-`meson setup build --reconfigure -Dbranding_dir=data/branding/gnome` (or any
+`meson setup build --reconfigure -DBranding_dir=data/branding/gnome` (or any
 of the four below). Re-running it with the previous path puts you back. The
 GResource manifest is regenerated at configure time, so a `meson compile -C
 build` after the reconfigure is what actually embeds the new assets.
 
 The five directories are siblings, not a hierarchy. A packaged build only
-embeds one — the one `-Dbranding_dir` pointed at.
+embeds one — the one `-DBranding_dir` pointed at. There is no default: a fresh
+`meson setup build` with no `-DBranding_dir` fails at configure time and lists
+these five, rather than quietly shipping Regolith's branding on a distro that
+never chose it.
+
+Want a sixth? Copy any of these five, edit its `branding.conf`, `logo.png`,
+`theme.css` and `slides/`, and point `-DBranding_dir` at the copy — see
+`docs/DISTRO-GUIDE.md`.
 
 ## What each one teaches
 
 The deck is short on purpose: the *practice* screen does the heavy lifting.
 The slides exist to name a concept (workspaces, `$mod`, Activities) and the
-practice workflows under `regolith/workflows/<desktop>/` (or installed via
-the marketplace) deliver the keystrokes.
+practice workflows bundled in each branding's own `workflows/` — `regolith/`
+and `gnome/` ship one, currently — (or installed via the marketplace) deliver
+the keystrokes.
 
 - **`gnome/`** — Activities as the front door; workspaces that come and go;
   extensions when the desktop should grow. Built around the GNOME Wayland

@@ -3,7 +3,7 @@
 
 A distro owner points the build at their own branding directory:
 
-    meson setup build -Dbranding_dir=/path/to/my-distro-branding
+    meson setup build -DBranding_dir=/path/to/my-distro-branding
 
 Everything in that directory is compiled into the binary, so a shipped build
 carries its own identity and cannot be tampered with or go missing at runtime.
