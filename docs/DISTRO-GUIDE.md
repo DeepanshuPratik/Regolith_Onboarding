@@ -741,20 +741,53 @@ the user's real browser and quits the app. **The app never downloads, fetches
 or runs anything** — the marketplace is a plain repository the user visits, and
 installing from it is a manual act the user performs, having read the files.
 
-Lay the repository out the same way as any other workflow source, so the
-manual install command is a straight copy:
+Lay the repository out so a workflow owns its folder, which is what lets it
+carry its own images without colliding with another author's:
 
 ```
 your-marketplace-repo/
-└── workflows/
-    ├── regolith/*.json
-    └── gnome/*.json
+├── workflows/
+│   ├── regolith/tiling/tiling.json
+│   └── gnome/navigation/navigation.json
+│       └── assets/keys.png
+└── index.json          ← what the site and the install script read
 ```
 
-### Installing a marketplace workflow by hand
+The flat `<desktop-id>/*.json` layout still works and is what older installs
+have; discovery reads both.
 
-The reference branding ships no install mechanism, so this is the command a
-user actually runs to pull a workflow from a marketplace repository:
+Your `branding.conf` names two different things, for two different audiences:
+
+```ini
+[Marketplace]
+Url=https://your-marketplace-site/      # the + tile opens this, for people
+Repo=you/your-marketplace-repo          # the install script fetches from this
+```
+
+`Url` should be a page that can explain itself and hand over a command. `Repo`
+is where `linux-onboarding-install` looks, and it is substituted into that
+script at build time so you do not patch it.
+
+### Installing a marketplace workflow
+
+The app still fetches nothing itself. What ships beside it is
+`linux-onboarding-install`, which the marketplace's own page hands the user as a
+copy-able command:
+
+```bash
+linux-onboarding-install gnome navigation    # one workflow
+linux-onboarding-install gnome --all         # everything for that desktop
+linux-onboarding-install gnome --list        # what is available
+```
+
+It reads the marketplace's `index.json`, fetches only the files listed there,
+stages them in a temporary directory so a dropped connection cannot leave half a
+workflow behind, and then runs `--check-workflows`. If the app refuses what
+landed, the script takes it back out again.
+
+#### By hand
+
+Nothing stops a user doing it themselves, and this is what the script automates:
 
 ```bash
 mkdir -p ~/.config/linux-onboarding/workflows/<desktop-id>
