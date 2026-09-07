@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- The welcome page sits at the top of the branding directory, so its
+     relative paths resolve from there: the logo beside it, and the same
+     stylesheet the slides use so the deck reads as one piece. -->
+<!-- Critical: the background inline, so this page paints the app's colour before
+     the stylesheet below has been fetched over the app:// scheme. Without it the
+     document exists and is white for as long as that fetch takes (#33). -->
+<style>html,body{background:#232733;color:#d8e0ee}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="slides/assets/style.css">
+<div class="welcome">
+  <img class="logo" src="logo.png" alt="">
+  <h1>Welcome to Regolith</h1>
+  <p class="lede">
+    A tiling desktop that keeps your hands on the keyboard. This guide covers
+    the shortcuts worth knowing first.
+  </p>
+  <!-- Not a link out: the app intercepts app://action/ and moves the deck on.
+       Plain markup, so it works with scripting disabled. -->
+  <a class="cta" href="app://action/next">Get Started</a>
+</div>

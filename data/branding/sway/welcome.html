@@ -1,0 +1,33 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{background:#0f1115;color:#e6ebf2}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="slides/assets/style.css">
+<div class="welcome">
+  <!-- A terminal-styled "config preview" as the welcome mark. Two reasons: sway
+       has no marketing logo worth shipping, and the thing users remember about
+       sway is reading its config — so the deck starts them there. -->
+  <div class="terminal" aria-label="sway config preview">
+    <div class="terminal-bar">
+      <span class="dot red"></span>
+      <span class="dot amber"></span>
+      <span class="dot green"></span>
+      <span class="terminal-title">~/.config/sway/config</span>
+    </div>
+    <pre class="terminal-body"><span class="cmt"># sway</span>
+<span class="kw">set</span> <span class="sym">$mod</span> <span class="str">Mod4</span>
+
+<span class="cmt"># terminal</span>
+<span class="kw">bindsym</span> <span class="sym">$mod</span>+<span class="str">Return</span> <span class="fn">exec</span> alacritty
+
+<span class="cmt"># focus</span>
+<span class="kw">bindsym</span> <span class="sym">$mod</span>+<span class="str">Left</span>  <span class="fn">focus</span> left
+<span class="kw">bindsym</span> <span class="sym">$mod</span>+<span class="str">Down</span>  <span class="fn">focus</span> down</pre>
+  </div>
+  <h1>sway</h1>
+  <p class="lede">
+    A tiling window manager for Wayland. The desktop is a config file and a
+    handful of keystrokes — this tour shows the ones that pay back fastest.
+  </p>
+  <a class="cta" href="app://action/next">Get Started</a>
+</div>

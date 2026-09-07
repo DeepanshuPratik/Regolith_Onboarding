@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- Critical: the background inline, so this page paints the app's colour before
+     the stylesheet below has been fetched over the app:// scheme. Without it the
+     document exists and is white for as long as that fetch takes (#33). -->
+<style>html,body{background:#232733;color:#d8e0ee}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1>Learn them by using them</h1>
+  <p class="lede">
+    Reading a shortcut list does not build muscle memory. The workflows on the
+    next screen prompt you for one shortcut at a time and wait until you press
+    it — and the real action happens, so you see what it does.
+  </p>
+  <ul>
+    <li><kbd>Play</kbd><span><span class="what">Starts a workflow.</span> <span class="why">This window shrinks aside so you can see your desktop.</span></span></li>
+    <li><kbd>Escape</kbd><span><span class="what">Stops at any point.</span> <span class="why">Nothing is left changed behind you.</span></span></li>
+  </ul>
+  <p class="footnote">Take them in any order. Launching Applications is a good first one.</p>
+</div>

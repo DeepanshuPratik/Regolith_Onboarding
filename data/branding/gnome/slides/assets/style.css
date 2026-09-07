@@ -1,0 +1,151 @@
+/*
+ * GNOME deck stylesheet.
+ *
+ * The same anatomy as regolith's sheet: tokens in :root, slides that fill the
+ * viewport, a kbd row + what/why split, and a pill CTA on the welcome page.
+ * What changes here is the surface: light, rounded, Ubuntu orange on the logo
+ * and the practice command. The desktop accent (Adwaita blue by default)
+ * handles the rest.
+ */
+
+:root {
+  --bg: #fafafa;
+  --fg: #2e3436;
+  --muted: #5e6969;
+  --accent: var(--desktop-accent, #3584e4);
+  --brand-orange: #e95420;
+  --brand-orange-soft: #fbe6dd;
+  --key-bg: #ffffff;
+  --key-border: alpha(#2e3436, 0.14);
+  --key-shadow: alpha(#2e3436, 0.06);
+  --cta-bg: var(--desktop-accent, #3584e4);
+  --cta-fg: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Ubuntu", system-ui, "Cantarell", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  height: 100%;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.lede {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 56ch;
+}
+
+ul { margin: 0; padding: 0; list-style: none; }
+
+li {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  border-top: 1px solid alpha(#2e3436, 0.08);
+}
+
+li:first-child { border-top: none; }
+
+kbd {
+  flex: 0 0 auto;
+  min-width: 132px;
+  text-align: center;
+  background: var(--key-bg);
+  border: 1px solid var(--key-border);
+  border-bottom-width: 2px;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-family: ui-monospace, "Ubuntu Mono", "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+  box-shadow: 0 1px 0 var(--key-shadow);
+}
+
+.what { color: var(--fg); font-weight: 500; }
+.why  { color: var(--muted); }
+
+.footnote {
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+a { color: var(--accent); }
+
+/* Welcome page. Centred, with the orange brand mark sized to dominate and a
+   pill CTA that matches the GTK button beneath it. */
+
+.welcome {
+  height: 100%;
+  padding: 36px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(1200px 500px at 50% -10%, var(--brand-orange-soft), transparent 70%),
+    var(--bg);
+}
+
+.welcome .logo {
+  width: 128px;
+  height: 128px;
+  margin-bottom: 22px;
+  filter: drop-shadow(0 4px 18px alpha(#e95420, 0.18));
+}
+
+.welcome h1 {
+  margin: 0 0 10px;
+  font-size: 38px;
+  font-weight: 300;
+  letter-spacing: -0.015em;
+}
+
+.welcome .lede {
+  margin: 0 0 30px;
+  max-width: 50ch;
+  font-size: 15px;
+}
+
+.cta {
+  display: inline-block;
+  padding: 12px 30px;
+  border-radius: 999px;
+  background: var(--cta-bg);
+  color: var(--cta-fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 1px 0 alpha(#2e3436, 0.10);
+}
+
+.cta:hover { filter: brightness(1.08); }

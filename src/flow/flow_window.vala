@@ -15,316 +15,342 @@
  ****************************************************************************************/
 using Gtk;
 
-namespace regolith_onboarding {
+namespace linux_onboarding {
 
+    /**
+     * Walks the user through one workflow, one keybinding at a time.
+     *
+     * This page owns presentation and step sequencing only. Noticing that the key
+     * was actually pressed, performing the action it is normally bound to, and
+     * getting the window out of the way are three separate services, each chosen
+     * for the running desktop by PlatformRegistry.
+     *
+     * This page also draws the click-to-continue prompt. The observer can only
+     * report that its grab has gone deaf (needs_user_focus); what the user sees
+     * and clicks is presentation, so it belongs here.
+     *
+     * Observation is handed in rather than built here. The observer's install()
+     * writes into the window manager and belongs to the whole run, so it is the
+     * app that owns a PracticeSession; a page only borrows it for the length of
+     * one workflow, between start() and stop().
+     */
     public class WorkFlowPage : Box {
 
         public delegate void workflowList();
 
+        // How long the tick stays up before the next step is shown.
+        private const uint STEP_ADVANCE_DELAY_SECONDS = 2;
+
+        /**
+         * The demo slot, in pixels, and it is fixed on purpose.
+         *
+         * Assets are whatever size their author made them — the shipped set runs
+         * from 500x346 to 1600x900 — so a slot that took each one's natural size
+         * made every step a different shape and the window resized under the
+         * user as they worked through a workflow. The slot is now constant and
+         * the asset is fitted into it.
+         */
+        private const int DEMO_WIDTH  = 340;
+        private const int DEMO_HEIGHT = 230;
+
+        /**
+         * The measure the step text wraps at. Without it a long description is a
+         * single long line, which widens the page — the same resize by another
+         * route.
+         */
+        private const int TEXT_WIDTH_CHARS = 46;
+
+        // Current step, unpacked from JSON.
         private string heading = "";
         private string command = " ";
         private string description = " ";
         private string image = "";
-        private string execCommand = "";
-
-        private int curr_x = 0;
-        private int curr_y = 0;
 
         private uint current_key_sequence = 0;
         private bool isPlayed = false;
+
+        private Workflow workflow;
+        private Json.Array? steps;
+        private PracticeSession practice;
+        private WindowPlacer? placer = null;
+        private bool capture_started = false;
+        private workflowList return_to_list;
+
         private Gtk.Button play_button;
-        private KeybindingsHandler keypressHandler;
-        private Gtk.Image demo;
-        private Gtk.Box demo_box;
         private Gtk.Button cancel_button;
+        // The click-to-continue prompt: hidden until the observer says its grab
+        // has stopped receiving keys, which on GNOME is the ordinary case rather
+        // than an edge one. Kept out of the instruction box on purpose — that
+        // box is rebuilt and reordered by index between steps.
+        private Gtk.Box focus_prompt;
+        // A widget rather than a Gtk.Image: an animated asset is its own widget
+        // that plays, and a still one is an Image. The page only ever adds and
+        // removes it, so it does not care which it has.
+        private Gtk.Widget demo;
+        private Gtk.Box demo_box;
         private Gtk.Box checkedCommand;
         private Gtk.Image checkTicked;
-        private string mode = "";
-
-        // Sway/i3 mode block written to config.d for keybinding interception.
-        // Keypresses are detected via IPC binding-event subscription (no seat grab needed).
-        private const string WM_MODE_NAME = "Onboarding";
-        private bool   use_wm_mode  = false;
-        private string mode_file_path = "";
-        private Pid            ipc_pid      = 0;
-        private GLib.IOChannel ipc_channel  = null;
-        private uint           ipc_watch_id = 0;
-
         private Gtk.Box midBox;
         private Gtk.Box instructionAndPlayHolder;
+        private Gtk.Box buttonHolder;
         private Label headingLabel;
         private Label commandLabel;
         private Label descriptionLabel;
 
-        public WorkFlowPage(Json.Array? key_binding_info, owned workflowList workflowList) {
+        public WorkFlowPage(Workflow workflow, PracticeSession practice, owned workflowList workflowList) {
             Object(orientation: Gtk.Orientation.VERTICAL, spacing: 10);
             this.margin = 20;
+            // FILL across, centred down the page. Centring horizontally left the
+            // page at its natural width inside a wider window, which is the
+            // band of empty space either side of the content on GNOME — where
+            // the window is a normal toplevel and does not shrink to its
+            // content the way a layer surface does.
             this.set_valign(Gtk.Align.CENTER);
-            this.set_halign(Gtk.Align.CENTER);
+            this.set_halign(Gtk.Align.FILL);
+            this.hexpand = true;
             this.get_style_context().add_class("practice-page");
+
+            this.workflow = workflow;
+            this.steps = workflow.steps;
+            this.practice = practice;
+            this.return_to_list = (owned) workflowList;
 
             var css_provider = new Gtk.CssProvider();
             css_provider.load_from_resource(APP_PATH + "/css/flow.css");
             Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
 
-            var buttonHolder = new Box(Gtk.Orientation.HORIZONTAL, 2);
-            keypressHandler = new KeybindingsHandler();
-            var configmanager = new configManager();
+            if (steps == null || steps.get_length () == 0) return;
 
-            if (key_binding_info != null) {
-                Json.Object obj = key_binding_info.get_element(current_key_sequence).get_object();
-                try {
-                    process_workflow_sequence(obj);
-                } catch (Error e) {
-                    stderr.printf("Error in process_workflow_sequence: %s\n", e.message);
+            buttonHolder = new Box(Gtk.Orientation.HORIZONTAL, 2);
+            var keyspec = new KeySpec();
+
+            process_workflow_sequence(steps.get_element(current_key_sequence).get_object());
+
+            headingLabel = new Label(heading);
+            commandLabel = new Label("PRESS: " + keyspec.format_spec_display(command));
+            headingLabel.get_style_context().add_class("heading");
+            descriptionLabel = new Label(description);
+            wrap_step_text ();
+            instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
+            instructionAndPlayHolder.set_valign(Gtk.Align.CENTER);
+            createInstructionBox();
+            midBox = new Box(Gtk.Orientation.HORIZONTAL, 20);
+            midBox.get_style_context().add_class("contentHolder");
+
+            demo = workflow.load_demo(image, DEMO_WIDTH, DEMO_HEIGHT);
+            demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
+            // The slot keeps its size whether the step has an asset or not, so
+            // a step without one does not reflow the page.
+            demo_box.set_size_request(DEMO_WIDTH, DEMO_HEIGHT);
+            demo_box.set_valign(Gtk.Align.CENTER);
+            demo_box.add(demo);
+            midBox.add(instructionAndPlayHolder);
+            midBox.add(demo_box);
+            this.add(midBox);
+
+            focus_prompt = build_focus_prompt ();
+            this.add (focus_prompt);
+
+            bool can_practice = PlatformRegistry.can_practice ();
+
+            cancel_button = new Gtk.Button();
+            cancel_button.get_style_context().add_class("cancelButton");
+            // With no way to capture the keypress the page is a reference card, so
+            // the only sensible control is a way back.
+            cancel_button.set_label(can_practice ? "CANCEL" : "BACK");
+            play_button = new Button();
+            play_button.get_style_context().add_class("playButton");
+            play_button.set_label("PLAY");
+            if (can_practice) buttonHolder.add(play_button);
+            buttonHolder.add(cancel_button);
+            buttonHolder.expand = false;
+            buttonHolder.set_halign(Gtk.Align.CENTER);
+            instructionAndPlayHolder.add(buttonHolder);
+
+            play_button.clicked.connect (on_play);
+            cancel_button.clicked.connect (on_cancel);
+        }
+
+        // Built on first use rather than in the constructor: both of its methods
+        // need a realised toplevel, and this page is constructed before it has one.
+        private WindowPlacer window_placer () {
+            if (placer == null)
+                placer = PlatformRegistry.placer ((Gtk.Window) this.get_toplevel());
+            return placer;
+        }
+
+        // PLAY shrinks the window out of the way and hands control to the observer
+        // so the user can perform the shortcut against their real desktop.
+        private void on_play () {
+            if (isPlayed) return;
+
+            window_placer ().shrink_for_practice ();
+
+            instructionAndPlayHolder.remove(descriptionLabel);
+            checkedCommand.add(checkTicked);
+            checkTicked.opacity = 0;
+            instructionAndPlayHolder.margin = 0;
+            this.margin = 20;
+            play_button.margin = 0;
+            cancel_button.margin = 0;
+            midBox.set_spacing(0);
+            midBox.margin = 0;
+            this.expand = false;
+            this.set_halign(Gtk.Align.CENTER);
+            demo_box.remove(demo);
+            // The slot is a fixed size so the page does not change shape between
+            // steps — but practice takes the demo away, and a slot still holding
+            // 340x230 for a widget that is gone is a rectangle of nothing in the
+            // middle of the shrunken card. Give the space back until the next
+            // step needs it.
+            demo_box.set_size_request(-1, -1);
+            isPlayed = true;
+            play_button.set_label("CAPTURING");
+
+            if (!capture_started) {
+                // Connected here rather than in the constructor, and dropped again
+                // in finish(): the session outlives this page, so a page that goes
+                // away still wired to its signals would be called back after it was
+                // destroyed. The install() these signals depend on already happened,
+                // at startup.
+                practice.step_matched.connect (on_step_matched);
+                practice.aborted.connect (on_aborted);
+                practice.needs_user_focus.connect (on_needs_user_focus);
+                capture_started = true;
+
+                if (!practice.start ())
+                    stderr.printf ("Nothing here can observe the keypress; this step cannot complete.\n");
+            }
+
+            hide_focus_prompt ();
+            practice.arm (command);
+            this.show_all();
+        }
+
+        /**
+         * The observer's grab has stopped receiving keys and only the user can
+         * fix it: on GNOME the app cannot take focus back at all (#11), so the
+         * recovery path is them clicking into this window. Until they do, the
+         * step they are being asked to perform cannot complete, and without this
+         * prompt it simply appears to stop responding.
+         */
+        private void on_needs_user_focus () {
+            // Nothing is armed before PLAY, and after a match the step is over;
+            // a prompt in either case would be asking the user to rescue a grab
+            // nobody is waiting on.
+            if (!isPlayed) return;
+
+            focus_prompt.no_show_all = false;
+            focus_prompt.show_all ();
+        }
+
+        /**
+         * Their click has already brought focus back — that is what a click on
+         * this button means. Telling the session lets the observer re-arm its
+         * timeout, so a second loss of focus prompts again.
+         */
+        private void on_user_returned () {
+            hide_focus_prompt ();
+            practice.user_returned ();
+        }
+
+        private void hide_focus_prompt () {
+            focus_prompt.hide ();
+            // Back on, or the next show_all() on the page reveals it again.
+            focus_prompt.no_show_all = true;
+        }
+
+        /**
+         * no_show_all because this page calls show_all() after nearly every
+         * change, and the prompt must appear only when the observer asks for it.
+         * That also means show_all() on the box itself is a no-op, so
+         * on_needs_user_focus clears the flag first.
+         */
+        private Gtk.Box build_focus_prompt () {
+            var box = new Box (Gtk.Orientation.VERTICAL, 8);
+            box.get_style_context ().add_class ("focus-prompt");
+            box.set_halign (Gtk.Align.CENTER);
+
+            var explanation = new Label (
+                "Another window has the keyboard, so the shortcut you press cannot reach this step.");
+            explanation.set_line_wrap (true);
+            // GTK CSS has no max-width, so the measure is set here rather than
+            // in flow.css, where it would be a parse error in the log.
+            explanation.max_width_chars = 44;
+            explanation.set_justify (Gtk.Justification.CENTER);
+            explanation.get_style_context ().add_class ("focus-prompt-text");
+
+            var resume_button = new Button.with_label ("CLICK HERE TO CONTINUE");
+            resume_button.get_style_context ().add_class ("playButton");
+            resume_button.clicked.connect (on_user_returned);
+
+            box.add (explanation);
+            box.add (resume_button);
+            box.no_show_all = true;
+            return box;
+        }
+
+        // The user pressed the right key: perform the real action, confirm it, and
+        // move on after a beat so the tick is actually seen.
+        private void on_step_matched () {
+            hide_focus_prompt ();
+            current_key_sequence++;
+            practice.dispatch (command);
+            handleTick();
+            this.show_all();
+
+            GLib.Timeout.add_seconds (STEP_ADVANCE_DELAY_SECONDS, () => {
+                if (!(this.get_toplevel() is Gtk.Window)) return false;
+                window_placer ().restore ();
+
+                if (current_key_sequence >= steps.get_length()) {
+                    finish ();
+                    return false;
                 }
 
-                headingLabel = new Label(heading);
-                commandLabel = new Label("PRESS: " + configmanager.format_spec_display(command));
-                headingLabel.get_style_context().add_class("heading");
-                descriptionLabel = new Label(description);
-                instructionAndPlayHolder = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
-                instructionAndPlayHolder.set_valign(Gtk.Align.CENTER);
-                createInstructionBox();
-                midBox = new Box(Gtk.Orientation.HORIZONTAL, 20);
-                midBox.get_style_context().add_class("contentHolder");
+                reset_ui_for_next_step (steps.get_element(current_key_sequence).get_object());
+                return false;
+            });
+        }
 
-                demo = new Gtk.Image.from_resource(APP_PATH + "/" + image);
-                demo_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
-                demo_box.add(demo);
-                midBox.add(instructionAndPlayHolder);
-                midBox.add(demo_box);
-                this.add(midBox);
+        private void on_aborted () {
+            restore_window ();
+            finish ();
+        }
 
-                cancel_button = new Gtk.Button();
-                cancel_button.get_style_context().add_class("cancelButton");
-                cancel_button.set_label("CANCEL");
-                play_button = new Button();
-                play_button.get_style_context().add_class("playButton");
-                play_button.set_label("PLAY");
-                buttonHolder.add(play_button);
-                buttonHolder.add(cancel_button);
-                buttonHolder.expand = false;
-                buttonHolder.set_halign(Gtk.Align.CENTER);
-                instructionAndPlayHolder.add(buttonHolder);
+        private void on_cancel () {
+            restore_window ();
+            finish ();
+        }
 
-                // Fallback GTK key handler — only active when WM mode setup fails (X11/unknown WM).
-                key_press_event.connect((key) => {
-                    if (use_wm_mode) return false;
-                    if (mode != "TILEUP") return false;
-                    var fmt = configmanager.format_spec(command);
-                    string[] tokens = fmt.split(" ");
-                    uint COMMAND_MASK = 0;
-                    uint token_count = tokens.length;
-                    for (int i = 0; i < tokens.length - 1; i++)
-                        COMMAND_MASK |= keypressHandler.modifierMasks[tokens[i]];
-                    bool matched = false;
-                    if (keypressHandler.nonModifiers.get(tokens[token_count - 1]) != (uint)null)
-                        matched = keypressHandler.match(key, COMMAND_MASK, keypressHandler.nonModifiers[tokens[token_count - 1]], true);
-                    else
-                        matched = keypressHandler.match(key, COMMAND_MASK, (uint)tokens[token_count - 1][0], false);
-                    if (matched) {
-                        COMMAND_MASK = 0;
-                        current_key_sequence++;
-                        regolith_onboarding.seat.ungrab();
-                        Posix.system(execCommand);
-                        handleTick();
-                        Gdk.Window gdkwin = this.get_window();
-                        regolith_onboarding.seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
-                        this.show_all();
-                        GLib.Timeout.add_seconds(2, () => {
-                            var window = (Gtk.Window) this.get_toplevel();
-                            new HandleScreenMode(window, "WINDOW", curr_x, curr_y);
-                            mode = "WINDOW";
-                            if (current_key_sequence >= key_binding_info.get_length()) {
-                                if (IS_SESSION_WAYLAND) regolith_onboarding.seat.ungrab();
-                                workflowList();
-                                this.destroy();
-                                return false;
-                            }
-                            obj = key_binding_info.get_element(current_key_sequence).get_object();
-                            try {
-                                reset_ui_for_next_step(obj, buttonHolder);
-                            } catch (Error e) {
-                                stderr.printf("Error advancing step: %s\n", e.message);
-                            }
-                            return false;
-                        });
-                    }
-                    return false;
-                });
+        private void restore_window () {
+            window_placer ().restore ();
+        }
 
-                play_button.clicked.connect(() => {
-                    if (!isPlayed) {
-                        var window = (Gtk.Window) this.get_toplevel();
-                        if (curr_x == 0 && curr_y == 0)
-                            window.get_position(out curr_x, out curr_y);
-                        new HandleScreenMode(window, "TILEUP", curr_x, curr_y);
-                        mode = "TILEUP";
-                        instructionAndPlayHolder.remove(descriptionLabel);
-                        checkedCommand.add(checkTicked);
-                        checkTicked.opacity = 0;
-                        instructionAndPlayHolder.margin = 0;
-                        this.margin = 20;
-                        play_button.margin = 0;
-                        cancel_button.margin = 0;
-                        midBox.set_spacing(0);
-                        midBox.margin = 0;
-                        this.expand = false;
-                        this.set_halign(Gtk.Align.CENTER);
-                        demo_box.remove(demo);
-                        isPlayed = true;
-                        execCommandString();
-                        play_button.set_label("CAPTURING");
-
-                        if (use_wm_mode) {
-                            // Mode already set up — re-enter it for the next step.
-                            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-                            try {
-                                Process.spawn_command_line_sync(wm_cmd + " mode '" + WM_MODE_NAME + "'");
-                            } catch (Error e) {
-                                stderr.printf("Failed to re-enter WM mode: %s\n", e.message);
-                            }
-                        } else if (setup_wm_mode(key_binding_info)) {
-                            use_wm_mode = true;
-
-                            ipc_watch_id = ipc_channel.add_watch(
-                                GLib.IOCondition.IN | GLib.IOCondition.HUP,
-                                (src, cond) => {
-                                    if ((cond & GLib.IOCondition.HUP) != 0)
-                                        return false;
-                                    try {
-                                        string line;
-                                        size_t length, term_pos;
-                                        if (src.read_line(out line, out length, out term_pos) != GLib.IOStatus.NORMAL)
-                                            return true;
-                                        if (line == null) return true;
-                                        line = line.strip();
-                                        if (line.length == 0) return true;
-
-                                        // Skip subscription acknowledgement: [{"success":true}]
-                                        if (line.has_prefix("[")) return true;
-
-                                        if (mode != "TILEUP") return true;
-
-                                        var parser = new Json.Parser();
-                                        parser.load_from_data(line);
-                                        var root_obj = parser.get_root().get_object();
-                                        if (root_obj.get_string_member("change") != "run") return true;
-
-                                        var bnd = root_obj.get_object_member("binding");
-                                        var sym_node = bnd.get_member("symbol");
-                                        if (sym_node == null || sym_node.is_null()) return true;
-                                        var symbol = sym_node.get_string();
-                                        var mask_arr = bnd.get_array_member("event_state_mask");
-
-                                        if (symbol == "Escape") {
-                                            teardown_wm_mode();
-                                            var win = (Gtk.Window) this.get_toplevel();
-                                            new HandleScreenMode(win, "WINDOW", curr_x, curr_y);
-                                            mode = "WINDOW";
-                                            workflowList();
-                                            this.destroy();
-                                            return false;
-                                        }
-
-                                        var cfg = new configManager();
-                                        var expected = cfg.format_spec_for_mode(command);
-                                        if (expected == "") return true;
-
-                                        if (!ipc_event_matches(expected, symbol, mask_arr)) return true;
-
-                                        // Block re-matches while the tick-display timeout is pending.
-                                        mode = "WINDOW";
-                                        var wm_cmd_l = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-                                        current_key_sequence++;
-                                        try { Process.spawn_command_line_sync(wm_cmd_l + " mode default"); } catch {}
-
-                                        if (!execute_via_sway_binding(expected))
-                                            Posix.system(execCommand);
-
-                                        handleTick();
-                                        this.show_all();
-
-                                        GLib.Timeout.add_seconds(2, () => {
-                                            var toplevel = this.get_toplevel();
-                                            if (!(toplevel is Gtk.Window)) return false;
-                                            var win = (Gtk.Window) toplevel;
-                                            new HandleScreenMode(win, "WINDOW", curr_x, curr_y);
-
-                                            if (current_key_sequence >= key_binding_info.get_length()) {
-                                                teardown_wm_mode();
-                                                workflowList();
-                                                this.destroy();
-                                                return false;
-                                            }
-
-                                            obj = key_binding_info.get_element(current_key_sequence).get_object();
-                                            try {
-                                                reset_ui_for_next_step(obj, buttonHolder);
-                                                execCommandString();
-                                            } catch (Error e) {
-                                                stderr.printf("Error advancing step: %s\n", e.message);
-                                            }
-                                            return false;
-                                        });
-
-                                    } catch (Error e) {
-                                        stderr.printf("IPC event error: %s\n", e.message);
-                                    }
-                                    return true;
-                                });
-
-                            // Deferred mode entry: lets sway finish post-reload cleanup before
-                            // we send the mode command, avoiding a race that resets mode to "default".
-                            GLib.Timeout.add(300, () => {
-                                try {
-                                    var wm_cmd_enter = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-                                    Process.spawn_command_line_sync(wm_cmd_enter + " mode '" + WM_MODE_NAME + "'");
-                                } catch (Error e) {
-                                    stderr.printf("Failed to enter WM mode: %s\n", e.message);
-                                }
-                                return false;
-                            });
-
-                        } else {
-                            stderr.printf("setup_wm_mode() failed — falling back to seat.grab\n");
-                            use_wm_mode = false;
-                            if (IS_SESSION_WAYLAND) {
-                                var gdkwin = this.get_window();
-                                if (gdkwin != null) {
-                                    var grabbed = grab_inputs(gdkwin);
-                                    if (grabbed != null)
-                                        regolith_onboarding.seat = grabbed;
-                                    else
-                                        stderr.printf("Failed to grab input devices.\n");
-                                }
-                            }
-                        }
-                        this.show_all();
-                    }
-                });
-
-                cancel_button.clicked.connect(() => {
-                    if (use_wm_mode) {
-                        teardown_wm_mode();
-                    } else if (IS_SESSION_WAYLAND) {
-                        regolith_onboarding.seat.ungrab();
-                    }
-                    var window = (Gtk.Window) this.get_toplevel();
-                    if (curr_x == 0 && curr_y == 0)
-                        window.get_position(out curr_x, out curr_y);
-                    new HandleScreenMode(window, "WINDOW", curr_x, curr_y);
-                    mode = "WINDOW";
-                    workflowList();
-                    this.destroy();
-                });
+        /**
+         * Hands the session back. Only start()'s half is undone — what install()
+         * put in the window manager stays there for the next workflow, and comes
+         * out when the app exits.
+         *
+         * Reachable from a signal the session is in the middle of emitting, which
+         * is why the disconnect comes first: on_aborted() lands here, and the page
+         * is destroyed on the next line.
+         */
+        private void finish () {
+            if (capture_started) {
+                practice.step_matched.disconnect (on_step_matched);
+                practice.aborted.disconnect (on_aborted);
+                practice.needs_user_focus.disconnect (on_needs_user_focus);
+                practice.stop ();
+                capture_started = false;
             }
+            return_to_list ();
+            this.destroy();
         }
 
         // Resets all UI labels/images after a step completes and loads the next one.
-        private void reset_ui_for_next_step(Json.Object next_obj, Gtk.Box buttonHolder) throws Error {
-            var cfg = new configManager();
+        private void reset_ui_for_next_step(Json.Object next_obj) {
+            var keyspec = new KeySpec();
             process_workflow_sequence(next_obj);
             this.margin = 20;
             play_button.margin_end = 5;
@@ -336,10 +362,12 @@ namespace regolith_onboarding {
             instructionAndPlayHolder.remove(checkedCommand);
             headingLabel = new Label(heading);
             headingLabel.get_style_context().add_class("heading");
-            commandLabel = new Label("PRESS: " + cfg.format_spec_display(command));
+            commandLabel = new Label("PRESS: " + keyspec.format_spec_display(command));
             descriptionLabel = new Label(description);
+            wrap_step_text ();
             createInstructionBox();
-            demo = new Gtk.Image.from_resource(APP_PATH + "/" + image);
+            demo = workflow.load_demo(image, DEMO_WIDTH, DEMO_HEIGHT);
+            demo_box.set_size_request(DEMO_WIDTH, DEMO_HEIGHT);
             demo_box.add(demo);
             play_button.get_style_context().add_class("playButton");
             play_button.set_label("PLAY");
@@ -348,169 +376,68 @@ namespace regolith_onboarding {
             this.show_all();
         }
 
-        // Writes a mode block to the user's sway/i3 config.d directory (auto-included by
-        // the active Regolith config), reloads the WM, and subscribes to IPC binding events.
-        // Returns true on success; caller falls back to seat.grab on false.
-        private bool setup_wm_mode(Json.Array key_binding_info) {
-            if (WM_NAME != "sway" && WM_NAME != "i3") return false;
+        /**
+         * Reads one step. Tolerant by design: these files come from distro
+         * maintainers and the marketplace, so an unrecognised field is far more
+         * likely to mean "newer schema" than "broken", and must not cost the user
+         * the whole step. "function" is the pre-1 name for "description".
+         */
+        public void process_workflow_sequence(Json.Object obj) {
+            command = ""; heading = ""; description = ""; image = "";
 
-            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-            var cfg = new configManager();
-
-            var config_d = find_or_create_config_d();
-            if (config_d == null) return false;
-            mode_file_path = Path.build_filename(config_d, "regolith_onboarding_mode");
-
-            var sb = new StringBuilder();
-            sb.append("mode \"" + WM_MODE_NAME + "\" {\n");
-            for (int i = 0; i < (int)key_binding_info.get_length(); i++) {
-                try {
-                    var element = key_binding_info.get_element(i);
-                    if (element == null || element.get_node_type() != Json.NodeType.OBJECT) continue;
-                    var kobj = element.get_object();
-                    if (!kobj.has_member("key_id")) continue;
-                    var wm_key = cfg.format_spec_for_mode(kobj.get_string_member("key_id"));
-                    if (wm_key == "") continue;
-                    sb.append("    bindsym " + wm_key + " nop\n");
-                } catch (Error e) {
-                    stderr.printf("Error reading key binding: %s\n", e.message);
-                }
-            }
-            sb.append("    bindsym Escape nop\n");
-            sb.append("}\n");
-
-            try {
-                var f = File.new_for_path(mode_file_path);
-                var w = new DataOutputStream(f.replace(null, false, FileCreateFlags.NONE));
-                w.put_string(sb.str);
-                w.close();
-            } catch (Error e) {
-                stderr.printf("Failed to write mode file: %s\n", e.message);
-                return false;
-            }
-
-            try {
-                Process.spawn_command_line_sync(wm_cmd + " reload");
-            } catch (Error e) {
-                stderr.printf("WM reload failed: %s\n", e.message);
-                cleanup_mode_file();
-                return false;
-            }
-
-            // Small delay so sway finishes processing the reload before we subscribe.
-            GLib.Thread.usleep(200 * 1000);
-
-            try {
-                int stdout_fd;
-                string[] argv = {wm_cmd, "-t", "subscribe", "-m", "[\"binding\"]"};
-                Process.spawn_async_with_pipes(
-                    null, argv, null,
-                    SpawnFlags.SEARCH_PATH | SpawnFlags.DO_NOT_REAP_CHILD,
-                    null, out ipc_pid, null, out stdout_fd, null);
-                ipc_channel = new GLib.IOChannel.unix_new(stdout_fd);
-            } catch (Error e) {
-                stderr.printf("IPC subscribe failed: %s\n", e.message);
-                cleanup_mode_file();
-                return false;
-            }
-
-            return true;
-        }
-
-        private void teardown_wm_mode() {
-            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-            try { Process.spawn_command_line_sync(wm_cmd + " mode default"); } catch {}
-
-            if (ipc_watch_id != 0) { GLib.Source.remove(ipc_watch_id); ipc_watch_id = 0; }
-            if (ipc_channel != null) { try { ipc_channel.shutdown(false); } catch {} ipc_channel = null; }
-            if (ipc_pid != 0) {
-                Posix.kill((Posix.pid_t)ipc_pid, Posix.Signal.TERM);
-                ChildWatch.add(ipc_pid, (pid, status) => { Process.close_pid(pid); });
-                ipc_pid = 0;
-            }
-
-            cleanup_mode_file();
-            use_wm_mode = false;
-        }
-
-        private void cleanup_mode_file() {
-            if (mode_file_path == "") return;
-            var wm_cmd = (WM_NAME == "sway") ? "swaymsg" : "i3-msg";
-            try { File.new_for_path(mode_file_path).delete(); } catch {}
-            mode_file_path = "";
-            try { Process.spawn_command_line_sync(wm_cmd + " reload"); } catch {}
-        }
-
-        // Returns the first existing config.d directory (Regolith-first order),
-        // or creates the regolith3 one if none are found yet.
-        private string? find_or_create_config_d() {
-            string[] candidates = (WM_NAME == "sway") ? new string[]{
-                Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d"),
-                Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d"),
-                Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d"),
-            } : new string[]{
-                Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "i3", "config.d"),
-                Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "i3", "config.d"),
-                Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d"),
-            };
-            foreach (var dir in candidates) {
-                if (FileUtils.test(dir, FileTest.IS_DIR)) return dir;
-            }
-            try {
-                File.new_for_path(candidates[0]).make_directory_with_parents();
-                return candidates[0];
-            } catch (Error e) {
-                stderr.printf("Cannot find or create config.d: %s\n", e.message);
-                return null;
-            }
-        }
-
-        // Returns true when the sway IPC binding event matches the expected key spec (e.g. "Mod4+Return").
-        private bool ipc_event_matches(string expected, string symbol, Json.Array mask_arr) {
-            var parts = expected.split("+");
-            if (symbol != parts[parts.length - 1]) return false;
-
-            int expected_mod_count = parts.length - 1;
-            if (expected_mod_count != (int)mask_arr.get_length()) return false;
-
-            for (int i = 0; i < expected_mod_count; i++) {
-                var actual_mod = mask_arr.get_element(i).get_string().down();
-                bool found = false;
-                for (int j = 0; j < expected_mod_count; j++) {
-                    if (parts[j].down() == actual_mod) { found = true; break; }
-                }
-                if (!found) return false;
-            }
-            return true;
-        }
-
-        public void process_workflow_sequence(Json.Object obj) throws Error {
             foreach (unowned string name in obj.get_members()) {
                 switch (name) {
-                    case "key_id":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for key_id");
-                        command = obj.get_string_member(name);
-                        break;
-                    case "function":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for function");
-                        description = obj.get_string_member(name);
-                        break;
-                    case "heading":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for heading");
-                        heading = obj.get_string_member(name);
-                        break;
-                    case "image":
-                        if (obj.get_member(name).get_node_type() != Json.NodeType.VALUE)
-                            throw new MyError.INVALID_FORMAT("Bad type for image");
-                        image = obj.get_string_member(name);
-                        break;
+                    case "key_id":      command     = step_string(obj, name); break;
+                    case "heading":     heading     = step_string(obj, name); break;
+                    case "description":
+                    case "function":    description = step_string(obj, name); break;
+                    case "image":       image       = step_string(obj, name); break;
                     default:
-                        throw new MyError.INVALID_FORMAT("Unexpected element '%s'", name);
+                        warning("%s: ignoring unknown step field \"%s\"", workflow.source, name);
+                        break;
                 }
             }
+        }
+
+        private string step_string(Json.Object obj, string name) {
+            var node = obj.get_member(name);
+            if (node == null || node.get_node_type() != Json.NodeType.VALUE) {
+                warning("%s: step field \"%s\" is not a string", workflow.source, name);
+                return "";
+            }
+            return obj.get_string_member(name) ?? "";
+        }
+
+        /**
+         * Holds the step text to a measure. GTK CSS has no max-width, so this is
+         * the only place it can be said — and without it the page is as wide as
+         * its longest description, which differs per step.
+         */
+        private void wrap_step_text () {
+            Label[] wrapped = { headingLabel, descriptionLabel };
+            foreach (var label in wrapped) {
+                label.set_line_wrap (true);
+                label.max_width_chars = TEXT_WIDTH_CHARS;
+                label.set_justify (Gtk.Justification.CENTER);
+            }
+
+            // The shortcut itself never wraps. On the shrunken practice card
+            // there is less width than this label wants, and wrapping it put
+            // "Super +" on one line and "V" on the next — the one string on the
+            // page that has to be readable at a glance, broken in half. Letting
+            // it set the card's minimum width is the right trade.
+            commandLabel.set_line_wrap (false);
+            commandLabel.set_justify (Gtk.Justification.CENTER);
+
+            // flow.css and theme.css have carried styles for these three since
+            // before this page existed, and the page never applied them — so the
+            // step's own text was the only thing on a dark card wearing the GTK
+            // theme's default label colour, which is nearly illegible on it.
+            // .text-secondary and .practice-command are both in the documented
+            // styling contract, so a distro can already reach them.
+            descriptionLabel.get_style_context ().add_class ("practice-description");
+            descriptionLabel.get_style_context ().add_class ("text-secondary");
+            commandLabel.get_style_context ().add_class ("practice-command");
         }
 
         public void createInstructionBox() {
@@ -526,225 +453,6 @@ namespace regolith_onboarding {
 
         public void handleTick() {
             checkTicked.opacity = 1.0;
-        }
-
-        // Finds the sway command for key_spec by scanning config files, then dispatches via swaymsg.
-        // Reads main Regolith config files for variable definitions ($mod etc.) and config.d for bindsyms.
-        // Returns true if a command was found and dispatched (or is nop).
-        private bool execute_via_sway_binding(string key_spec) {
-            if (WM_NAME != "sway" || key_spec.length == 0) return false;
-
-            string home = Environment.get_home_dir();
-            var var_list = new GLib.Array<string>();
-            var all_content = new StringBuilder();
-
-            // Read main config files — $mod and other variables are defined here, not in config.d
-            string[] main_configs = {
-                "/usr/share/regolith/sway/config",
-                "/usr/share/regolith/common/sway/config",
-                Path.build_filename(home, ".config", "regolith3", "sway", "config"),
-                Path.build_filename(home, ".config", "sway", "config"),
-            };
-            foreach (var src in main_configs) {
-                string contents = "";
-                try { FileUtils.get_contents(src, out contents); } catch { continue; }
-                foreach (var line in contents.split("\n"))
-                    parse_var_line(line.strip(), var_list);
-                all_content.append("\n");
-                all_content.append(contents);
-            }
-
-            // Also try the last-loaded config from swaymsg
-            string cfg_json = "";
-            try { Process.spawn_command_line_sync("swaymsg -t get_config", out cfg_json, null, null); } catch {}
-            if (cfg_json.length > 0) {
-                string main_cfg = "";
-                try {
-                    var p = new Json.Parser();
-                    p.load_from_data(cfg_json);
-                    main_cfg = p.get_root().get_object().get_string_member("config");
-                } catch { main_cfg = cfg_json; }
-                foreach (var line in main_cfg.split("\n"))
-                    parse_var_line(line.strip(), var_list);
-                all_content.append("\n");
-                all_content.append(main_cfg);
-            }
-
-            // Scan config.d directories for bindsym lines
-            string[] search_dirs = {
-                "/usr/share/regolith/common/config.d",
-                "/usr/share/regolith/sway/config.d",
-                "/etc/regolith3/sway/config.d",
-                Path.build_filename(home, ".config", "regolith3", "common-wm", "config.d"),
-                Path.build_filename(home, ".config", "regolith3", "sway", "config.d"),
-                Path.build_filename(home, ".config", "regolith2", "sway", "config.d"),
-                Path.build_filename(home, ".config", "sway", "config.d"),
-            };
-            foreach (var dir in search_dirs) {
-                if (!FileUtils.test(dir, FileTest.IS_DIR)) continue;
-                try {
-                    var d = Dir.open(dir, 0);
-                    string? fn;
-                    while ((fn = d.read_name()) != null) {
-                        string contents = "";
-                        try {
-                            FileUtils.get_contents(Path.build_filename(dir, fn), out contents);
-                            all_content.append("\n");
-                            all_content.append(contents);
-                        } catch {}
-                    }
-                } catch {}
-            }
-
-            string[] lines = all_content.str.split("\n");
-            // Second pass: pick up any vars defined inside config.d files
-            foreach (var line in lines)
-                parse_var_line(line.strip(), var_list);
-
-            // Scan top-level bindsym lines (depth 0) for a match
-            int depth = 0;
-            foreach (var line in lines) {
-                var s = line.strip();
-                if (s.has_suffix("{")) { depth++; continue; }
-                if (s == "}") { if (depth > 0) depth--; continue; }
-                if (depth != 0 || !s.has_prefix("bindsym ")) continue;
-
-                string resolved = s;
-                for (uint i = 0; i + 1 < var_list.length; i += 2)
-                    resolved = resolved.replace(var_list.index(i), var_list.index(i + 1));
-
-                string rest = resolved.substring("bindsym ".length).strip();
-                while (rest.has_prefix("--")) {
-                    int sp = rest.index_of(" ");
-                    if (sp < 0) { rest = ""; break; }
-                    rest = rest.substring(sp).strip();
-                }
-                if (rest.length == 0) continue;
-                int sp = rest.index_of(" ");
-                if (sp < 0) continue;
-                string bkey = rest.substring(0, sp).strip();
-                string bcmd = rest.substring(sp).strip();
-
-                if (!keys_match(bkey, key_spec)) continue;
-                if (bcmd == "nop" || bcmd.length == 0) return true;
-
-                try {
-                    string[] argv = {"swaymsg", bcmd};
-                    Process.spawn_sync(null, argv, null, SpawnFlags.SEARCH_PATH, null, null, null, null);
-                    return true;
-                } catch (Error e) {
-                    stderr.printf("swaymsg dispatch: %s\n", e.message);
-                    return false;
-                }
-            }
-
-            return false;
-        }
-
-        // Extracts set/$mod and set_from_resource variable definitions from a config line.
-        // Uses the default value for set_from_resource (xrdb is unreliable on Wayland).
-        private void parse_var_line(string s, GLib.Array<string> out_list) {
-            if (s.has_prefix("set ") && !s.has_prefix("set_from_resource ")) {
-                var parts = s.split(" ", 3);
-                if (parts.length >= 3 && parts[1].has_prefix("$")) {
-                    out_list.append_val(parts[1]);
-                    out_list.append_val(parts[2].strip());
-                }
-            } else if (s.has_prefix("set_from_resource ")) {
-                // "set_from_resource $name resource_name default"
-                var parts = s.split(" ");
-                if (parts.length >= 4 && parts[1].has_prefix("$")) {
-                    out_list.append_val(parts[1]);
-                    out_list.append_val(parts[3].strip());
-                }
-            }
-        }
-
-        // Modifier order and case are ignored: "Mod4+Shift+Return" == "shift+mod4+Return"
-        private bool keys_match(string a, string b) {
-            return sort_key_spec(a.down()) == sort_key_spec(b.down());
-        }
-
-        private string sort_key_spec(string key_spec) {
-            var parts = key_spec.split("+");
-            if (parts.length <= 1) return key_spec;
-            string symbol = parts[parts.length - 1];
-            string[] mods = {};
-            for (int i = 0; i < parts.length - 1; i++) mods += parts[i];
-            for (int i = 1; i < mods.length; i++) {
-                string key = mods[i];
-                int j = i - 1;
-                while (j >= 0 && mods[j] > key) { mods[j + 1] = mods[j]; j--; }
-                mods[j + 1] = key;
-            }
-            return string.joinv("+", mods) + "+" + symbol;
-        }
-
-        // ydotool uses Linux input-event key names (KEY_ENTER) rather than X11 keysym names (Return).
-        private string to_ydotool_key(string xkey) {
-            switch (xkey) {
-                case "Return":    return "KEY_ENTER";
-                case "Up":        return "KEY_UP";
-                case "Down":      return "KEY_DOWN";
-                case "Left":      return "KEY_LEFT";
-                case "Right":     return "KEY_RIGHT";
-                case "Caps_Lock": return "KEY_CAPSLOCK";
-                case "Shift_L":   return "KEY_LEFTSHIFT";
-                case "Alt_L":     return "KEY_LEFTALT";
-                case "Control_L": return "KEY_LEFTCTRL";
-                case "Super_L":   return "KEY_LEFTMETA";
-                default:          return xkey;
-            }
-        }
-
-        public void execCommandString() {
-            var configmanager = new configManager();
-            bool use_ydotool = false;
-            if (IS_SESSION_WAYLAND) {
-                string? ydotool_path = GLib.Environment.find_program_in_path("ydotool");
-                use_ydotool = (ydotool_path != null);
-                execCommand = use_ydotool
-                    ? "ydotool key "
-                    : "xdotool sleep 0.5 key --clearmodifiers ";
-            } else {
-                execCommand = "xdotool sleep 0.5 key --clearmodifiers ";
-            }
-
-            string[] splitCommands = configmanager.format_spec(command).split(" ");
-            for (int i = 0; i < splitCommands.length - 1; i++) {
-                var k = keypressHandler.remontoireSymToKey[splitCommands[i]];
-                execCommand += (use_ydotool ? to_ydotool_key(k) : k) + "+";
-            }
-            var last = splitCommands[splitCommands.length - 1];
-            var raw = (keypressHandler.remontoireSymToKey.get(last) != (string)null)
-                ? keypressHandler.remontoireSymToKey[last]
-                : last;
-            execCommand += use_ydotool ? to_ydotool_key(raw) : raw;
-        }
-
-        private Gdk.Seat? grab_inputs(Gdk.Window gdkwin) {
-            var display = gdkwin.get_display();
-            if (display == null) { stderr.printf("Failed to get Display\n"); return null; }
-            var seat = display.get_default_seat();
-            if (seat == null) { stderr.printf("Failed to get Seat\n"); return null; }
-
-            int attempt = 0;
-            Gdk.GrabStatus? grabStatus = null;
-            int wait_time = 1000;
-            do {
-                grabStatus = seat.grab(gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
-                if (grabStatus != Gdk.GrabStatus.SUCCESS) {
-                    attempt++;
-                    wait_time *= 2;
-                    GLib.Thread.usleep(wait_time);
-                }
-            } while (grabStatus != Gdk.GrabStatus.SUCCESS && attempt < 8);
-
-            if (grabStatus != Gdk.GrabStatus.SUCCESS) {
-                stderr.printf("Failed to grab input: %d\n", grabStatus);
-                return null;
-            }
-            return seat;
         }
     }
 }

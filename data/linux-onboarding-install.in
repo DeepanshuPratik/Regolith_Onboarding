@@ -1,0 +1,220 @@
+#!/usr/bin/env python3
+"""Install a workflow from the marketplace into this user's config.
+
+    linux-onboarding-install gnome navigation     one workflow
+    linux-onboarding-install gnome --all          everything for that desktop
+    linux-onboarding-install gnome --list         what is available
+
+This ships **with the application**, from its own repository, rather than being
+downloaded and run. That is the whole point: nothing is ever fetched and
+executed. What is fetched is JSON and images, and this places them where the app
+looks and then hands off to the app's own validator.
+
+It is deliberately boring about what it will accept. A workflow id arrives from
+a URL and becomes a path on someone's disk, so anything that is not a plain
+lowercase name is refused outright rather than sanitised into something
+plausible.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+# Substituted at build time from branding.conf's [Marketplace] Repo, so a distro
+# that ships its own marketplace does not have to patch this file.
+DEFAULT_REPO = "@MARKETPLACE_REPO@"
+DEFAULT_BRANCH = "main"
+
+# The same shape the marketplace's own CI enforces. Checked again here because
+# this is the side that turns a name into a directory on someone's disk.
+SAFE_NAME = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
+
+TIMEOUT = 30
+
+
+def die(message: str) -> "NoReturn":  # type: ignore[valid-type]
+    print(f"error: {message}", file=sys.stderr)
+    raise SystemExit(1)
+
+
+def safe(kind: str, value: str) -> str:
+    """A name that may become a path segment, or nothing at all.
+
+    `..` and `/` are the obvious attacks, but the rule is stricter than that on
+    purpose: the marketplace only ever contains lowercase names, so anything
+    else is either a typo or someone trying something.
+    """
+    if not SAFE_NAME.match(value):
+        die(f"{kind} '{value}' is not a plain lowercase name; refusing to use it as a path")
+    return value
+
+
+def fetch(url: str) -> bytes:
+    if not url.startswith("https://"):
+        die(f"refusing to fetch over an insecure URL: {url}")
+    try:
+        with urllib.request.urlopen(url, timeout=TIMEOUT) as response:
+            return response.read()
+    except urllib.error.HTTPError as exc:
+        die(f"{url}\n       {exc.code} {exc.reason}")
+    except urllib.error.URLError as exc:
+        die(f"cannot reach {url}\n       {exc.reason}")
+
+
+def load_index(repo: str, branch: str) -> dict:
+    """The manifest: the only way to learn which files a workflow is made of.
+
+    raw.githubusercontent serves single files and cannot list a directory, so
+    without this there is no way to know that a workflow has three images.
+    """
+    url = f"https://raw.githubusercontent.com/{repo}/{branch}/index.json"
+    try:
+        return json.loads(fetch(url))
+    except json.JSONDecodeError as exc:
+        die(f"{url} is not valid JSON: {exc}")
+
+
+def workflows_for(index: dict, desktop: str) -> list[dict]:
+    entries = index.get("desktops", {}).get(desktop)
+    if not entries:
+        known = ", ".join(sorted(index.get("desktops", {}))) or "none"
+        die(f"no workflows for '{desktop}'. Available: {known}")
+    return entries
+
+
+def install_one(entry: dict, desktop: str, repo: str, branch: str,
+                target_root: Path, force: bool) -> Path:
+    workflow_id = safe("workflow id", entry["id"])
+    target = target_root / desktop / workflow_id
+
+    if target.exists() and not force:
+        die(f"{target} already exists. Pass --force to replace it.")
+
+    # Downloaded into a temporary directory and moved into place only once every
+    # file has arrived, so a broken connection cannot leave half a workflow in
+    # the user's config for the app to trip over.
+    with tempfile.TemporaryDirectory() as staging_name:
+        staging = Path(staging_name)
+        for name in entry["files"]:
+            # Only files the manifest lists, and only names that cannot escape.
+            parts = name.split("/")
+            if len(parts) == 1:
+                safe("file name", parts[0].lower())
+                destination = staging / parts[0]
+            elif len(parts) == 2 and parts[0] == "assets":
+                safe("asset name", parts[1].lower())
+                destination = staging / "assets" / parts[1]
+            else:
+                die(f"manifest lists '{name}', which is not a shape this installs")
+
+            url = (f"https://raw.githubusercontent.com/{repo}/{branch}/"
+                   f"workflows/{desktop}/{workflow_id}/{name}")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(fetch(url))
+            print(f"  fetched {name}")
+
+        if target.exists():
+            shutil.rmtree(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(staging, target)
+
+    return target
+
+
+def verify(desktop: str) -> bool:
+    """Ask the app whether it accepts what was just installed.
+
+    --check-workflows is the offline validator; running it here means a bad
+    workflow is caught now rather than in the middle of practising.
+
+    Only the complaints are shown. That command prints every step of every
+    workflow it can see — dozens of lines of things that are *fine* — and
+    burying the one line that explains the failure in all of that helps nobody.
+    """
+    app = shutil.which("linux-onboarding")
+    if app is None:
+        print("note: linux-onboarding is not on PATH, so the install was not verified.")
+        return True
+
+    env = dict(os.environ, XDG_CURRENT_DESKTOP=desktop)
+    result = subprocess.run([app, "--check-workflows"], env=env,
+                            capture_output=True, text=True)
+    if result.returncode == 0:
+        return True
+
+    complaints = [line.strip() for line in result.stdout.splitlines()
+                  if "!!" in line or "problem" in line.lower()]
+    print("\nThe app refused it:", file=sys.stderr)
+    for line in complaints or result.stdout.splitlines()[-3:]:
+        print(f"    {line}", file=sys.stderr)
+    print(f"\n    Run 'linux-onboarding --check-workflows' yourself for the full report.",
+          file=sys.stderr)
+    return False
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="linux-onboarding-install",
+        description="Install workflows from the linux-onboarding marketplace.")
+    parser.add_argument("desktop", help="desktop id, e.g. gnome, kde, sway")
+    parser.add_argument("workflow", nargs="?", help="workflow id to install")
+    parser.add_argument("--all", action="store_true", help="install every workflow for this desktop")
+    parser.add_argument("--list", action="store_true", help="show what is available and install nothing")
+    parser.add_argument("--force", action="store_true", help="replace a workflow that is already installed")
+    parser.add_argument("--repo", default=DEFAULT_REPO, metavar="OWNER/NAME",
+                        help=f"marketplace repository (default: {DEFAULT_REPO})")
+    parser.add_argument("--branch", default=DEFAULT_BRANCH)
+    args = parser.parse_args()
+
+    desktop = safe("desktop id", args.desktop)
+    index = load_index(args.repo, args.branch)
+    entries = workflows_for(index, desktop)
+
+    if args.list:
+        print(f"{len(entries)} workflow(s) for {desktop}:\n")
+        for entry in entries:
+            print(f"  {entry['id']}\n      {entry['name']} — {entry['steps']} steps")
+        return 0
+
+    if args.all:
+        chosen = entries
+    elif args.workflow:
+        wanted = args.workflow
+        chosen = [e for e in entries if e["id"] == wanted]
+        if not chosen:
+            available = ", ".join(e["id"] for e in entries)
+            die(f"'{wanted}' is not in {desktop}. Available: {available}")
+    else:
+        die("name a workflow, or pass --all. Try --list to see what there is.")
+
+    target_root = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "linux-onboarding" / "workflows"
+
+    installed: list[Path] = []
+    for entry in chosen:
+        print(f"{entry['id']}: {entry['name']}")
+        installed.append(install_one(entry, desktop, args.repo, args.branch,
+                                     target_root, args.force))
+
+    if not verify(desktop):
+        for path in installed:
+            shutil.rmtree(path, ignore_errors=True)
+        die("the app rejected this workflow, so it has been removed again.\n"
+            "       Nothing was left in your config. Please report it to the marketplace.")
+
+    print(f"\nInstalled {len(installed)} workflow(s) into {target_root / desktop}.")
+    print("They appear in the app's catalogue next time you open it.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

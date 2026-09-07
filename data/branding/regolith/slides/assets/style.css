@@ -1,0 +1,146 @@
+/* Shared styling for the Regolith HTML deck: the welcome page and the slides
+   after it. Pages are loaded through the app:// scheme, so relative paths like
+   this one resolve against the bundle exactly as they would on a filesystem.
+   The welcome page lives a directory up and reaches this sheet the same way. */
+
+:root {
+  --bg: #232733;
+  --fg: #d8e0ee;
+  --muted: #aab6c8;
+  /* app:///palette.css always defines --desktop-accent when it is linked, so
+     the fallback here is for a page that does not link it. It is linked before
+     this sheet, so anything set here still wins — see DISTRO-GUIDE. */
+  --accent: var(--desktop-accent, #6ab0f3);
+  --key-bg: #2c3243;
+  --key-border: #414a60;
+  /* Matched to .pill-button.suggested-action in theme.css: the deck's own
+     button and the GTK ones beneath it should not read as two designs. */
+  --cta-bg: var(--desktop-accent, #2f6fb5);
+  --cta-border: #2a5f9c;
+  --cta-fg: #f2f6fb;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, "Cantarell", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  height: 100%;
+  padding: 28px 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.lede {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 54ch;
+}
+
+ul { margin: 0; padding: 0; list-style: none; }
+
+li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  border-top: 1px solid rgba(138, 162, 200, 0.14);
+}
+
+li:first-child { border-top: none; }
+
+kbd {
+  flex: 0 0 auto;
+  min-width: 108px;
+  text-align: center;
+  background: var(--key-bg);
+  border: 1px solid var(--key-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.what { color: var(--fg); }
+.why  { color: var(--muted); }
+
+.footnote {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+a { color: var(--accent); }
+
+/* The welcome page. It has no Back/Next strip under it — it is the first page
+   and it navigates itself — so it gets the full height to centre in. */
+
+.welcome {
+  height: 100%;
+  padding: 28px 34px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.welcome .logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 20px;
+}
+
+.welcome h1 {
+  margin: 0 0 10px;
+  font-size: 34px;
+  font-weight: 300;
+}
+
+.welcome .lede {
+  margin: 0 0 28px;
+  max-width: 46ch;
+}
+
+/* An anchor is how a page talks back to the app, so the primary one is dressed
+   as the button it replaces rather than left looking like a link. */
+.cta {
+  display: inline-block;
+  padding: 11px 26px;
+  border-radius: 99px;
+  background: var(--cta-bg);
+  border: 1px solid var(--cta-border);
+  color: var(--cta-fg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Brightened rather than a second colour, so the hover state follows whatever
+   accent is in force instead of drifting back to Regolith's blue. */
+.cta:hover { filter: brightness(1.12); }

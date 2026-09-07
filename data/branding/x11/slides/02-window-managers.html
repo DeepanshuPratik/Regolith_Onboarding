@@ -1,0 +1,21 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{background:#1a1a1a;color:#e6e6e6}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1>The window manager is the desktop</h1>
+  <p class="lede">
+    On X11, the choice you make on first login is the choice that defines the
+    whole session. Three families cover most users; each does one thing well
+    and stays out of the way of everything else.
+  </p>
+  <ul>
+    <li><kbd>Floating</kbd><span><span class="what">Openbox, Fluxbox.</span> <span class="why">Windows are things you place, like papers on a desk. Familiar from Windows and macOS.</span></span></li>
+    <li><kbd>Tiling</kbd><span><span class="what">i3, dwm, awesome.</span> <span class="why">Windows snap to a grid; you choose where, not how. The keyboard does most of the work.</span></span></li>
+    <li><kbd>Stacked</kbd><span><span class="what">FVWM, WindowMaker.</span> <span class="why">Windows overlap but raise when focused. A middle ground, less common today.</span></span></li>
+    <li><kbd>xinit ~/.xinitrc</kbd><span><span class="what">Pick one explicitly.</span> <span class="why">Whichever you choose, run it from your <code>.xinitrc</code>; that's the file <code>startx</code> reads.</span></span></li>
+    <li><kbd>update-alternatives --display x-window-manager</kbd><span><span class="what">See what's installed.</span> <span class="why">A quick way to tell what your distro made the default, if a DM hasn't shown you yet.</span></span></li>
+  </ul>
+  <p class="footnote">This is one of the freedoms that drove people to Linux in the first place. Lean into it.</p>
+</div>

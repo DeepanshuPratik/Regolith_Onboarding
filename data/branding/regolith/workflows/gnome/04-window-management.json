@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "desktop": "gnome",
+  "workflows": [
+    {
+      "name": "Managing the Window in Front",
+      "description": "GNOME gives the focused window four keys of its own. None of them need the mouse, and all four are bound out of the box on a stock GNOME session.",
+      "steps": [
+        {
+          "key_id": "<> Up",
+          "heading": "Fill the screen",
+          "description": "Maximises the focused window. The same thing dragging its title bar to the top edge does, without the drag."
+        },
+        {
+          "key_id": "<> Down",
+          "heading": "Give it back its old size",
+          "description": "Unmaximises, returning the window to whatever size it had before. On a window that is already restored this minimises it instead."
+        },
+        {
+          "key_id": "<Alt> F4",
+          "heading": "Close it",
+          "description": "Closes the focused window — the keyboard equivalent of its X button. An application with unsaved work will still ask you first."
+        },
+        {
+          "key_id": "<> l",
+          "heading": "Lock the screen",
+          "description": "Locks straight away, without going near the system menu. Worth having in your fingers before you need it."
+        }
+      ]
+    }
+  ]
+}

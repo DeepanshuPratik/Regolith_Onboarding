@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- Critical: the background inline, so this page paints the app's colour before
+     the stylesheet below has been fetched over the app:// scheme. Without it the
+     document exists and is white for as long as that fetch takes (#33). -->
+<style>html,body{background:#232733;color:#d8e0ee}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1>Ten desktops, one keystroke apart</h1>
+  <p class="lede">
+    Instead of stacking every window on one screen, spread your work across
+    numbered workspaces — mail on one, editor on another, browser on a third —
+    and move between them instantly.
+  </p>
+  <ul>
+    <li><kbd>Super + 1…9</kbd><span><span class="what">Jump to a workspace.</span> <span class="why">Direct, no cycling.</span></span></li>
+    <li><kbd>Super + Tab</kbd><span><span class="what">Next workspace.</span> <span class="why">When you do not care about the number.</span></span></li>
+    <li><kbd>Super + Shift + 1…9</kbd><span><span class="what">Send this window there.</span> <span class="why">Tidy up without a mouse.</span></span></li>
+    <li><kbd>Super + ← ↑ ↓ →</kbd><span><span class="what">Move focus.</span> <span class="why">By direction. <em>h j k l</em> work too.</span></span></li>
+  </ul>
+</div>

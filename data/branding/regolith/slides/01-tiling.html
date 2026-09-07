@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- Critical: the background inline, so this page paints the app's colour before
+     the stylesheet below has been fetched over the app:// scheme. Without it the
+     document exists and is white for as long as that fetch takes (#33). -->
+<style>html,body{background:#232733;color:#d8e0ee}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1>Your windows arrange themselves</h1>
+  <p class="lede">
+    Regolith tiles every window automatically. Nothing overlaps, nothing needs
+    dragging, and nothing gets lost behind something else. Open a second window
+    and the space simply divides.
+  </p>
+  <ul>
+    <li><kbd>Super + Enter</kbd><span><span class="what">A terminal.</span> <span class="why">Opens beside whatever is already there.</span></span></li>
+    <li><kbd>Super + Space</kbd><span><span class="what">Anything else.</span> <span class="why">Start typing an app name and press Enter.</span></span></li>
+    <li><kbd>Super + Shift + ?</kbd><span><span class="what">Every shortcut.</span> <span class="why">The one to remember if you forget the rest.</span></span></li>
+  </ul>
+  <p class="footnote">Super is the key with the Windows or Command logo.</p>
+</div>

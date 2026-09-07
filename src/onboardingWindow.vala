@@ -15,356 +15,412 @@
  * You should have received a copy of the Apache License along with this program.       *
  *  If not, see <http://www.apache.org/licenses/>.                                      *
  ****************************************************************************************/
- using Gtk;
+using Gtk;
 using Gee;
 
- namespace regolith_onboarding {
-     
-     // key press variables
-     public const int KEY_CODE_ESCAPE = 65307;
-     public const int KEY_CODE_CAPSLOCK = 65549;
-     public const int KEY_CODE_NUMSLOCK = 65407;
-     public const int KEY_CODE_LEFT_ALT = 65513;
-     public const int KEY_CODE_RIGHT_ALT = 65514;
-     public const int KEY_CODE_LEFT_SHIFT = 65505;
-     public const int KEY_CODE_RIGHT_SHIFT = 65506;
-     public const int KEY_CODE_TAB = 65289;
-     public const int KEY_CODE_SUPER = 65515;
-     public const int KEY_CODE_UP = 65362;
-     public const int KEY_CODE_DOWN = 65364;
-     public const int KEY_CODE_ENTER = 65293;
-     public const int KEY_CODE_PGDOWN = 65366;
-     public const int KEY_CODE_PGUP = 65365;
-     public const int KEY_CODE_RIGHT = 65363;
-     public const int KEY_CODE_LEFT = 65361;
-     public const int KEY_CODE_SPACE = 32;
-     public const int KEY_CODE_PLUS = 43;
-     public const int KEY_CODE_MINUS = 45;
-     public const int KEY_CODE_QUESTION = 63;
-     public const int KEY_CODE_PRINTSRC = 65377;
-     public const int KEY_CODE_BRIGHT_UP = 269025027;
-     public const int KEY_CODE_BRIGHT_DOWN = 269025027;
-     public const int KEY_CODE_MIC_MUTE = 269025202;
-     public const int KEY_CODE_VOLUME_UP = 269025043;
-     public const int KEY_CODE_VOLUME_DOWN = 269025041;
-     public const int KEY_CODE_VOLUME_MUTE = 269025042;
-     
-     bool allow_scroll_wheel = false;
-     // Controls access to keyboard and mouse
-     protected Gdk.Seat seat;
- 
-     public errordomain MyError {
-         INVALID_FORMAT
-     }
-     public class CarouselSetup : Window {
-         
-         // required Widgets of application
-         private Gtk.Box container;
-         private Hdy.Carousel carousel;
-         private WorkFlowPage workflowPage;
-         
-         // parsing variables
-         private Array<WorkspaceDataHolder> workspacesInfoHolder;
- 
-         public CarouselSetup (Gtk.Application app) {
-             Object(application: app, type: Gtk.WindowType.POPUP);
-             window_position = WindowPosition.CENTER;
- 
-             if (IS_SESSION_WAYLAND) {
-                 set_size_request (800,450);
-             } else {
-                 set_default_size (800,450);
-             }
-               
-             // Adding css file from GResource
-             var css_provider = new Gtk.CssProvider();
-             try {
-                 css_provider.load_from_resource(APP_PATH + "/css/Regolith_Onboarding.css");
-                 Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
-             } catch (Error e) {
-                 error ("Cannot load CSS stylesheet: %s", e.message);
-             }
-             this.get_style_context().add_class("carousel");
- 
-             // Main container setup
-             container = new Box(Gtk.Orientation.VERTICAL, 30);
-             container.get_style_context().add_class("main-container");
-             this.add(container);
- 
-             carousel = new Hdy.Carousel();
-             container.add(carousel);
-             
-             var carousel_indicator = new Hdy.CarouselIndicatorDots();
-             carousel_indicator.set_carousel(carousel);
-             container.add(carousel_indicator);
- 
-             // Load all workflow data from GResource
-             load_all_workflows();
- 
-             // Create the list page of all workflows
-             var worflowsListPage = new WorkFlows(workspacesInfoHolder, (workflow_sequence)=>{
-               create_practice_page(workflow_sequence);
-               this.remove(container);
-               this.add(workflowPage);
-               this.show_all();
-             });
-             
-             // Create the Intro page
-             var introPage = new IntroPage(()=>{
-                 carousel.scroll_to_full(worflowsListPage, 800);
-             });
-             
-             // Populate the carousel
-             carousel.insert(introPage, 0);
-             carousel.insert(worflowsListPage, 1);
-             carousel.set_spacing(100);
-             
-             // Disable navigation to prevent accidental jumps during practice
-             carousel.set_allow_scroll_wheel(allow_scroll_wheel);
-             carousel.set_allow_mouse_drag(allow_scroll_wheel);
-             carousel.set_allow_long_swipes(allow_scroll_wheel);
- 
-             // Connect global key press events
-             key_press_event.connect ((key) => {
-                 if (key.keyval == KEY_CODE_ESCAPE) {
-                     clean_config();
-                     quit();
-                 }
-                 return false;
-             });
- 
-             // Handle platform-specific input grabbing
-             if (IS_SESSION_WAYLAND) {
-                 GtkLayerShell.init_for_window (this);
-                 GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
-                 GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
-             } else {
-                 this.map.connect (() => {
-                    var gdkwin = this.get_window ();
-                    if (gdkwin != null) {
-                        var grabbed_seat = grab_inputs(gdkwin);
-                        if (grabbed_seat != null) {
-                            set_seat(grabbed_seat);
-                        } else {
-                            stderr.printf ("Failed to acquire access to input devices, aborting.");
-                            app.quit();
-                        }
-                    }
-                });
-             }
-         }
-         
-         private void load_all_workflows() {
-            workspacesInfoHolder = new Array<WorkspaceDataHolder>();
-            
-            // --- PART 1: Load default workflows from GResource ---
-            // These are now resource PATHS, not URIs.
-            string[] default_workflow_paths = {
-                APP_PATH + "/workflows/sampleWorkFlows.json",
-                APP_PATH + "/workflows/sampleWorkFlows2.json"
-            };
-            
-            stdout.printf("--- Loading default workflows from GResource ---\n");
-            foreach (var resource_path in default_workflow_paths) {
-                try {
-                    // STEP 1: Look up the resource and get its raw data (bytes)
-                    var bytes = GLib.resources_lookup_data(resource_path, 0);
-                    
-                    // STEP 2: Load that raw string data directly into the parser
-                    var parser = new Json.Parser();
-                    parser.load_from_data((string) bytes.get_data());
-                    
-                    // STEP 3: Process the parsed data
-                    process(parser.get_root());
-                    stdout.printf("--- Successfully processed default workflow: %s ---\n", resource_path);
+namespace linux_onboarding {
 
-                } catch(Error err){
-                    stderr.printf("Critical Error: Could not load or parse default workflow '%s': %s\n", resource_path, err.message);
-                }
+
+    public class CarouselSetup : Window {
+
+        // Navigation stays off so a stray scroll cannot jump pages mid-practice.
+        private const bool ALLOW_CAROUSEL_GESTURES = false;
+
+        // One size for the window, whichever desktop it is on.
+        private const int WINDOW_WIDTH  = 900;
+
+        /**
+         * 620 rather than 560 because the catalogue is what needs the room: five
+         * tiles in two rows plus their captions, a heading and the page
+         * indicator. At 560 the second row was inside a scroll view the user had
+         * no reason to suspect, so the bottom row read as cut off.
+         */
+        private const int WINDOW_HEIGHT = 620;
+
+        private Gtk.Box container;
+        private Hdy.Carousel carousel;
+        private WorkFlowPage workflowPage;
+        private Gee.List<Workflow> workflows;
+
+        // Observation, for the whole run rather than for one workflow. Built
+        // last in the constructor and taken down again by release_practice().
+        private PracticeSession practice;
+
+        // Carousel contents in order: welcome, featured slides, workflow list.
+        private Gee.ArrayList<Gtk.Widget> pages = new Gee.ArrayList<Gtk.Widget> ();
+
+        // Kept so the deck can decide, once its pages exist, whether there is
+        // anything worth indicating.
+        private Hdy.CarouselIndicatorDots carousel_indicator;
+
+        private OnboardingState state;
+
+        // The first page in the deck, kept so that show_all() can wait for it to
+        // paint (#33). Null when a distro ships neither a welcome page nor any
+        // slides, which is a legitimate build.
+        private SlidePage? first_deck_page = null;
+
+        // How long the window waits for that first paint before showing itself
+        // anyway. Long enough for a bundled page over the app:// scheme, short
+        // enough that a wedged web process costs a beat rather than the app.
+        private const uint FIRST_PAINT_TIMEOUT_MS = 1500;
+
+        private bool shown_once = false;
+        private uint first_paint_timeout_id = 0;
+
+        // Last page the deck owes this user: the final slide it decided to show,
+        // or the welcome page when the delta is empty. Reaching it is what marks
+        // the branding version seen.
+        private int last_owed_index = -1;
+
+        public CarouselSetup (Gtk.Application app) {
+            Object(application: app, type: Gtk.WindowType.POPUP);
+            window_position = WindowPosition.CENTER;
+
+            size_window ();
+
+            // load_from_resource() does not throw in GTK3; a missing resource is a
+            // build error, not something to handle at runtime.
+            var css_provider = new Gtk.CssProvider();
+            css_provider.load_from_resource(APP_PATH + "/css/app.css");
+            Gtk.StyleContext.add_provider_for_screen(this.get_screen(), css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER);
+            // Beneath both of the above in priority: the desktop's own accent,
+            // as defaults that app.css consumes and a distro's theme.css may
+            // override (#32).
+            Palette.apply (this.get_screen ());
+
+            // Distro theme layers over the base sheet, so it must load after it.
+            Branding.get_default ().apply_theme (this.get_screen ());
+
+            this.get_style_context().add_class("carousel");
+
+            container = new Box(Gtk.Orientation.VERTICAL, 30);
+            container.hexpand = true;
+            container.vexpand = true;
+            container.get_style_context().add_class("main-container");
+            this.add(container);
+
+            carousel = new Hdy.Carousel();
+            container.add(carousel);
+
+            carousel_indicator = new Hdy.CarouselIndicatorDots();
+            carousel_indicator.set_carousel(carousel);
+            container.add(carousel_indicator);
+
+            workflows = new WorkflowLocator ().load ();
+
+            var worflowsListPage = new WorkFlows(workflows, (workflow)=>{
+              create_practice_page(workflow);
+              this.remove(container);
+              this.add(workflowPage);
+              this.show_all();
+            });
+
+            // Welcome page first, then the distro's featured slides, then the
+            // workflow catalogue. Welcome and slides are both HTML rendered by
+            // SlidePage, so the whole deck shares one WebKit process.
+            var branding = Branding.get_default ();
+
+            // The welcome page carries its own "Get Started" in markup, which
+            // moves one page along — the first slide when there are any, and the
+            // catalogue when the distro ships none.
+            if (branding.welcome_resource != "")
+                add_deck_page (new SlidePage.self_navigating (branding.welcome_resource));
+
+            // Version gating (D12): only the slides added since the branding
+            // version this user last saw. A machine with no state file has seen
+            // nothing, so it gets all of them. The deck can collapse to nothing
+            // here, and that is the normal case on a run with no upgrade —
+            // welcome still shows, and its "Get Started" lands on the catalogue
+            // because next is resolved from the firing page, not from a fixed
+            // slide count.
+            // Per desktop (#31): the same machine gets its own record on
+            // Regolith and on GNOME, because the deck introduces a catalogue and
+            // a practice loop that differ between them.
+            state = OnboardingState.load (PlatformRegistry.probe ().primary_desktop ());
+            var slides = branding.slides_for (state.last_seen_version);
+            for (int i = 0; i < slides.length; i++) {
+                int index = pages.size;
+                add_deck_page (new SlidePage (
+                    slides[i],
+                    i == slides.length - 1,
+                    () => { scroll_to_page (index - 1); },
+                    () => { scroll_to_page (index + 1); }));
             }
-            
-            // --- PART 2: Load custom user workflows from their config directory ---
-            var user_config_dir = Environment.get_user_config_dir();
-            var user_workflows_path = Path.build_filename(user_config_dir, "regolith-onboarding", "workflows");
 
-            if (FileUtils.test(user_workflows_path, FileTest.IS_DIR)) {
-                stdout.printf("\n--- Found user workflows directory: %s ---\n", user_workflows_path);
-                try {
-                    var dir = Dir.open(user_workflows_path, 0);
-                    string? name;
-                    while ((name = dir.read_name()) != null) {
-                        if (name.has_suffix(".json")) {
-                            var user_file_path = Path.build_filename(user_workflows_path, name);
-                            try {
-                                // This uses load_from_file because it's a real filesystem path. This is correct.
-                                var parser = new Json.Parser();
-                                parser.load_from_file(user_file_path);
-                                process(parser.get_root());
-                                stdout.printf("--- Successfully loaded user workflow: %s ---\n", name);
-                            } catch (Error e) {
-                                stderr.printf("Warning: Skipping malformed user workflow file '%s': %s\n", name, e.message);
-                            }
-                        }
-                    }
-                } catch (Error e) {
-                    stderr.printf("Warning: Could not read user workflows from '%s': %s\n", user_workflows_path, e.message);
-                }
+            last_owed_index = pages.size - 1;
+            pages.add (worflowsListPage);
+
+            for (int i = 0; i < pages.size; i++)
+                carousel.insert (pages[i], i);
+            // The 100-pixel gap is the "there's another page" hint the deck
+            // relies on. Per-page GdkWindows created by libhandy are not
+            // clipped to their allocation by default, so wider deck content
+            // (longer ks, wider kbd chips) would otherwise paint across the
+            // gap into the visible window — see SlidePage.build(). With that
+            // clip in place, the spacing is purely visual.
+            carousel.set_spacing(100);
+
+            // Welcome plus the catalogue is not a deck, and two faint dots under
+            // it read as a stray mark rather than as progress. The indicator
+            // earns its place only when there is a slide to page through — which
+            // on most runs, after the version has been recorded once, there is
+            // not.
+            if (pages.size < 3) {
+                carousel_indicator.no_show_all = true;
+                carousel_indicator.hide ();
             }
-            
-            stdout.printf("\n============================================\n");
-            stdout.printf("Total workflows loaded (default + user): %u\n", workspacesInfoHolder.length);
-            stdout.printf("============================================\n");
-            stdout.flush();
 
+            record_version_once_deck_is_seen ();
+
+            carousel.set_allow_scroll_wheel(ALLOW_CAROUSEL_GESTURES);
+            carousel.set_allow_mouse_drag(ALLOW_CAROUSEL_GESTURES);
+            carousel.set_allow_long_swipes(ALLOW_CAROUSEL_GESTURES);
+
+            // Escape is a way out from anywhere in the app, including mid-practice,
+            // so it goes through the same teardown as every other exit.
+            key_press_event.connect ((key) => {
+                if (key.keyval == KEY_CODE_ESCAPE) quit();
+                return false;
+            });
+
+            var is_wayland = PlatformRegistry.probe ().is_wayland ();
+
+            if (is_wayland && LayerShellSupport.available ()) {
+                // sway and any other compositor carrying zwlr_layer_shell_v1.
+                // EXCLUSIVE is how this window holds the keyboard during
+                // practice: the compositor routes every key here, including the
+                // modifier combinations it would otherwise have eaten itself.
+                GtkLayerShell.init_for_window (this);
+                GtkLayerShell.set_layer(this, GtkLayerShell.Layer.OVERLAY);
+                GtkLayerShell.set_keyboard_mode (this, GtkLayerShell.KeyboardMode.EXCLUSIVE);
+            }
+
+            // Every other session — Wayland without a layer shell (GNOME/Mutter),
+            // and X11 — configures nothing here, and neither one grabs.
+            //
+            // Layer shell is not merely unavailable on Mutter, it is fatal:
+            // asking for any of the calls above is a SIGABRT at show_all()
+            // rather than a degraded window (#26, and LayerShellSupport for the
+            // measurements).
+            //
+            // The X11 branch used to take a KEYBOARD | POINTER seat grab the
+            // moment the window mapped, and abort startup if it failed. Three
+            // things were wrong with that. It asked for POINTER, which on an
+            // XWayland connection into Mutter or KWin is the one thing that
+            // stops GTK requesting the shortcuts inhibitor at all (#11) — so the
+            // app held the pointer and lost the capability the grab was for. It
+            // held the user's keyboard for the whole run, including while they
+            // were reading slides and had asked for nothing. And a failed grab
+            // killed the app, when the honest consequence is only that practice
+            // is unavailable. PracticeSession owns the grab now, on every
+            // desktop: taken at PLAY, keyboard only, dropped when the workflow
+            // ends (#29).
+
+            // Last, so the window is fully configured before an observer starts
+            // reading its key events, and after the Escape handler above so that
+            // handler still runs first.
+            //
+            // This window is the observer's owner because it is the only widget
+            // here whose life is the app's: a grab-based observer hooks the
+            // owner's key events and holds a grab on its Gdk.Window, and a
+            // practice page — which comes and goes with each workflow — would
+            // take both away with it. It is also where GTK delivers key events
+            // before propagating them to whatever currently has focus.
+            practice = new PracticeSession (this, workflows);
+
+            // Writes the binding mode now rather than at PLAY. A config reload
+            // before the window is even mapped is invisible; the same reload in
+            // the middle of a workflow is a flicker over the thing being taught.
+            practice.install ();
+
+            // The window can also be destroyed without going through quit() — a
+            // window-manager close, or the toplevel being torn down at exit. Left
+            // uninstalled, the binding mode shadows the user's keys until some
+            // later run's cleanup_stale_state() notices it.
+            this.destroy.connect (release_practice);
         }
 
-         public void create_practice_page(Json.Array keyBindings){
-           workflowPage = new WorkFlowPage(keyBindings, ()=>{
-             // Callback to return to the main list view
-             this.remove(workflowPage);
-             this.add(container);
-             this.show_all();
-           });
-         }
-         
-         public void quit() {
-             if (seat != null) seat.ungrab ();
-             hide ();
-             close ();
-         }
-         
-         public void set_seat(Gdk.Seat seat) {
-             regolith_onboarding.seat = seat;
-         }
-         
-         public void process (Json.Node node) throws Error {
-             if (node.get_node_type () != Json.NodeType.OBJECT) {
-                 throw new MyError.INVALID_FORMAT ("Unexpected element type %s process()", node.type_name ());
-             }
-             unowned Json.Object obj = node.get_object ();
- 
-             foreach (unowned string name in obj.get_members ()) {
-                 if (name == "workspaces") {
-                     unowned Json.Node item = obj.get_member(name);
-                     process_workspaces (item);
-                 } else {
-                     throw new MyError.INVALID_FORMAT ("Unexpected element '%s' process()", name);
-                 }
-             }
-         }
-         
-         public void process_workspaces (Json.Node node) throws Error {
-             if (node.get_node_type () != Json.NodeType.ARRAY) {
-                 throw new MyError.INVALID_FORMAT ("Unexpected element '%s' process_workspaces()", node.type_name ());
-             }
-             unowned Json.Array objArray = node.get_array ();
-             if (objArray != null) {
-               for(int i=0; i<objArray.get_length(); i++){
-                 Json.Object? obj = objArray.get_element(i).get_object();
-                 var workspaceJson = new WorkspaceDataHolder();
-                 foreach (unowned string name in obj.get_members ()) {
-                   unowned Json.Node item = obj.get_member (name);
-                   Json.NodeType node_type = item.get_node_type ();
-                   switch (name) {
-                    case "workflow_name":
-                    case "workflow_description":
-                      if (node_type != Json.NodeType.VALUE) throw new MyError.INVALID_FORMAT("Bad type for %s", name);
-                      if (name == "workflow_name") workspaceJson.set_workflow_name(obj.get_string_member(name));
-                      else workspaceJson.set_workflow_description(obj.get_string_member(name));
-                      break;
+        /**
+         * How big this window is, and why it is not one call.
+         *
+         * A layer surface has no size negotiation: the compositor gives it what
+         * it asks for, so sway needs a size *request* or the surface has no size
+         * at all. An ordinary toplevel does negotiate, and there a size request
+         * is a **minimum** — the window still grows to whatever its content
+         * wants. That is what made the app 800x505 on GNOME while asking for
+         * 800x450, with the content centred inside and a band of empty space
+         * down each side.
+         *
+         * So: request on the layer-shell path, default size everywhere else,
+         * where it is a starting size the user can then resize away from.
+         *
+         * Asked of LayerShellSupport rather than of is_wayland(), because
+         * "Wayland" is not the question — GNOME and KDE are Wayland too, and
+         * they are the sessions this gets wrong.
+         */
+        private void size_window () {
+            if (PlatformRegistry.probe ().is_wayland () && LayerShellSupport.available ()) {
+                set_size_request (WINDOW_WIDTH, WINDOW_HEIGHT);
+            } else {
+                set_default_size (WINDOW_WIDTH, WINDOW_HEIGHT);
+            }
+        }
 
-                    case "image":
-                      if (node_type != Json.NodeType.VALUE) throw new MyError.INVALID_FORMAT("Bad type for image");
-                      workspaceJson.set_workflow_image(obj.get_string_member(name));
-                      break;
-                
-                    case "key_bindings_sequence":
-                      if (node_type != Json.NodeType.ARRAY) throw new MyError.INVALID_FORMAT("Bad type for key_bindings_sequence");
-                      workspaceJson.set_workflow_sequence(obj.get_array_member(name));
-                      break;
-                      
-                    default:
-                      throw new MyError.INVALID_FORMAT ("Unexpected element '%s' in workflow object", name);
-                   }
-                 }
-                 workspacesInfoHolder.append_val(workspaceJson);
+        /**
+         * Appends an HTML page and wires its action links up to where it sits.
+         * Positions are resolved at click time and relative to the page that
+         * fired, so the same <a href="app://action/next"> works wherever a
+         * distro puts it in the deck.
+         */
+        private void add_deck_page (SlidePage page) {
+            int index = pages.size;
+            page.action.connect ((name) => { dispatch_action (name, index); });
+            if (first_deck_page == null) first_deck_page = page;
+            pages.add (page);
+        }
 
-                 // DEBUG PRINT: Print the contents of the loaded workflow object
-                 stdout.printf("\n[WORKFLOW LOADED]\n");
-                 stdout.printf("  Name: %s\n", workspaceJson.get_workflow_name());
-                 stdout.printf("  Desc: %s\n", workspaceJson.get_workflow_description());
-                 stdout.printf("  Img:  %s\n", workspaceJson.get_workflow_image());
-                 stdout.printf("  Steps: %u\n", workspaceJson.get_workflow_sequence().get_length());                 
-               }
-             }
-         }
-         
-         // Grabs the input devices for a given window
-         private Gdk.Seat ? grab_inputs (Gdk.Window gdkwin) {
-             var display = gdkwin.get_display ();
-             if (display == null) {
-                 stderr.printf ("Failed to get Display\n");
-                 return null;
-             }
- 
-             var seat = display.get_default_seat ();
-             if (seat == null) {
-                 stdout.printf ("Failed to get Seat from Display\n");
-                 return null;
-             }
- 
-             int attempt = 0;
-             Gdk.GrabStatus ? grabStatus = null;
-             int wait_time = 1000;
- 
-             do {
-                 grabStatus = seat.grab (gdkwin, Gdk.SeatCapabilities.KEYBOARD | Gdk.SeatCapabilities.POINTER, true, null, null, null);
-                 if (grabStatus != Gdk.GrabStatus.SUCCESS) {
-                     attempt++;
-                     wait_time = wait_time * 2;
-                     GLib.Thread.usleep (wait_time);
-                 }
-             } while (grabStatus != Gdk.GrabStatus.SUCCESS && attempt < 8);
- 
-             if (grabStatus != Gdk.GrabStatus.SUCCESS) {
-                 stderr.printf ("Aborting, failed to grab input: %d\n", grabStatus);
-                 return null;
-             } else {
-                 return seat;
-             }
-         }
+        /**
+         * Show the window once there is something in it to see.
+         *
+         * The app used to open as a white box: show_all() ran the moment the
+         * constructor returned, while every deck page was still loading, so the
+         * first frame was a WebView with no document in it (#33). Waiting for the
+         * first page's ready signal costs a few hundred milliseconds of nothing
+         * on screen and buys a first frame that is the actual deck.
+         *
+         * The timeout is not optional. A page that never finishes — a broken
+         * bundle, a web process that will not start — must not leave the app
+         * running with no window and no explanation, so whichever comes first
+         * wins and show_all() happens either way.
+         *
+         * Note this is only the *map*. Everything order-sensitive already
+         * happened in the constructor: gtk-layer-shell must be initialised before
+         * the window is mapped (#26 — asking for it on Mutter is a SIGABRT, not a
+         * degraded window), and it is, whether the map comes now or in a second.
+         */
+        public void show_when_ready () {
+            if (first_deck_page == null) {
+                show_deck_now ();
+                return;
+            }
 
-         private void clean_config() {
-             if (WM_NAME != "sway" && WM_NAME != "i3") return;
+            first_deck_page.ready.connect (show_deck_now);
+            first_paint_timeout_id = Timeout.add (FIRST_PAINT_TIMEOUT_MS, () => {
+                first_paint_timeout_id = 0;
+                show_deck_now ();
+                return Source.REMOVE;
+            });
+        }
 
-             var cmd = WM_NAME == "sway" ? "swaymsg" : "i3-msg";
-             try { Process.spawn_command_line_sync(cmd + " mode default"); } catch (Error e) {}
+        /**
+         * Whichever of the two paths above arrives first, and only that one.
+         *
+         * Both are dropped here rather than left to fire into a window that has
+         * already been shown — or destroyed. A pending timeout holds a reference
+         * to this window for as long as it is armed, which is the pattern
+         * SeatGrabObserver follows next door with cancel_regrab_timeout().
+         */
+        private void show_deck_now () {
+            if (shown_once) return;
+            shown_once = true;
 
-             // Delete the mode block file from config.d if it was left behind,
-             // then reload so the mode is fully removed.
-             string[] candidates;
-             if (WM_NAME == "sway") {
-                 candidates = {
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "sway", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "sway", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "sway", "config.d", "regolith_onboarding_mode"),
-                 };
-             } else {
-                 candidates = {
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith3", "i3", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "regolith2", "i3", "config.d", "regolith_onboarding_mode"),
-                     Path.build_filename(Environment.get_home_dir(), ".config", "i3", "config.d", "regolith_onboarding_mode"),
-                 };
-             }
-             bool deleted = false;
-             foreach (var path in candidates) {
-                 if (FileUtils.test(path, FileTest.EXISTS)) {
-                     try { File.new_for_path(path).delete(); deleted = true; } catch (Error e) {}
-                 }
-             }
-             if (deleted) {
-                 try { Process.spawn_command_line_sync(cmd + " reload"); } catch (Error e) {}
-             }
-         }
-     }
- }
+            if (first_paint_timeout_id != 0) {
+                GLib.Source.remove (first_paint_timeout_id);
+                first_paint_timeout_id = 0;
+            }
+            if (first_deck_page != null) first_deck_page.ready.disconnect (show_deck_now);
+
+            show_all ();
+        }
+
+        /**
+         * The vocabulary an HTML page may use. Deliberately only positions in
+         * the deck: markup replaces the buttons it used to sit beside, and can
+         * reach nothing the buttons could not.
+         */
+        private void dispatch_action (string name, int from_index) {
+            switch (name) {
+                case "next":      scroll_to_page (from_index + 1);  break;
+                case "back":      scroll_to_page (from_index - 1);  break;
+                case "catalogue": scroll_to_page (pages.size - 1);  break;
+                default:
+                    warning ("branding page asked for app://action/%s, " +
+                             "which this build does not implement", name);
+                    break;
+            }
+        }
+
+        /**
+         * Marks the branding version seen once the user has reached the last page
+         * the deck owed them.
+         *
+         * Not at startup, which is the tempting place for it: a user who opens the
+         * window and closes it on slide two would then never be shown slide three,
+         * and the app would have quietly eaten content it exists to deliver.
+         * Reaching the final owed page is the earliest moment the claim "this user
+         * has seen this version" is actually true.
+         *
+         * A user who jumps straight to the catalogue from the welcome page is
+         * therefore not recorded, and sees the same slides next launch. That is
+         * the right direction to be wrong in: showing a slide twice is a small
+         * annoyance, never showing it is the bug.
+         */
+        private void record_version_once_deck_is_seen () {
+            var branding = Branding.get_default ();
+
+            // The carousel opens on page 0, so nothing beyond it being owed means
+            // there is nothing left for the user to miss — the no-delta case, and
+            // the one where a distro ships no slides at all.
+            if (last_owed_index <= 0) {
+                state.record (branding.version);
+                return;
+            }
+
+            carousel.page_changed.connect ((index) => {
+                if ((int) index >= last_owed_index) state.record (branding.version);
+            });
+        }
+
+        private void scroll_to_page (int index) {
+            if (index < 0 || index >= pages.size) return;
+            carousel.scroll_to_full (pages[index], 400);
+        }
+
+        public void create_practice_page(Workflow workflow){
+          workflowPage = new WorkFlowPage(workflow, practice, ()=>{
+            this.remove(workflowPage);
+            this.add(container);
+            this.show_all();
+          });
+        }
+
+        /**
+         * The one way out. Every exit path funnels through here so that nothing
+         * this run installed outside the process outlives it.
+         */
+        public void quit() {
+            release_practice ();
+            clean_config ();
+            hide ();
+            close ();
+        }
+
+        /**
+         * Take the binding mode back out of the window manager and drop any grab
+         * the observer holds. Idempotent, because more than one exit path reaches
+         * it and quit() itself triggers the destroy handler that also calls it.
+         */
+        public void release_practice () {
+            if (practice != null) practice.uninstall ();
+        }
+
+        // Belt and braces behind release_practice(): that undoes what this run
+        // installed, this sweeps up anything a run that was killed left behind, in
+        // every platform that claims the session rather than only the one we used.
+        private void clean_config() {
+            PlatformRegistry.cleanup_stale_state ();
+        }
+
+    }
+}

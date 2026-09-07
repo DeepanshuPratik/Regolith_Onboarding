@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "desktop": "gnome",
+  "workflows": [
+    {
+      "name": "Opening and Switching Windows",
+      "description": "Two shortcuts that put another window in front of this one. Both hand the keyboard to whatever they open, so when you are done, click this window to carry on — GNOME does not let an application take the keyboard back by itself.",
+      "steps": [
+        {
+          "key_id": "<Ctrl><Alt> t",
+          "heading": "Open a terminal",
+          "description": "The one shortcut worth knowing before any other. The terminal opens in front of this window and takes the keyboard with it; click back here when you have had a look."
+        },
+        {
+          "key_id": "<Alt> Tab",
+          "heading": "Switch between open windows",
+          "description": "Hold Alt and press Tab to move between windows. This is the last step on purpose: it moves the keyboard to whatever you switch to, so click this window afterwards to return."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+/*
+ * X11 fallback deck stylesheet.
+ *
+ * Same anatomy as the others. Stripped to essentials: charcoal surface,
+ * monospace kbd, no decoration. If this deck is on screen, the session is
+ * one the app doesn't know — the design should make that honest.
+ */
+
+:root {
+  --bg: #1a1a1a;
+  --fg: #e6e6e6;
+  --muted: #999999;
+  --accent: var(--desktop-accent, #cccccc);
+  --key-bg: #242424;
+  --key-border: #3a3a3a;
+  --cta-bg: #333333;
+  --cta-fg: #f0f0f0;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, "Cantarell", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.slide {
+  height: 100%;
+  padding: 28px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--fg);
+}
+
+.lede {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 56ch;
+}
+
+ul { margin: 0; padding: 0; list-style: none; }
+
+li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  border-top: 1px solid alpha(#c0c0c0, 0.10);
+}
+
+li:first-child { border-top: none; }
+
+kbd {
+  flex: 0 0 auto;
+  min-width: 130px;
+  text-align: center;
+  background: var(--key-bg);
+  border: 1px solid var(--key-border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+code {
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  color: var(--accent);
+}
+
+.what { color: var(--fg); font-weight: 500; }
+.why  { color: var(--muted); }
+
+.footnote {
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+a { color: var(--accent); }
+
+.welcome {
+  height: 100%;
+  padding: 30px 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.welcome .logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 22px;
+}
+
+.welcome h1 {
+  margin: 0 0 10px;
+  font-size: 34px;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+}
+
+.welcome .lede {
+  margin: 0 0 28px;
+  max-width: 50ch;
+}
+
+.cta {
+  display: inline-block;
+  padding: 11px 26px;
+  background: var(--cta-bg);
+  color: var(--cta-fg);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid #555555;
+}
+
+.cta:hover { background: #404040; }

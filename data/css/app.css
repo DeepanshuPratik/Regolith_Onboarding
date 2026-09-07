@@ -1,0 +1,129 @@
+/*
+ * The application's base stylesheet.
+ *
+ * Two rules for anything added here. Colours that vary by desktop come from
+ * Palette's generated sheet (@onboarding_accent and friends), loaded beneath
+ * this one so a distro's theme.css still wins; and this is GTK CSS, not web CSS
+ * — no max-width, no line-height, no flexbox, and an unknown property is a parse
+ * error in the log rather than a rule that quietly does nothing.
+ */
+
+/*
+ * The toplevel itself. .main-container covers it on the deck and the
+ * catalogue, but the practice page replaces that container rather than sitting
+ * inside it — so without this the window falls back to the GTK theme's default
+ * and a dark build shows a light frame around the practice card.
+ */
+.carousel {
+    background-color: @theme_bg_color;
+}
+
+.main-container {
+    border-radius: 16px;
+    padding: 28px;
+
+    /* The user's GTK theme, so an unbranded build looks native in light and
+       dark alike. A distro's theme.css overrides this wholesale.
+       @theme_bg_color, not @window_bg_color: the latter is a GTK4/libadwaita
+       name that resolves to nothing here, which left an unbranded build with no
+       background at all. */
+    background-color: @theme_bg_color;
+    border: 1px solid alpha(currentColor, 0.16);
+    box-shadow: 0 6px 24px alpha(black, 0.18);
+}
+
+/* Catalogue tiles.
+ *
+ * A uniform card each, so the grid reads as a set of things to pick rather than
+ * as screenshots floating on the panel. Uniform is the point: the practice page
+ * had a second frame inside the window and looked wrong for exactly the reason
+ * these look right — every tile here carries the same one. */
+.workflow-button {
+    background-color: alpha(currentColor, 0.04);
+    border: 1px solid alpha(currentColor, 0.10);
+    box-shadow: none;
+    padding: 12px;
+    border-radius: 14px;
+}
+
+.workflow-button:hover {
+    background-color: @onboarding_accent_dim;
+    border-color: alpha(@onboarding_accent, 0.45);
+}
+
+.workflow-button:focus {
+    border-color: @onboarding_accent;
+}
+
+.workflow-button .heading {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/*
+ * The "install more workflows" tile.
+ *
+ * Dashed, to say "not a workflow, an action". This was a 3em plus at half
+ * opacity inside an almost invisible 1px dash, with its caption pushed below
+ * the fold — which on screen was a faint mark in an empty cell, indistinguishable
+ * from a rendering artefact. A plus glyph fills little of its own em box, so the
+ * size has to be set in px and the opacity has to be one you can actually see.
+ */
+.add-tile {
+    background: none;
+    border: 2px dashed alpha(currentColor, 0.35);
+    border-radius: 14px;
+}
+
+.add-tile:hover {
+    border-color: alpha(@onboarding_accent, 0.7);
+    background-color: @onboarding_accent_dim;
+}
+
+/*
+ * The icon's size is set in code (pixel_size); this is its colour. A symbolic
+ * icon takes the foreground it is given, and the muted default at 80% read as a
+ * smudge on a dark panel — the accent says "this is the action on this tile".
+ */
+.add-tile-plus {
+    color: @onboarding_accent;
+}
+
+/* Secondary copy: blurbs sitting under a heading. */
+.text-secondary {
+    font-size: 1.1em;
+    opacity: 0.7;
+}
+
+/* Primary call to action. Worn by the deck's Next button and the catalogue's
+   marketplace link, so it lives here rather than with either of them. */
+.pill-button {
+    font-size: 1em;
+    font-weight: bold;
+    padding: 12px 24px;
+    border-radius: 99px;
+}
+
+/* The accent is the desktop's, so this button is Breeze blue on KDE and
+   Adwaita blue on GNOME without either of them being named here. */
+.pill-button.suggested-action {
+    background-image: none;
+    background-color: @onboarding_accent;
+    border: 1px solid @onboarding_accent;
+    color: @onboarding_accent_fg;
+}
+
+.pill-button.suggested-action:hover {
+    background-image: none;
+    background-color: shade(@onboarding_accent, 1.12);
+}
+
+/* Commands the user is expected to read before running. */
+.command-block {
+    font-family: monospace;
+    font-size: 0.9em;
+    background-color: alpha(currentColor, 0.07);
+    border: 1px solid alpha(currentColor, 0.15);
+    border-radius: 8px;
+    padding: 10px 12px;
+}

@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{background:#1a1a1a;color:#e6e6e6}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1>What X11 gives you, and what it doesn't</h1>
+  <p class="lede">
+    X11 is the protocol that lets windows talk to a keyboard and a mouse. It
+    draws nothing of its own: no panel, no dock, no notifications. What you see
+    on screen is whatever your <strong>window manager</strong> draws, plus
+    whatever compositing effects a separate compositor adds on top.
+  </p>
+  <ul>
+    <li><kbd>Alt + Tab</kbd><span><span class="what">Cycle windows.</span> <span class="why">Provided by every X11 window manager, in some form. The exact keys vary.</span></span></li>
+    <li><kbd>Ctrl + Alt + T</kbd><span><span class="what">Open a terminal.</span> <span class="why">A convention, not a guarantee. Most distros bind it by default; if yours doesn't, the launcher is one key away.</span></span></li>
+    <li><kbd>Alt + F2</kbd><span><span class="what">A command, without leaving the keyboard.</span> <span class="why">Runs a single command through your shell; disappears.</span></span></li>
+    <li><kbd>Ctrl + Alt + ←/→</kbd><span><span class="what">Switch desktop.</span> <span class="why">The convention from openbox and KDE 4 — most tiling WMs override it.</span></span></li>
+    <li><kbd>Print Screen</kbd><span><span class="what">Take a screenshot.</span> <span class="why">Handled by your screenshot tool; bind it if it isn't.</span></span></li>
+  </ul>
+  <p class="footnote">Transparency, animations and rounded corners all live in a separate compositor (picom, compton). If you want them, install one.</p>
+</div>

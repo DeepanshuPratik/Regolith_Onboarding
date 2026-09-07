@@ -1,0 +1,22 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>html,body{background:#0f1115;color:#e6ebf2}</style>
+<link rel="stylesheet" href="app:///palette.css">
+<link rel="stylesheet" href="assets/style.css">
+<div class="slide">
+  <h1>Workspaces by name, not number</h1>
+  <p class="lede">
+    i3 and sway both let you give each workspace a name. The number stays for
+    switching; the name is what the bar shows and what your muscle memory
+    reaches for. The defaults are 1…10; renaming them takes one line each.
+  </p>
+  <ul>
+    <li><kbd>1: term</kbd><span><span class="what">Browsers and editors.</span> <span class="why">The work surface.</span></span></li>
+    <li><kbd>2: web</kbd><span><span class="what">Browsers and reference.</span> <span class="why">Switch to it to look something up, switch back when done.</span></span></li>
+    <li><kbd>3: chat</kbd><span><span class="what">A persistent chat window.</span> <span class="why">Visible from anywhere; you set it sticky.</span></span></li>
+    <li><kbd>9: scratch</kbd><span><span class="what">A scratchpad.</span> <span class="why"><code>$mod+minus</code> hides it; <code>$mod+Shift+minus</code> shows it again.</span></span></li>
+    <li><kbd>$mod + 1…9</kbd><span><span class="what">Switch to that workspace.</span> <span class="why">By number, by name — whichever you're looking at.</span></span></li>
+    <li><kbd>$mod + Shift + 1…9</kbd><span><span class="what">Send the focused window there.</span> <span class="why">Move a window without focusing it first.</span></span></li>
+  </ul>
+  <p class="footnote">Names are the config's job, not the bar's — change them in <code>~/.config/sway/config</code> under <code>workspace</code>.</p>
+</div>

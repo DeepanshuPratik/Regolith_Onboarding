@@ -1,0 +1,67 @@
+/*
+ * sway theme. Almost-black surface, sharp accent, square corners.
+ * The deck is plain i3 muscle memory; the chrome underneath it shouldn't
+ * pull attention from the keys.
+ */
+
+.carousel,
+.main-container,
+.practice-page {
+    background-color: #0f1115;
+}
+
+.carousel,
+.main-container {
+    border: 1px solid alpha(#c0c8d4, 0.10);
+    border-radius: 0;
+}
+
+.title-1 {
+    color: #e6ebf2;
+}
+
+.heading {
+    color: #88c0d0;
+}
+
+.practice-command {
+    color: #88c0d0;
+}
+
+.add-tile-plus {
+    color: #88c0d0;
+}
+
+.text-secondary {
+    color: #8a92a3;
+}
+
+.notice {
+    color: #ebcb8b;
+}
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: #2e3440;
+    color: #eceff4;
+    border: 1px solid #4c566a;
+    border-radius: 0;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: #3b4252;
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: alpha(#c0c8d4, 0.06);
+    color: #e6ebf2;
+    border: 1px solid alpha(#c0c8d4, 0.20);
+    border-radius: 0;
+}
+
+.workflow-button:hover {
+    background-color: alpha(#88c0d0, 0.14);
+}

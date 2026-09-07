@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "desktop": "gnome",
+  "workflows": [
+    {
+      "name": "Getting Around GNOME",
+      "description": "The three keys that open the parts of the shell you cannot see. Each one opens an overlay; Escape closes it and brings you straight back here.",
+      "steps": [
+        {
+          "key_id": "<> a",
+          "heading": "Show all your applications",
+          "description": "Opens the app grid over your desktop. Everything installed is here, and typing filters it. Press Escape to close it and come back."
+        },
+        {
+          "key_id": "<> v",
+          "heading": "Open the notification list",
+          "description": "Notifications and the calendar live in the same drop-down. Escape closes it again."
+        },
+        {
+          "key_id": "<> 1",
+          "heading": "Jump straight to your first pinned app",
+          "description": "Super and a number switches to that app on the dash, launching it if it is not already running. Super+2 is the second, and so on."
+        }
+      ]
+    }
+  ]
+}
