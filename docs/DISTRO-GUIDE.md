@@ -13,11 +13,23 @@ The split to understand before anything else:
 
 ## Building with your branding
 
-Copy `data/branding/regolith/` as a starting point, edit it, and point the build
-at it:
+`-DBranding_dir` has no default — configure fails with the list of bundled
+options rather than silently compiling in Regolith's branding for a distro that
+never asked for it:
 
 ```bash
-meson setup build -Dbranding_dir=/path/to/my-distro-branding
+meson setup build
+# ERROR: -DBranding_dir is required.
+# Available under data/branding/: gnome, regolith, regolith-wayland, sway, x11
+```
+
+Point it at one of those, or your own:
+
+```bash
+meson setup build -DBranding_dir=data/branding/gnome
+# or, for a distro of your own:
+cp -r data/branding/regolith /path/to/my-distro-branding   # any of the five works as a starting point
+meson setup build -DBranding_dir=/path/to/my-distro-branding
 meson compile -C build
 ./build/linux-onboarding
 ```
@@ -41,10 +53,9 @@ my-distro-branding/
 │       ├── style.css
 │       └── screenshot.png
 └── workflows/                        optional, these become your defaults
-    └── <desktop-id>/
-        ├── 01-launching.json
-        └── images/
-            └── launch.png
+    ├── 01-launching.json
+    └── assets/
+        └── launch.png
 ```
 
 ### branding.conf
@@ -392,7 +403,7 @@ Everything in the desktop file below the basename is yours. `Name`,
 read correctly under any distro; replace them with your own wording.
 
 The icon is **not** a fixed asset of this repository — it is `logo.png` from
-your `-Dbranding_dir`, installed under the application id. Rebranding the build
+your `-DBranding_dir`, installed under the application id. Rebranding the build
 rebrands the launcher icon with it, and no distro ships another distro's logo by
 accident. The contract that comes with that: **`logo.png` should be a square
 PNG**, 512×512 in the shipped Regolith branding. A non-square one still
@@ -427,9 +438,25 @@ $XDG_CONFIG_DIRS/linux-onboarding/workflows/           sysadmin (/etc/xdg)
 $XDG_CONFIG_HOME/linux-onboarding/workflows/           the user (~/.config)
 ```
 
-### Keyed by desktop environment
+### Your build's own workflows are flat
 
-Each of those directories holds one subdirectory per desktop id:
+`workflows/` under your `-DBranding_dir` holds your `.json` files directly —
+no per-desktop subdirectory:
+
+```
+workflows/01-launching.json
+workflows/02-navigation.json
+```
+
+That build already committed to one distro's identity at configure time, so
+there is no desktop id left to disambiguate: a GNOME build's bundled workflows
+are GNOME's, full stop.
+
+### The other three layers are keyed by desktop environment
+
+Distro packages, sysadmin config and the user's own directory are not tied to
+any one build, so each of those three holds one subdirectory per desktop id
+instead:
 
 ```
 workflows/regolith/*.json
@@ -447,8 +474,9 @@ ubuntu:GNOME                 ->  ubuntu, gnome, default
 KDE                          ->  kde, default
 ```
 
-Within a layer only the first match is read, so shipping both `regolith/` and
-`default/` gives Regolith users the specific set rather than both.
+Within one of these three layers only the first match is read, so shipping
+both `regolith/` and `default/` gives Regolith users the specific set rather
+than both.
 
 Because the session suffix is stripped, `Regolith-Wayland` and `Regolith-X11`
 share one directory.
@@ -622,12 +650,12 @@ The practical support table:
 | GNOME on Wayland | Yes* | Keyboard-only seat grab → `zwp_keyboard_shortcuts_inhibit_v1` |
 | KDE (KWin) on Wayland | Yes*† | Same keyboard-only grab; bindings from `kglobalshortcutsrc` |
 
-\* GNOME ships a workflow set as of this branch — `workflows/gnome/`, three
-workflows whose seven steps all resolve against GNOME's own GSettings. KDE is
-**unauthored**: the platform implements observation, resolution and dispatch,
-but no `workflows/kde/*.json` ship, so practice has nothing to teach there until
-someone authors the set. The code path is complete the moment the JSON is
-supplied.
+\* GNOME ships a workflow set as of this branch — bundled in
+`data/branding/gnome/workflows/`, whose steps all resolve against GNOME's own
+GSettings. KDE is **unauthored**: the platform implements observation,
+resolution and dispatch, but no KDE branding directory bundles any
+`workflows/*.json`, so practice has nothing to teach there until someone
+authors the set. The code path is complete the moment the JSON is supplied.
 
 Authoring for GNOME has one constraint worth knowing before you start, and it is
 not obvious: **almost every GNOME default shortcut moves the keyboard somewhere

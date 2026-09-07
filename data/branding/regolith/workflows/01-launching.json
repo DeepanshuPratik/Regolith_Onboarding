@@ -5,31 +5,31 @@
     {
       "name": "Launching Applications",
       "description": "Open the apps you use most without reaching for the mouse.",
-      "image": "images/terminal-single.jpg",
+      "image": "assets/terminal-single.jpg",
       "steps": [
         {
           "key_id": "<> Enter",
           "heading": "Launch a Terminal",
           "description": "Opens your terminal. This is the shortcut you will use more than any other.",
-          "image": "images/terminal-single.jpg"
+          "image": "assets/terminal-single.jpg"
         },
         {
           "key_id": "<><Shift> Enter",
           "heading": "Launch a Browser",
           "description": "Opens your default browser, tiled beside the terminal.",
-          "image": "images/split-side-by-side.jpg"
+          "image": "assets/split-side-by-side.jpg"
         },
         {
           "key_id": "<> Space",
           "heading": "Application Launcher",
           "description": "Search and start any installed application by name.",
-          "image": "images/launcher.jpg"
+          "image": "assets/launcher.jpg"
         },
         {
           "key_id": "<><Shift> ?",
           "heading": "Keybinding Viewer",
           "description": "Shows every shortcut available. Your reference when you forget one.",
-          "image": "images/launcher.jpg"
+          "image": "assets/launcher.jpg"
         }
       ]
     }

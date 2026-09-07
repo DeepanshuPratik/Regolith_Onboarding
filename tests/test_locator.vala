@@ -154,6 +154,30 @@ namespace linux_onboarding.Tests {
         }
     }
 
+    /**
+     * The reported bug, as a test: Ubuntu's XDG_CURRENT_DESKTOP normalises to
+     * ["ubuntu", "gnome", "default"], and this repo bundles no "ubuntu"
+     * workflows directory — only the fallthrough to "gnome" makes an Ubuntu
+     * GNOME session load anything but the fallback set.
+     */
+    private void test_locator_falls_through_to_first_existing_candidate () {
+        var root = locator_tmpdir ();
+        DirUtils.create_with_parents (Path.build_filename (root, "gnome"), 0755);
+
+        var candidates = Desktop.build_candidates ("Ubuntu:GNOME");
+        var chosen = WorkflowLocator.first_existing_candidate (root, candidates);
+
+        check_str ("skips missing ubuntu/, lands on gnome/",
+                   chosen, Path.build_filename (root, "gnome"));
+    }
+
+    /** When nothing on the candidate list exists under root, there is nothing to fall back to. */
+    private void test_locator_no_existing_candidate_is_null () {
+        var root = locator_tmpdir ();
+        var chosen = WorkflowLocator.first_existing_candidate (root, {"ubuntu", "gnome", "default"});
+        check_str ("no directory matches", chosen, null);
+    }
+
     public void register_locator () {
         Test.add_func ("/locator/flat", test_locator_finds_flat_workflows);
         Test.add_func ("/locator/own-folder", test_locator_finds_workflow_in_its_own_folder);
@@ -162,5 +186,7 @@ namespace linux_onboarding.Tests {
         Test.add_func ("/locator/one-level-only", test_locator_does_not_recurse_further);
         Test.add_func ("/locator/folder-with-several-jsons", test_locator_ignores_a_folder_with_several_jsons);
         Test.add_func ("/locator/stable-order", test_locator_order_is_stable);
+        Test.add_func ("/locator/falls-through-to-first-existing-candidate", test_locator_falls_through_to_first_existing_candidate);
+        Test.add_func ("/locator/no-existing-candidate-is-null", test_locator_no_existing_candidate_is_null);
     }
 }

@@ -1,4 +1,4 @@
-option('branding_dir',
+option('Branding_dir',
        type: 'string',
-       value: 'data/branding/regolith',
-       description: 'Directory holding this distro\'s branding.conf, theme.css, logo and slides/. Compiled into the binary.')
+       value: '',
+       description: 'Directory holding this distro\'s branding.conf, theme.css, logo and slides/. Compiled into the binary. Required: no default, so a build never silently ships another distro\'s identity. See data/branding/ for ready-to-fork options.')

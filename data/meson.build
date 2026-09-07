@@ -10,7 +10,7 @@ install_data(
 )
 
 # The icon follows the branding rather than being a fixed asset of this
-# repository: identity here is compiled in and chosen by -Dbranding_dir, and a
+# repository: identity here is compiled in and chosen by -DBranding_dir, and a
 # launcher entry carrying another distro's logo would be a bug rather than a
 # default. Installed under APP_ID so the desktop file's Icon= key resolves
 # without either name having to be repeated anywhere else.

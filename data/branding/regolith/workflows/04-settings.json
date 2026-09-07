@@ -5,31 +5,31 @@
     {
       "name": "Settings at Your Fingertips",
       "description": "Reach the settings you change most often directly from the keyboard.",
-      "image": "images/launcher.jpg",
+      "image": "assets/launcher.jpg",
       "steps": [
         {
           "key_id": "<> c",
           "heading": "Settings",
           "description": "Opens the Regolith control centre.",
-          "image": "images/launcher.jpg"
+          "image": "assets/launcher.jpg"
         },
         {
           "key_id": "<> d",
           "heading": "Display Settings",
           "description": "Arrange monitors and change resolution.",
-          "image": "images/launcher.jpg"
+          "image": "assets/launcher.jpg"
         },
         {
           "key_id": "<> w",
           "heading": "Wi-Fi Settings",
           "description": "Pick a network without hunting through menus.",
-          "image": "images/launcher.jpg"
+          "image": "assets/launcher.jpg"
         },
         {
           "key_id": "<> n",
           "heading": "Notification Viewer",
           "description": "Review notifications you may have missed.",
-          "image": "images/launcher.jpg"
+          "image": "assets/launcher.jpg"
         }
       ]
     }
