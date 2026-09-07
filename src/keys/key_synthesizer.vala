@@ -70,20 +70,56 @@ namespace linux_onboarding {
         }
 
         /** Command that replays key_id, e.g. "<><Shift> Enter". */
+        /**
+         * The ydotool command for key_id.
+         *
+         * uinput KEY_* constants, which is the vocabulary *both* ydotool
+         * generations understand: 0.1.8's binary carries all 439 of them and
+         * 1.x documents them. Worth writing down, because 0.1.8's own --help
+         * shows only alias forms (`alt+r`, `Alt+F4`) while its alias table holds
+         * just SUPER and SUPER_L — the help suggests a narrower vocabulary than
+         * it accepts, and following it would emit names like `slash` that appear
+         * nowhere in the binary.
+         *
+         * Getting this wrong is invisible: handed a name it does not know, 0.1.8
+         * prints nothing and exits 0 (`ydotool key NOSUCHKEY123` succeeds), so
+         * the step completes and the desktop does nothing.
+         *
+         * Split out from command_for so the mapping can be tested with no
+         * ydotool installed.
+         */
+        internal string ydotool_command_for (string key_id) {
+            string command = "ydotool key ";
+            var parts = spec.format_spec (key_id).split (" ");
+            for (int i = 0; i < parts.length; i++) {
+                var xkey = keysym_for (parts[i]);
+                command += to_ydotool_key (xkey);
+                if (i < parts.length - 1) command += "+";
+            }
+            return command;
+        }
+
+        // The X keysym one remontoire token means, before either ydotool
+        // vocabulary is applied.
+        private string keysym_for (string token) {
+            var mapped = keys.remontoireSymToKey.get (token);
+            return (mapped != null) ? mapped : spec.to_keysym (token);
+        }
+
         public string command_for (string key_id) {
             // One decision, made in tool(): xdotool cannot inject into a Wayland
             // compositor, ydotool goes through /dev/uinput and can when its
             // daemon is running. Spelling that test again here is what let
             // availability and the command disagree about which tool would run.
-            bool use_ydotool = tool () == "ydotool";
-            string command = use_ydotool ? "ydotool key "
-                                         : "xdotool sleep 0.5 key --clearmodifiers ";
+            if (tool () == "ydotool")
+                return ydotool_command_for (key_id);
 
+            string command = "xdotool sleep 0.5 key --clearmodifiers ";
             var parts = spec.format_spec (key_id).split (" ");
             for (int i = 0; i < parts.length - 1; i++) {
-                command += translate (parts[i], use_ydotool) + "+";
+                command += translate (parts[i], false) + "+";
             }
-            command += translate (parts[parts.length - 1], use_ydotool);
+            command += translate (parts[parts.length - 1], false);
 
             return command;
         }
