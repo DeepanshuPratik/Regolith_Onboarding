@@ -212,25 +212,43 @@ namespace linux_onboarding {
             string ack;
             try { Process.spawn_command_line_sync (ipc + " mode default", out ack, null, null); } catch {}
 
-            var home = Environment.get_home_dir ();
-            string[] roots = { "regolith3", "regolith2", null };
-            // LEGACY_MODE_FILE is the pre-rename name; clear it too so upgrades do
-            // not strand a block written by an older build.
-            string[] names = { MODE_FILE, LEGACY_MODE_FILE };
-
             bool deleted = false;
-            foreach (var root in roots) {
-                foreach (var name in names) {
-                    var path = (root == null)
-                        ? Path.build_filename (home, ".config", wm_id, "config.d", name)
-                        : Path.build_filename (home, ".config", root, wm_id, "config.d", name);
-                    if (!FileUtils.test (path, FileTest.EXISTS)) continue;
-                    try { File.new_for_path (path).delete (); deleted = true; } catch {}
-                }
+            foreach (var path in mode_file_candidates (wm_id)) {
+                if (!FileUtils.test (path, FileTest.EXISTS)) continue;
+                try { File.new_for_path (path).delete (); deleted = true; } catch {}
             }
             if (deleted) {
                 try { Process.spawn_command_line_sync (ipc + " reload", out ack, null, null); } catch {}
             }
+        }
+
+        /**
+         * Every path a mode block could be sitting at, in every config.d layout
+         * this app knows and under both the current and the pre-rename name.
+         *
+         * Shared by cleanup_stale_state() and by the crash guard, which is the
+         * point: the list of things to remove and the list of things a signal
+         * handler removes must not be able to drift apart. The paths are built
+         * rather than discovered, so this is callable before anything has been
+         * installed — and the crash guard needs them collected up front, since a
+         * signal handler cannot go looking.
+         */
+        public static string[] mode_file_candidates (string wm_id) {
+            var home = Environment.get_home_dir ();
+            string[] roots = { "regolith3", "regolith2", null };
+            // LEGACY_MODE_FILE is the pre-rename name; clear it too so upgrades
+            // do not strand a block written by an older build.
+            string[] names = { MODE_FILE, LEGACY_MODE_FILE };
+
+            string[] paths = {};
+            foreach (var root in roots) {
+                foreach (var name in names) {
+                    paths += (root == null)
+                        ? Path.build_filename (home, ".config", wm_id, "config.d", name)
+                        : Path.build_filename (home, ".config", root, wm_id, "config.d", name);
+                }
+            }
+            return paths;
         }
     }
 }

@@ -199,6 +199,17 @@ namespace linux_onboarding {
          * platform that wrote the mess may not be the one supplying capabilities
          * now, and leaving a config fragment behind permanently shadows keys.
          */
+        /**
+         * Gather what every claiming platform would need undone after a crash.
+         *
+         * Every claimant, for the same reason cleanup_stale_state() asks them
+         * all: the platform that wrote something is not necessarily the one
+         * supplying capabilities now.
+         */
+        public static void collect_emergency_reset (EmergencyReset into) {
+            foreach (var platform in claimants ()) platform.collect_emergency_reset (into);
+        }
+
         public static void cleanup_stale_state () {
             foreach (var platform in claimants ()) platform.cleanup_stale_state ();
         }

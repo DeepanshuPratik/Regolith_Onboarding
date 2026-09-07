@@ -91,6 +91,21 @@ namespace linux_onboarding {
         public virtual WindowPlacer? placer (Gtk.Window window) { return null; }
 
         /**
+         * Name what would have to be undone if this process died without
+         * running cleanup_stale_state(): files it wrote, and the one command
+         * that hands control back.
+         *
+         * Separate from cleanup_stale_state() because of *when* it is asked. A
+         * crash handler may not allocate or call into GLib, so it cannot ask a
+         * platform anything — the answers have to be collected at startup and
+         * frozen. See SignalGuard.
+         *
+         * A platform that leaves nothing outside the process implements
+         * nothing here.
+         */
+        public virtual void collect_emergency_reset (EmergencyReset into) {}
+
+        /**
          * Remove anything a previous run of this platform left outside the
          * process — a config fragment, a mode still active in the WM.
          *

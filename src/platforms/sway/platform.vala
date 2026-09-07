@@ -85,6 +85,23 @@ namespace linux_onboarding {
         public void cleanup_stale_state () {
             SwayModes.cleanup_stale_state (ipc, wm_id);
         }
+
+        /**
+         * The mode file, and the command that leaves the mode.
+         *
+         * Both matter: removing the file is not enough, because sway keeps the
+         * config it has already loaded — a crash while the mode is active
+         * leaves the compositor in it, with every key the app named bound to
+         * `nop`. The IPC binary is resolved to an absolute path here, at
+         * startup, because a signal handler may not search PATH.
+         */
+        public void collect_emergency_reset (EmergencyReset into) {
+            foreach (var path in SwayModes.mode_file_candidates (wm_id))
+                into.add_file (path);
+
+            var binary = Environment.find_program_in_path (ipc);
+            if (binary != null) into.set_command ({ binary, "mode", "default", null });
+        }
     }
 
     /**
