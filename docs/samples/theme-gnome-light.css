@@ -1,0 +1,137 @@
+/*
+ * Sample distro theme: "GNOME Light" — Adwaita-flavoured, light, rounded.
+ *
+ * Drop-in replacement for data/branding/regolith/theme.css. This one is
+ * *light*, which is the useful test: it proves the theme layer really is on
+ * top, and it exposes the two things a theme cannot reach on its own — see
+ * docs/samples/README.md before you conclude something is broken.
+ *
+ *     cp docs/samples/theme-gnome-light.css \
+ *        data/branding/regolith/theme.css
+ *     meson compile -C build
+ *
+ * Every class below is the app's styling contract. Loaded after the base
+ * stylesheet, so anything set here wins.
+ */
+
+/* ---- surfaces -------------------------------------------------------- */
+
+.carousel,
+.main-container,
+.practice-page {
+    background-color: #fafafa;
+}
+
+.carousel,
+.main-container {
+    border: 1px solid alpha(#000000, 0.12);
+    border-radius: 12px;
+}
+
+/* ---- text ------------------------------------------------------------ */
+
+.title-1 {
+    color: #241f31;
+}
+
+.heading {
+    color: #1c71d8;
+}
+
+.text-secondary {
+    color: #5e5c64;
+}
+
+.notice {
+    color: #a05a00;
+}
+
+/* ---- the practice page ----------------------------------------------- */
+
+.practice-heading {
+    color: #1c71d8;
+}
+
+.practice-command {
+    color: #613583;
+    font-weight: 700;
+}
+
+.practice-description {
+    color: #5e5c64;
+}
+
+.media-container {
+    border: 1px solid alpha(#000000, 0.15);
+    border-radius: 8px;
+}
+
+/* ---- buttons --------------------------------------------------------- */
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: #3584e4;
+    color: #ffffff;
+    border: 1px solid #1c71d8;
+    border-radius: 999px;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: #1c71d8;
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: #ffffff;
+    color: #241f31;
+    border: 1px solid alpha(#000000, 0.18);
+    border-radius: 999px;
+}
+
+.cancelButton:hover {
+    background-color: #f0f0f0;
+}
+
+/* ---- the catalogue --------------------------------------------------- */
+
+.workflow-button {
+    background-color: #ffffff;
+    border: 1px solid alpha(#000000, 0.10);
+    border-radius: 12px;
+}
+
+.workflow-button:hover {
+    background-color: alpha(#3584e4, 0.10);
+}
+
+.workflow-button .heading {
+    color: #1c71d8;
+}
+
+.add-tile {
+    background-color: #f2f2f2;
+    border: 1px dashed alpha(#000000, 0.25);
+    border-radius: 12px;
+}
+
+.add-tile-plus {
+    color: #3584e4;
+}
+
+/* ---- the click-to-continue prompt (#30) ------------------------------ */
+
+.focus-prompt {
+    background-color: #ffffff;
+    border: 1px solid alpha(#000000, 0.15);
+    border-radius: 12px;
+}
+
+.focus-prompt-text {
+    color: #5e5c64;
+}
+
+.command-block {
+    color: #613583;
+}

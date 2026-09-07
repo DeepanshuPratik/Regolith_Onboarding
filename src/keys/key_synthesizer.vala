@@ -184,7 +184,31 @@ namespace linux_onboarding {
                 case "grave":        return "KEY_GRAVE";
                 case "bracketleft":  return "KEY_LEFTBRACE";
                 case "bracketright": return "KEY_RIGHTBRACE";
+                // Navigation and editing. KdeResolver canonicalises KDE's own
+                // spellings onto these names — PgUp becomes Prior, Del becomes
+                // Delete — so they arrive here whether or not a workflow author
+                // wrote them that way.
+                case "Home":         return "KEY_HOME";
+                case "End":          return "KEY_END";
+                case "Prior":        return "KEY_PAGEUP";
+                case "Next":         return "KEY_PAGEDOWN";
+                case "Delete":       return "KEY_DELETE";
+                case "Insert":       return "KEY_INSERT";
+                case "Menu":         return "KEY_COMPOSE";
                 default:             break;
+            }
+
+            // Function keys. F1 .. F24 are named identically on both sides
+            // apart from the prefix, so the mapping is arithmetic rather than
+            // twenty-four more case labels. Bounded because "F0" and "F99" are
+            // not keys, and passing either through produces a ydotool command
+            // that fails at dispatch rather than at authoring time.
+            if (xkey.length >= 2 && xkey[0] == 'F') {
+                var digits = xkey.substring (1);
+                if (is_all_digits (digits)) {
+                    var n = int.parse (digits);
+                    if (n >= 1 && n <= 24) return "KEY_F" + digits;
+                }
             }
 
             // Single letters and digits map straight onto KEY_A .. KEY_Z, KEY_0 .. KEY_9.
@@ -196,6 +220,14 @@ namespace linux_onboarding {
 
             warning ("no ydotool name for keysym '%s'; passing through", xkey);
             return xkey;
+        }
+
+        /** True for a non-empty run of ASCII digits, and nothing else. */
+        internal static bool is_all_digits (string text) {
+            if (text.length == 0) return false;
+            for (int i = 0; i < text.length; i++)
+                if (!text[i].isdigit ()) return false;
+            return true;
         }
     }
 }

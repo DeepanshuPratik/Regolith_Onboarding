@@ -1,0 +1,138 @@
+/*
+ * Sample distro theme: "Regolith Amber" — dark, warm, square.
+ *
+ * Drop-in replacement for data/branding/regolith/theme.css. Deliberately as
+ * far from the shipped blue theme as the contract allows, so a build that has
+ * picked it up is obvious at a glance rather than something you have to
+ * squint at.
+ *
+ *     cp docs/samples/theme-regolith-amber.css \
+ *        data/branding/regolith/theme.css
+ *     meson compile -C build
+ *
+ * Two companion knobs live outside this file — see docs/samples/README.md.
+ *
+ * Every class below is the app's styling contract. Loaded after the base
+ * stylesheet, so anything set here wins.
+ */
+
+/* ---- surfaces -------------------------------------------------------- */
+
+.carousel,
+.main-container,
+.practice-page {
+    background-color: #1a1512;
+}
+
+.carousel,
+.main-container {
+    border: 1px solid alpha(#e0a458, 0.22);
+    border-radius: 2px;
+}
+
+/* ---- text ------------------------------------------------------------ */
+
+.title-1 {
+    color: #f3e6d4;
+}
+
+.heading {
+    color: #e0a458;
+}
+
+.text-secondary {
+    color: #b3a591;
+}
+
+.notice {
+    color: #d98c5f;
+}
+
+/* ---- the practice page ----------------------------------------------- */
+
+.practice-heading {
+    color: #e0a458;
+}
+
+.practice-command {
+    color: #f0b775;
+    font-weight: 700;
+}
+
+.practice-description {
+    color: #b3a591;
+}
+
+.media-container {
+    border: 1px solid alpha(#e0a458, 0.30);
+    border-radius: 2px;
+}
+
+/* ---- buttons --------------------------------------------------------- */
+
+.pill-button.suggested-action,
+.playButton {
+    background-image: none;
+    background-color: #b5651d;
+    color: #fdf6ec;
+    border: 1px solid #8f4f16;
+    border-radius: 3px;
+}
+
+.pill-button.suggested-action:hover,
+.playButton:hover {
+    background-color: #d07a2a;
+}
+
+.cancelButton {
+    background-image: none;
+    background-color: alpha(#e0a458, 0.10);
+    color: #f3e6d4;
+    border: 1px solid alpha(#e0a458, 0.28);
+    border-radius: 3px;
+}
+
+.cancelButton:hover {
+    background-color: alpha(#e0a458, 0.20);
+}
+
+/* ---- the catalogue --------------------------------------------------- */
+
+.workflow-button {
+    background-color: #241d18;
+    border: 1px solid alpha(#e0a458, 0.16);
+    border-radius: 3px;
+}
+
+.workflow-button:hover {
+    background-color: alpha(#e0a458, 0.14);
+}
+
+.workflow-button .heading {
+    color: #e0a458;
+}
+
+.add-tile {
+    border: 1px dashed alpha(#e0a458, 0.40);
+    border-radius: 3px;
+}
+
+.add-tile-plus {
+    color: #e0a458;
+}
+
+/* ---- the click-to-continue prompt (#30) ------------------------------ */
+
+.focus-prompt {
+    background-color: #241d18;
+    border: 1px solid alpha(#e0a458, 0.35);
+    border-radius: 3px;
+}
+
+.focus-prompt-text {
+    color: #b3a591;
+}
+
+.command-block {
+    color: #f0b775;
+}

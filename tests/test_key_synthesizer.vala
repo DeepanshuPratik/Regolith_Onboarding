@@ -99,6 +99,38 @@ namespace linux_onboarding.Tests {
         Test.add_func ("/key-synthesizer/ydotool/modifiers", () => {
             var synth = new KeySynthesizer ();
             check_str ("Super_L",   synth.to_ydotool_key ("Super_L"),   "KEY_LEFTMETA");
+
+            // Function keys used to fall through to the pass-through warning,
+            // so <Alt> F4 emitted "KEY_LEFTALT+F4" — a command ydotool rejects.
+            check_str ("F1",  synth.to_ydotool_key ("F1"),  "KEY_F1");
+            check_str ("F4",  synth.to_ydotool_key ("F4"),  "KEY_F4");
+            check_str ("F12", synth.to_ydotool_key ("F12"), "KEY_F12");
+            check_str ("F24", synth.to_ydotool_key ("F24"), "KEY_F24");
+
+            // Out of range, and not a function key at all: both must keep
+            // falling through rather than inventing KEY_F0 / KEY_F99. The
+            // fall-through warns, and the framework makes a warning fatal
+            // unless the case says it wants one.
+            Test.expect_message (null, LogLevelFlags.LEVEL_WARNING, "*no ydotool name*");
+            check_str ("F0", synth.to_ydotool_key ("F0"), "F0");
+            Test.assert_expected_messages ();
+
+            Test.expect_message (null, LogLevelFlags.LEVEL_WARNING, "*no ydotool name*");
+            check_str ("F99", synth.to_ydotool_key ("F99"), "F99");
+            Test.assert_expected_messages ();
+
+            Test.expect_message (null, LogLevelFlags.LEVEL_WARNING, "*no ydotool name*");
+            check_str ("Fake", synth.to_ydotool_key ("Fake"), "Fake");
+            Test.assert_expected_messages ();
+
+            // Navigation and editing keys, including the names KdeResolver
+            // canonicalises PgUp/PgDown/Del onto.
+            check_str ("Home",   synth.to_ydotool_key ("Home"),   "KEY_HOME");
+            check_str ("End",    synth.to_ydotool_key ("End"),    "KEY_END");
+            check_str ("Prior",  synth.to_ydotool_key ("Prior"),  "KEY_PAGEUP");
+            check_str ("Next",   synth.to_ydotool_key ("Next"),   "KEY_PAGEDOWN");
+            check_str ("Delete", synth.to_ydotool_key ("Delete"), "KEY_DELETE");
+            check_str ("Insert", synth.to_ydotool_key ("Insert"), "KEY_INSERT");
             check_str ("Shift_L",   synth.to_ydotool_key ("Shift_L"),   "KEY_LEFTSHIFT");
             check_str ("Control_L", synth.to_ydotool_key ("Control_L"), "KEY_LEFTCTRL");
             check_str ("Alt_L",     synth.to_ydotool_key ("Alt_L"),     "KEY_LEFTALT");
