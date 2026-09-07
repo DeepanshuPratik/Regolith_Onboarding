@@ -93,6 +93,26 @@ app_deps += layer_shell_dep
 app_deps += dependency('gee-0.8')
 app_deps += dependency('json-glib-1.0')
 
+# The marketplace repository the install script defaults to, read from the
+# branding being compiled in, so a distro that ships its own marketplace does
+# not have to patch the script.
+marketplace_repo = run_command(
+  'python3', '-c',
+  'import configparser,sys; c=configparser.ConfigParser(); c.read(sys.argv[1]); ' +
+  'print(c.get("Marketplace","Repo",fallback=""))',
+  branding_dir / 'branding.conf',
+  check: true,
+).stdout().strip()
+
+configure_file(
+  input: 'data/linux-onboarding-install.in',
+  output: 'linux-onboarding-install',
+  configuration: configuration_data({'MARKETPLACE_REPO': marketplace_repo}),
+  install: true,
+  install_dir: get_option('bindir'),
+  install_mode: 'rwxr-xr-x',
+)
+
 executable(
   'linux-onboarding',
   project_sources,
